@@ -1,0 +1,11 @@
+# CLAUDE.md
+
+請先完整閱讀並遵守 [`AGENTS.md`](AGENTS.md)。本檔只補充 Claude Code 的最小入口：
+
+- 這是保留上游歷史的 fork；不要移除 `upstream`、原作者或 Apache-2.0 授權標示。
+- 核心程式在 `packages/`、Agent Skills 在 `skills/`，以上游為準。
+- 提交前跑 `pwsh -NoProfile -File tools\dev_check.ps1`。不要把 gate 改成完整產品依賴安裝。
+- 測試輸出檔案、使用者媒體素材、`.env` 一律不可提交。
+- 使用繁體中文，直接交付可驗證結果，避免冗長背景鋪陳。
+- 動畫核心原則：frames read as states, not slides；堅持以 reconstructed motion 實作，嚴禁降級為靜態投影片。
+- PR、push、release 一律指向 `SanHsien/hyperframes`，嚴禁未經當次許可打向 `heygen-com/hyperframes`。
