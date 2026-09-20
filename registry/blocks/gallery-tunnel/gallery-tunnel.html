@@ -168,6 +168,25 @@
             });
         }
 
+        // Composition variables are authored text. Convert them to a URL before
+        // handing them to a DOM sink, and permit only the image-loading schemes
+        // this block supports. In particular, never let a javascript: or
+        // vbscript: value become an image source.
+        function imageUrl(value) {
+          try {
+            var url = new URL(value, document.baseURI);
+            if (url.protocol !== "https:" && url.protocol !== "http:" && url.protocol !== "data:") {
+              return null;
+            }
+            if (url.protocol === "data:" && !url.pathname.toLowerCase().startsWith("image/")) {
+              return null;
+            }
+            return url.href;
+          } catch (_) {
+            return null;
+          }
+        }
+
         var SPEED = num("speed");
         var GRID = Math.max(1, Math.min(4, Math.round(num("grid"))));
         var FILL = num("fill");
@@ -232,10 +251,12 @@
         // event waits for the decode) used directly as WebGL textures.
         var assets = document.getElementById("gt-assets");
         var IMAGES = IMAGE_SRCS.map(function (src, k) {
+          var safeSrc = imageUrl(src);
+          if (!safeSrc) return null;
           var el = document.createElement("img");
           el.id = "gt-img-" + k;
           el.alt = "";
-          el.src = src;
+          el.src = safeSrc;
           assets.appendChild(el);
 
           var tex = new THREEJS.Texture(el);
@@ -254,6 +275,8 @@
           el.addEventListener("load", ready);
           ready(); // a cache hit can complete before the listener is attached
           return rec;
+        }).filter(function (image) {
+          return image !== null;
         });
 
         var edgeMat = new THREEJS.MeshBasicMaterial({

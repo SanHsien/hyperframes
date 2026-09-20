@@ -565,6 +565,30 @@ describe("collectRuntimeTimelinePayload", () => {
     expect(result.clips[0].assetUrl).toBe("https://example.com/hero.jpg");
   });
 
+  it("does not surface executable asset URL schemes", () => {
+    const root = document.createElement("div");
+    root.setAttribute("data-composition-id", "main");
+    root.setAttribute("data-duration", "10");
+    document.body.appendChild(root);
+
+    for (const [id, src] of [
+      ["script", "javascript:alert(1)"],
+      ["legacy-script", "vbscript:msgbox(1)"],
+      ["inline-data", "data:text/html,<script>alert(1)</script>"],
+    ]) {
+      const image = document.createElement("img");
+      image.id = id;
+      image.setAttribute("src", src);
+      image.setAttribute("data-start", "0");
+      image.setAttribute("data-duration", "5");
+      root.appendChild(image);
+    }
+
+    const result = collectRuntimeTimelinePayload(defaultParams);
+    expect(result.clips).toHaveLength(3);
+    expect(result.clips.every((clip) => clip.assetUrl === null)).toBe(true);
+  });
+
   it("uses label from data-timeline-label", () => {
     const root = document.createElement("div");
     root.setAttribute("data-composition-id", "main");

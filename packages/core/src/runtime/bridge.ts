@@ -49,45 +49,73 @@ export function postRuntimeMessage(payload: RuntimeOutboundMessage): void {
 }
 
 type BridgeControlData = Partial<RuntimeBridgeControlMessage & RuntimeProtocolV1>;
-type ControlHandler = (data: BridgeControlData, deps: BridgeDeps) => void;
 
-// Per-action dispatchers. Splitting the handler into a lookup table keeps the
-// top-level message listener trivial (one map lookup), and each action's logic
-// becomes individually testable / inheritable for fallow's CRAP analysis.
-const CONTROL_HANDLERS = new Map<string, ControlHandler>(
-  Object.entries({
-    play: (_d, deps) => deps.onPlay(),
-    pause: (_d, deps) => deps.onPause(),
-    "stop-media": (_d, deps) => deps.onStopMedia(),
-    seek: (data, deps) =>
-      deps.onSeek(resolveSeekTimeSeconds(data, deps), data.seekMode ?? "commit"),
-    tick: (_d, deps) => deps.onTick(),
-    "set-muted": (data, deps) => deps.onSetMuted(Boolean(data.muted)),
-    "set-volume": (data, deps) =>
-      deps.onSetVolume(Math.max(0, Math.min(1, Number(data.volume ?? 1)))),
-    "set-media-output-muted": (data, deps) => deps.onSetMediaOutputMuted(Boolean(data.muted)),
-    "set-native-media-sync-disabled": (data, deps) =>
-      deps.onSetNativeMediaSyncDisabled(Boolean(data.disabled)),
-    "set-web-audio-media-disabled": (data, deps) =>
-      deps.onSetWebAudioMediaDisabled(Boolean(data.disabled)),
-    "set-playback-rate": (data, deps) => deps.onSetPlaybackRate(Number(data.playbackRate ?? 1)),
-    "set-root-duration": (data, deps) => deps.onSetRootDuration(Number(data.durationSeconds ?? 0)),
-    "set-color-grading": (data, deps) =>
-      deps.onSetColorGrading(data.target ?? null, data.grading ?? null),
-    "set-color-grading-compare": (data, deps) =>
-      deps.onSetColorGradingCompare(data.target ?? null, data.compare ?? null),
-    "enable-pick-mode": (_d, deps) => deps.onEnablePickMode(),
-    "disable-pick-mode": (_d, deps) => deps.onDisablePickMode(),
-    "flash-elements": (data) => handleFlashElements(data),
-    "set-runtime-data": (data, deps) => {
+// Messages cross a frame boundary, so the action must select from a closed
+// set of code-owned branches. Do not turn the message value into an indirect
+// function call: that makes the dispatch boundary harder to audit and could
+// accidentally become extensible if the handler table changes.
+function dispatchControl(action: string, data: BridgeControlData, deps: BridgeDeps): void {
+  switch (action) {
+    case "play":
+      deps.onPlay();
+      return;
+    case "pause":
+      deps.onPause();
+      return;
+    case "stop-media":
+      deps.onStopMedia();
+      return;
+    case "seek":
+      deps.onSeek(resolveSeekTimeSeconds(data, deps), data.seekMode ?? "commit");
+      return;
+    case "tick":
+      deps.onTick();
+      return;
+    case "set-muted":
+      deps.onSetMuted(Boolean(data.muted));
+      return;
+    case "set-volume":
+      deps.onSetVolume(Math.max(0, Math.min(1, Number(data.volume ?? 1))));
+      return;
+    case "set-media-output-muted":
+      deps.onSetMediaOutputMuted(Boolean(data.muted));
+      return;
+    case "set-native-media-sync-disabled":
+      deps.onSetNativeMediaSyncDisabled(Boolean(data.disabled));
+      return;
+    case "set-web-audio-media-disabled":
+      deps.onSetWebAudioMediaDisabled(Boolean(data.disabled));
+      return;
+    case "set-playback-rate":
+      deps.onSetPlaybackRate(Number(data.playbackRate ?? 1));
+      return;
+    case "set-root-duration":
+      deps.onSetRootDuration(Number(data.durationSeconds ?? 0));
+      return;
+    case "set-color-grading":
+      deps.onSetColorGrading(data.target ?? null, data.grading ?? null);
+      return;
+    case "set-color-grading-compare":
+      deps.onSetColorGradingCompare(data.target ?? null, data.compare ?? null);
+      return;
+    case "enable-pick-mode":
+      deps.onEnablePickMode();
+      return;
+    case "disable-pick-mode":
+      deps.onDisablePickMode();
+      return;
+    case "flash-elements":
+      handleFlashElements(data);
+      return;
+    case "set-runtime-data":
       if (typeof data.channel === "string")
         deps.onSetRuntimeData?.(data.channel, data.payload, data.requestId);
-    },
-    "clear-runtime-data": (data, deps) => {
+      return;
+    case "clear-runtime-data":
       if (typeof data.channel === "string") deps.onClearRuntimeData?.(data.channel, data.requestId);
-    },
-  } satisfies Record<string, ControlHandler>),
-);
+      return;
+  }
+}
 
 function resolveSeekTimeSeconds(data: BridgeControlData, deps: BridgeDeps): number {
   const explicitSeconds = Number(data.timeSeconds);
@@ -132,8 +160,7 @@ export function installRuntimeControlBridge(deps: BridgeDeps): (event: MessageEv
     if (rejectUnsupportedProtocol(data)) return;
     const action = data.action;
     if (typeof action !== "string") return;
-    const fn = CONTROL_HANDLERS.get(action);
-    if (fn) fn(data, deps);
+    dispatchControl(action, data, deps);
   };
   window.addEventListener("message", handler);
   // Announce that the bridge listener is installed so the parent can replay

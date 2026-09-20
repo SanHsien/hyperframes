@@ -84,7 +84,12 @@ function toAbsoluteAssetUrl(rawValue: string | null | undefined): string | null 
   const raw = String(rawValue ?? "").trim();
   if (!raw) return null;
   const lowered = raw.toLowerCase();
-  if (lowered.startsWith("data:") || lowered.startsWith("javascript:")) return null;
+  if (
+    lowered.startsWith("data:") ||
+    lowered.startsWith("javascript:") ||
+    lowered.startsWith("vbscript:")
+  )
+    return null;
   try {
     return new URL(raw, document.baseURI).toString();
   } catch {
