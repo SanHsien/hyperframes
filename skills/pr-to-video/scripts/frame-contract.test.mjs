@@ -4,10 +4,11 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 
 import { validateFrameHtml } from "./lib/frame-contract.mjs";
 
-const scriptDir = dirname(new URL(import.meta.url).pathname);
+const scriptDir = dirname(fileURLToPath(import.meta.url));
 const buildFrameScript = join(scriptDir, "build-frame.mjs");
 const assembleScript = join(scriptDir, "assemble-index.mjs");
 const transitionsScript = join(scriptDir, "transitions.mjs");
@@ -195,7 +196,7 @@ test("Code editorial preset stages renderer-parity fonts for an empty PR token s
   assert.match(frameMd, /@font-face\{font-family:"EB Garamond";font-weight:400/);
   assert.match(frameMd, /@font-face\{font-family:"Inter";font-weight:700/);
   assert.match(frameMd, /@font-face\{font-family:"JetBrains Mono";font-weight:400/);
-  assert.doesNotMatch(frameMd, /fonts\.googleapis\.com/);
+  assert.equal(frameMd.includes("fonts.googleapis.com"), false);
 });
 
 test("bundled Code editorial font licenses are shipped beside the assets", () => {
