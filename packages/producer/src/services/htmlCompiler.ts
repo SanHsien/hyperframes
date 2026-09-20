@@ -1550,7 +1550,7 @@ function isGoogleFontsUrl(href: string): boolean {
     const host = new URL(href).hostname.toLowerCase();
     return host === "fonts.googleapis.com" || host === "fonts.gstatic.com";
   } catch {
-    return /fonts\.googleapis\.com|fonts\.gstatic\.com/i.test(href);
+    return false;
   }
 }
 
