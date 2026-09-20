@@ -748,14 +748,15 @@ window.__afterTimeline = window.__timelines.scene;
   });
 
   it("escapes </script> in scoped composition script source to prevent injection", () => {
-    const wrapped = wrapScopedCompositionScript(
-      'window.payload = "</script><script>window.pwned = true;</script>";',
-      "scene",
-    );
+    const source = 'window.payload = "</script><script>window.pwned = true;</script>";';
+    const wrapped = wrapScopedCompositionScript(source, "scene");
 
-    expect(wrapped).toContain("(function(document, gsap, window, __hyperframes)");
+    expect(wrapped).toContain('Function("document", "gsap", "window", "__hyperframes"');
     expect(wrapped).not.toContain("</script><script>");
-    expect(wrapped).toContain("<\\/script>");
+    const literal = /Function\("document", "gsap", "window", "__hyperframes", (".*")\)\.call/.exec(
+      wrapped,
+    )?.[1];
+    expect(JSON.parse(literal ?? "")).toBe(source);
   });
 
   it("wraps unscoped composition script source as a string literal", () => {

@@ -613,9 +613,14 @@ export function wrapScopedCompositionScript(
       });
   var __hfRun = function() {
     try {
-      (function(document, gsap, window, __hyperframes) {
-${source.replace(/<\/(script)/gi, "<\\/$1")}
-      }).call(window, __hfScopedDocument, __hfScopedGsap, __hfScopedWindow, __hfScopedHyperframes);
+      // Keep authored code in a string literal so it cannot alter this wrapper's structure.
+      Function("document", "gsap", "window", "__hyperframes", ${jsonScriptLiteral(source)}).call(
+        window,
+        __hfScopedDocument,
+        __hfScopedGsap,
+        __hfScopedWindow,
+        __hfScopedHyperframes,
+      );
     } catch (_err) {
       console.error(__hfErrorLabel, __hfCompId, _err);
     }

@@ -51,6 +51,12 @@ function finiteNumber(value: number): number {
   return value;
 }
 
+function joinJavaScriptFragments(fragments: readonly string[]): string {
+  // Each dynamic value is encoded or validated at its construction site. Keep
+  // final assembly structural so those boundaries are not re-interpolated.
+  return fragments.join("");
+}
+
 function cssValue(value: string): string {
   if (/[;{}<>\r\n]/.test(value)) throw new Error("Invalid generated CSS value");
   return value;
@@ -293,7 +299,7 @@ export function generateGsapTimelineScript(
       );
     }
     if (zoomAnimations) {
-      gsapScript += "\n" + zoomAnimations;
+      gsapScript = joinJavaScriptFragments([gsapScript, "\n", zoomAnimations]);
     }
   } else if (keyframeAnimations.length > 0) {
     // Use only keyframe animations
@@ -311,7 +317,7 @@ export function generateGsapTimelineScript(
       );
     }
     if (zoomAnimations) {
-      gsapScript += "\n" + zoomAnimations;
+      gsapScript = joinJavaScriptFragments([gsapScript, "\n", zoomAnimations]);
     }
   } else if (generateDefaultAnimations) {
     gsapScript = generateDefaultGsapAnimations(
@@ -322,13 +328,16 @@ export function generateGsapTimelineScript(
       height,
     );
   } else {
-    gsapScript = `
-    const tl = gsap.timeline({ paused: true });
-${initialPositionSets ? initialPositionSets + "\n" : ""}    tl.to({}, { duration: ${finiteNumber(totalDuration || 1)} });
-    `;
+    gsapScript = joinJavaScriptFragments([
+      "\n    const tl = gsap.timeline({ paused: true });\n",
+      initialPositionSets ? joinJavaScriptFragments([initialPositionSets, "\n"]) : "",
+      "    tl.to({}, { duration: ",
+      String(finiteNumber(totalDuration || 1)),
+      " });\n    ",
+    ]);
     // Append zoom animations
     if (zoomAnimations) {
-      gsapScript += "\n" + zoomAnimations;
+      gsapScript = joinJavaScriptFragments([gsapScript, "\n", zoomAnimations]);
     }
   }
 
@@ -789,10 +798,11 @@ function generateDefaultGsapAnimations(
   canvasHeight?: number,
 ): string {
   if (elements.length === 0 && (!stageZoomKeyframes || stageZoomKeyframes.length === 0)) {
-    return `
-    const tl = gsap.timeline({ paused: true });
-    tl.to({}, { duration: ${finiteNumber(totalDuration || 1)} });
-    `;
+    return joinJavaScriptFragments([
+      "\n    const tl = gsap.timeline({ paused: true });\n    tl.to({}, { duration: ",
+      String(finiteNumber(totalDuration || 1)),
+      " });\n    ",
+    ]);
   }
 
   const animations: string[] = [];
@@ -858,9 +868,12 @@ function generateDefaultGsapAnimations(
       ? "\n" + generateZoomGsapAnimations(stageZoomKeyframes, canvasWidth, canvasHeight)
       : "";
 
-  return `
-    const tl = gsap.timeline({ paused: true });
-${animations.join("\n")}
-    ${mediaSync}${zoomAnimations}
-  `;
+  return joinJavaScriptFragments([
+    "\n    const tl = gsap.timeline({ paused: true });\n",
+    animations.join("\n"),
+    "\n    ",
+    mediaSync,
+    zoomAnimations,
+    "\n  ",
+  ]);
 }

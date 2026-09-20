@@ -222,6 +222,12 @@ export interface SplitAnimationsResult {
 
 // ── Serialization ───────────────────────────────────────────────────────────
 
+function joinJavaScriptFragments(fragments: readonly string[]): string {
+  // Ordinary values are serialized before they become fragments. The API docs
+  // separately identify the intentionally code-bearing fragments.
+  return fragments.join("");
+}
+
 /**
  * Construct executable JavaScript from trusted composition-author inputs.
  * __raw: values, preamble, postamble, and timelineVar are code-bearing inputs
@@ -300,10 +306,15 @@ export function serializeGsapAnimations(
   const preamble = options?.preamble || `const ${timelineVar} = gsap.timeline({ paused: true });`;
   const postamble = options?.postamble ? `\n    ${options.postamble}` : "";
 
-  return `
-    ${preamble}
-${lines.join("\n")}${mediaSync}${postamble}
-  `;
+  return joinJavaScriptFragments([
+    "\n    ",
+    preamble,
+    "\n",
+    lines.join("\n"),
+    mediaSync,
+    postamble,
+    "\n  ",
+  ]);
 }
 
 export function serializeValue(value: unknown): string {
