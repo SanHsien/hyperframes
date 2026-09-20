@@ -125,4 +125,14 @@ describe("snippetOwnsItsMotion", () => {
       </script>`;
     expect(snippetOwnsItsMotion(recipeOnly)).toBe(false);
   });
+
+  it("ignores recipes after overlapping comment openers", () => {
+    const recipeOnly = `
+      <!-- <!-- window.__timelines["x"] = gsap.timeline({ paused: true }); -->
+      <script>
+        /* /* window.__timelines["x"] = gsap.timeline({ paused: true }); */
+        var vars = window.__hyperframes.getVariables();
+      </script>`;
+    expect(snippetOwnsItsMotion(recipeOnly)).toBe(false);
+  });
 });

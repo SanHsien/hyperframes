@@ -56,8 +56,33 @@ const BODY_CLOSE = /<\/body>/i;
  * Comments are stripped first, because the recipe is written as one.
  */
 export function snippetOwnsItsMotion(snippetHtml: string): boolean {
-  const live = snippetHtml.replace(/<!--[\s\S]*?-->/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
+  const live = withoutDelimitedComments(
+    withoutDelimitedComments(snippetHtml, "<!--", "-->"),
+    "/*",
+    "*/",
+  );
   return live.includes("__timelines") && live.includes("gsap.timeline");
+}
+
+/** Remove complete comments without relying on a prefix-overlap-prone regex. */
+function withoutDelimitedComments(source: string, opener: string, closer: string): string {
+  const fragments: string[] = [];
+  let cursor = 0;
+
+  while (cursor < source.length) {
+    const commentStart = source.indexOf(opener, cursor);
+    if (commentStart === -1) {
+      fragments.push(source.slice(cursor));
+      break;
+    }
+
+    fragments.push(source.slice(cursor, commentStart));
+    const commentEnd = source.indexOf(closer, commentStart + opener.length);
+    if (commentEnd === -1) break;
+    cursor = commentEnd + closer.length;
+  }
+
+  return fragments.join("");
 }
 
 /**
