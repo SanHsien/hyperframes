@@ -279,10 +279,9 @@ function parseTranscriptArray(arrayLiteral: string): TranscriptWord[] {
   } catch {
     // Not valid JSON — normalize single quotes, unquoted keys, trailing commas
     let normalized = arrayLiteral;
-    normalized = normalized.replace(/'((?:[^'\\]|\\.)*)'/g, (_match, inner) => {
-      const escaped = inner.replace(/\\'/g, "'").replace(/"/g, '\\"');
-      return `"${escaped}"`;
-    });
+    normalized = normalized.replace(/'((?:[^'\\]|\\.)*)'/g, (_match, inner: string) =>
+      JSON.stringify(decodeSingleQuotedString(inner)),
+    );
     normalized = normalized.replace(/([{,]\s*)([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:/g, '$1"$2":');
     normalized = normalized.replace(/,(\s*[}\]])/g, "$1");
     parsed = JSON.parse(normalized);
@@ -312,4 +311,57 @@ function parseTranscriptArray(arrayLiteral: string): TranscriptWord[] {
   }
 
   return words;
+}
+
+/** Decode the escape forms accepted in a JavaScript single-quoted string. */
+function decodeSingleQuotedString(inner: string): string {
+  const decoded: string[] = [];
+
+  for (let index = 0; index < inner.length; index += 1) {
+    const char = inner[index];
+    if (char !== "\\") {
+      decoded.push(char);
+      continue;
+    }
+
+    const escaped = inner[index + 1];
+    if (escaped === undefined) {
+      decoded.push("\\");
+      continue;
+    }
+    index += 1;
+
+    const simpleEscape: Record<string, string> = {
+      b: "\b",
+      f: "\f",
+      n: "\n",
+      r: "\r",
+      t: "\t",
+      v: "\v",
+      "0": "\0",
+    };
+    if (escaped in simpleEscape) {
+      decoded.push(simpleEscape[escaped]);
+      continue;
+    }
+
+    const digits = escaped === "x" ? 2 : escaped === "u" ? 4 : 0;
+    const hex = digits > 0 ? inner.slice(index + 1, index + 1 + digits) : "";
+    if (digits > 0 && hex.length === digits && /^[0-9a-f]+$/i.test(hex)) {
+      decoded.push(String.fromCharCode(Number.parseInt(hex, 16)));
+      index += digits;
+      continue;
+    }
+
+    if (escaped === "\n") continue;
+    if (escaped === "\r") {
+      if (inner[index + 1] === "\n") index += 1;
+      continue;
+    }
+
+    // JavaScript treats an unsupported escape as the escaped character itself.
+    decoded.push(escaped);
+  }
+
+  return decoded.join("");
 }

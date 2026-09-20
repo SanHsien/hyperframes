@@ -146,6 +146,16 @@ describe("extractTranscript", () => {
       expect(words[0]).toEqual({ text: "We", start: 0.119, end: 0.259 });
       expect(words[1]).toEqual({ text: "asked", start: 0.319, end: 0.479 });
     });
+
+    it("preserves backslashes, quotes, and JavaScript escapes", () => {
+      const words = extractTranscript(String.raw`
+        const TRANSCRIPT = [
+          { text: 'C:\\media\\clip "A" and it\'s\nready', start: 0, end: 1 },
+        ];
+      `);
+
+      expect(words).toEqual([{ text: 'C:\\media\\clip "A" and it\'s\nready', start: 0, end: 1 }]);
+    });
   });
 
   describe("trailing commas", () => {
