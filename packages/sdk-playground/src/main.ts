@@ -262,8 +262,9 @@ function selectorToHfId(selector: string): string | null {
 }
 
 function gsapScriptOf(html: string): string | null {
-  const m = /<script[^>]*>([\s\S]*?)<\/script>/i.exec(html);
-  return m && m[1] ? m[1] : null;
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  const body = doc.querySelector("script")?.textContent;
+  return body || null;
 }
 
 function bucketFor(map: Map<string, GsapAnimation[]>, key: string): GsapAnimation[] {

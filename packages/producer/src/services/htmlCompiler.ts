@@ -259,9 +259,24 @@ export interface RenderModeHints {
   reasons: RenderModeHint[];
 }
 
-const INLINE_SCRIPT_PATTERN = /<script\b([^>]*)>([\s\S]*?)<\/script>/gi;
 const COMPILER_MOUNT_BLOCK_START = "/* __HF_COMPILER_MOUNT_START__ */";
 const COMPILER_MOUNT_BLOCK_END = "/* __HF_COMPILER_MOUNT_END__ */";
+
+function inlineScriptBodies(html: string, templateDepth = 0): string[] {
+  const { document } = parseHTML(html);
+  const bodies = Array.from(document.querySelectorAll("script"))
+    .filter((script) => !script.hasAttribute("src"))
+    .map((script) => script.textContent ?? "");
+  // linkedom keeps template contents inert and outside document queries. The
+  // previous string scan still saw them, and compositions commonly put their
+  // authored script inside a template, so traverse those fragments explicitly.
+  if (templateDepth < 16) {
+    for (const template of document.querySelectorAll("template")) {
+      bodies.push(...inlineScriptBodies(template.innerHTML, templateDepth + 1));
+    }
+  }
+  return bodies;
+}
 
 function stripJsComments(source: string): string {
   return source.replace(/\/\/.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "");
@@ -297,12 +312,8 @@ export function detectRenderModeHints(html: string): RenderModeHints {
     });
   }
 
-  let scriptMatch: RegExpExecArray | null;
-  const scriptPattern = new RegExp(INLINE_SCRIPT_PATTERN.source, INLINE_SCRIPT_PATTERN.flags);
-  while ((scriptMatch = scriptPattern.exec(html)) !== null) {
-    const attrs = scriptMatch[1] || "";
-    if (/\bsrc\s*=/i.test(attrs)) continue;
-    const content = stripJsComments(stripCompilerMountBootstrap(scriptMatch[2] || ""));
+  for (const scriptBody of inlineScriptBodies(html)) {
+    const content = stripJsComments(stripCompilerMountBootstrap(scriptBody));
     if (!/requestAnimationFrame\s*\(/.test(content)) continue;
     reasons.push({
       code: "requestAnimationFrame",
@@ -409,12 +420,8 @@ const SHADER_TRANSITION_USAGE_PATTERN =
   /\b(?:(?:window|globalThis)\s*\.\s*)?HyperShader\s*\.\s*init\s*\(|\b__hf\s*\.\s*transitions\s*=/;
 
 export function detectShaderTransitionUsage(html: string): boolean {
-  let scriptMatch: RegExpExecArray | null;
-  const scriptPattern = new RegExp(INLINE_SCRIPT_PATTERN.source, INLINE_SCRIPT_PATTERN.flags);
-  while ((scriptMatch = scriptPattern.exec(html)) !== null) {
-    const attrs = scriptMatch[1] || "";
-    if (/\bsrc\s*=/i.test(attrs)) continue;
-    const content = stripJsComments(stripCompilerMountBootstrap(scriptMatch[2] || ""));
+  for (const scriptBody of inlineScriptBodies(html)) {
+    const content = stripJsComments(stripCompilerMountBootstrap(scriptBody));
     if (SHADER_TRANSITION_USAGE_PATTERN.test(content)) return true;
   }
 

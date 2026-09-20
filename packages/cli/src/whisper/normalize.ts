@@ -1,5 +1,6 @@
 import { readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { extname, join } from "node:path";
+import { parseHTML } from "linkedom";
 
 export interface Word {
   /** Stable identifier for referencing this word in overrides and compositions.
@@ -23,6 +24,26 @@ export interface WordsToCuesOptions {
   /** Treat each entry as a finished cue (skip word-level grouping). Defaults to
    *  auto-detection: true when any entry contains internal whitespace. */
   preGrouped?: boolean;
+}
+
+function textContentOfHtml(value: string): string {
+  return (
+    parseHTML(`<!doctype html><html><body>${value}</body></html>`).document.body.textContent ?? ""
+  );
+}
+
+function scriptBodiesOfHtml(value: string, templateDepth = 0): string[] {
+  const { document } = parseHTML(value);
+  const bodies = Array.from(
+    document.querySelectorAll("script"),
+    (script) => script.textContent ?? "",
+  );
+  if (templateDepth < 16) {
+    for (const template of document.querySelectorAll("template")) {
+      bodies.push(...scriptBodiesOfHtml(template.innerHTML, templateDepth + 1));
+    }
+  }
+  return bodies;
 }
 
 // ---------------------------------------------------------------------------
@@ -198,15 +219,12 @@ function parseSrt(content: string): Word[] {
     const [startStr, endStr] = timeLine.split("-->").map((s) => s.trim());
     if (!startStr || !endStr) continue;
 
-    const text = lines
-      .slice(lines.indexOf(timeLine) + 1)
-      .join(" ")
-      .replace(/<[^>]+>/g, "") // strip HTML tags
-      .trim();
-    if (!text) continue;
+    const text = lines.slice(lines.indexOf(timeLine) + 1).join(" ");
+    const plainText = textContentOfHtml(text).trim();
+    if (!plainText) continue;
 
     words.push({
-      text,
+      text: plainText,
       start: parseSrtTimestamp(startStr),
       end: parseSrtTimestamp(endStr),
     });
@@ -229,15 +247,12 @@ function parseVtt(content: string): Word[] {
     const [startStr, endStr] = timeLine.split("-->").map((s) => s.trim());
     if (!startStr || !endStr) continue;
 
-    const text = lines
-      .slice(lines.indexOf(timeLine) + 1)
-      .join(" ")
-      .replace(/<[^>]+>/g, "") // strip HTML tags
-      .trim();
-    if (!text) continue;
+    const text = lines.slice(lines.indexOf(timeLine) + 1).join(" ");
+    const plainText = textContentOfHtml(text).trim();
+    if (!plainText) continue;
 
     words.push({
-      text,
+      text: plainText,
       start: parseVttTimestamp(startStr),
       end: parseVttTimestamp(endStr),
     });
@@ -545,7 +560,7 @@ export function patchCaptionHtml(dir: string, words: Word[]): void {
 
   for (const file of htmlFiles) {
     let content = readFileSync(file, "utf-8");
-    const scriptBlocks = content.match(/<script>[\s\S]*?<\/script>/g) ?? [];
+    const scriptBlocks = scriptBodiesOfHtml(content);
     let scriptMatch: RegExpMatchArray | null = null;
     let transcriptMatch: RegExpMatchArray | null = null;
     for (const block of scriptBlocks) {

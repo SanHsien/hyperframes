@@ -418,7 +418,7 @@ describe("inlineExternalScripts", () => {
       expect(result).toContain('const before = "$`";');
       expect(result).toContain('const after = "$\'";');
       expect(result).toContain('const both = "$&";');
-      expect(result.match(/<script>/g)?.length).toBe(1);
+      expect(result.match(/<script\b[^>]*>/gi)?.length).toBe(1);
     } finally {
       globalThis.fetch = originalFetch;
     }
@@ -537,6 +537,22 @@ describe("detectRenderModeHints", () => {
 
     expect(result.recommendScreenshot).toBe(true);
     expect(result.reasons.map((reason) => reason.code)).toEqual(["requestAnimationFrame"]);
+  });
+
+  it("parses mixed-case script tags with whitespace before the closing bracket", () => {
+    const html = `<html><body><ScRiPt>requestAnimationFrame(tick);</sCrIpT   ></body></html>`;
+
+    expect(detectRenderModeHints(html).reasons.map((reason) => reason.code)).toEqual([
+      "requestAnimationFrame",
+    ]);
+  });
+
+  it("still inspects scripts inside inert template contents", () => {
+    const html = `<html><body><template><script>requestAnimationFrame(tick);</script></template></body></html>`;
+
+    expect(detectRenderModeHints(html).reasons.map((reason) => reason.code)).toEqual([
+      "requestAnimationFrame",
+    ]);
   });
 
   it("ignores requestAnimationFrame inside comments and external scripts", () => {
@@ -996,6 +1012,14 @@ describe("detectShaderTransitionUsage", () => {
 </body></html>`;
 
     expect(detectShaderTransitionUsage(html)).toBe(true);
+  });
+
+  it("parses non-canonical script closing tags", () => {
+    expect(
+      detectShaderTransitionUsage(
+        `<html><body><SCRIPT>window.HyperShader.init({});</SCRIPT ></body></html>`,
+      ),
+    ).toBe(true);
   });
 
   it("ignores comments and external scripts by themselves", () => {

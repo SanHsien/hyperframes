@@ -49,7 +49,7 @@ const DECLARED: Record<string, string> = {
 };
 
 function scriptBody(html: string): string {
-  const match = /<script>([\s\S]*)<\/script>/.exec(html);
+  const match = /<script>([\s\S]*)<\/script\s*>/i.exec(html);
   assert.ok(match, "expected exactly one inline <script>");
   return match[1] ?? "";
 }

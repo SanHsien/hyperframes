@@ -559,6 +559,29 @@ describe("patchCaptionHtml", () => {
     expect(result).toContain('"Hi"');
   });
 
+  it("finds caption declarations inside mixed-case script tags", () => {
+    const dir = mkdtempSync(join(tmpdir(), "hf-patch-test-"));
+    dirs.push(dir);
+    writeFileSync(join(dir, "index.html"), `<SCRIPT>const script = [];</SCRIPT >`);
+
+    patchCaptionHtml(dir, [{ text: "Secure", start: 0, end: 1 }]);
+
+    expect(readFileSync(join(dir, "index.html"), "utf-8")).toContain('"Secure"');
+  });
+
+  it("finds caption declarations inside templates", () => {
+    const dir = mkdtempSync(join(tmpdir(), "hf-patch-test-"));
+    dirs.push(dir);
+    writeFileSync(
+      join(dir, "index.html"),
+      `<template><script>const script = [];</script></template>`,
+    );
+
+    patchCaptionHtml(dir, [{ text: "Nested", start: 0, end: 1 }]);
+
+    expect(readFileSync(join(dir, "index.html"), "utf-8")).toContain('"Nested"');
+  });
+
   it("does not modify HTML files without matching script patterns", () => {
     const dir = mkdtempSync(join(tmpdir(), "hf-patch-test-"));
     dirs.push(dir);

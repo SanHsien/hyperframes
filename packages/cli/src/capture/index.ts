@@ -15,6 +15,7 @@ import { createCaptureDownloadBudget } from "./readBoundedResponse.js";
 import { mkdirSync, writeFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { extractHtml } from "./htmlExtractor.js";
+import { stripFrameworkMarkup } from "./frameworkMarkup.js";
 // captureScreenshots removed — full-page screenshot replaces per-section shots
 import { extractTokens } from "./tokenExtractor.js";
 import { extractDesignStyles } from "./designStyleExtractor.js";
@@ -494,48 +495,9 @@ export async function captureWebsite(
     progress("extract", "Extracting HTML & CSS...");
     const extracted = await extractHtml(page1, { settleTime: 1000 });
 
-    // Strip framework scripts from the extracted body — keep visual library scripts
-    // IMPORTANT: Use non-greedy matching within individual script tags only
-    extracted.bodyHtml = extracted.bodyHtml
-      // Remove __NEXT_DATA__ (has its own ID so safe to target)
-      .replace(/<script\s+id="__NEXT_DATA__"[^>]*>[\s\S]*?<\/script>/gi, "")
-      // Remove React hydration markers
-      .replace(/\s*data-reactroot="[^"]*"/g, "")
-      .replace(/\s*data-reactroot/g, "");
-
-    // Remove Next.js bootstrap scripts individually (match each script tag separately)
-    extracted.bodyHtml = extracted.bodyHtml.replace(
-      /<script\b[^>]*>([\s\S]*?)<\/script>/gi,
-      // fallow-ignore-next-line complexity
-      (match: string, content: string) => {
-        // Only remove if this specific script contains Next.js bootstrap code
-        if (
-          content.includes("__next_f") ||
-          content.includes("self.__next_f") ||
-          content.includes("__NEXT_LOADED_PAGES__") ||
-          content.includes("_N_E") ||
-          content.includes("__NEXT_P")
-        ) {
-          return "";
-        }
-        return match;
-      },
-    );
-
-    // Strip framework script tags from head (keep styles + visual library scripts)
-    const FRAMEWORK_SRC_PATTERNS = [
-      /_next\/static\/chunks\/(main|framework|webpack|pages\/)/,
-      /_next\/static\/chunks\/app\//,
-      /_buildManifest\.js/,
-      /_ssgManifest\.js/,
-    ];
-    extracted.headHtml = extracted.headHtml.replace(
-      /<script[^>]*src="([^"]*)"[^>]*><\/script>/gi,
-      (match: string, src: string) => {
-        if (FRAMEWORK_SRC_PATTERNS.some((p) => p.test(src))) return "";
-        return match;
-      },
-    );
+    const cleanedMarkup = stripFrameworkMarkup(extracted.bodyHtml, extracted.headHtml);
+    extracted.bodyHtml = cleanedMarkup.bodyHtml;
+    extracted.headHtml = cleanedMarkup.headHtml;
 
     // Generate video manifest — screenshot each <video> element + extract surrounding context
     // so Claude Code can SEE what each video shows and WHERE it was used on the page.
