@@ -15,6 +15,7 @@
 ## 硬性邊界
 
 - 不提交使用者輸入影片、音訊、專有文件、API key、token、私鑰或 `.env`。
+- 測試輸出檔案一律不可提交。
 - 不推送到 `upstream`。上游同步先跑 `python tools/check_upstream_updates.py`，逐筆審查後再 merge / cherry-pick；不盲目覆蓋 fork 文件與 Windows gate。
 - 不發佈到 npm 或取代官方發行管道。上游工作流已加 `heygen-com/hyperframes` 閘門，不要拿掉。
 - 不要把維護 gate 改成完整產品依賴安裝。維護環境（`requirements-dev.txt`）僅安裝 pytest 與 ruff。
@@ -37,6 +38,7 @@
 ## 開發原則
 
 - 一般變更直接推 `origin/main`，不開功能分支、不開維護 PR。只有在需要他人審查、或改動風險高到值得先讓 CI 在 PR 上跑一輪時，才退回 **branch → PR → CI → merge**。
+- 動畫核心原則：frames read as states, not slides；堅持以 reconstructed motion 實作，嚴禁降級為靜態投影片。
 - 修 bug 先補可重現失敗測試，再做最小修正。
 - 不為了套格式而大改上游程式；Ruff 只閘維護工具的 E9（語法）與 F（pyflakes）。
 - 使用繁體中文回覆；使用者文件以繁中為主，公開入口同步維護 `README.en.md`。
