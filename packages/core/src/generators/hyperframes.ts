@@ -57,6 +57,13 @@ function joinJavaScriptFragments(fragments: readonly string[]): string {
   return fragments.join("");
 }
 
+function joinHtmlFragments(fragments: readonly string[]): string {
+  // Callers must prepare complete, context-safe fragments before assembly.
+  // Keeping the document join structural prevents safe style/script blocks
+  // from being reinterpreted through another HTML template interpolation.
+  return fragments.join("");
+}
+
 function cssValue(value: string): string {
   if (/[;{}<>\r\n]/.test(value)) throw new Error("Invalid generated CSS value");
   return value;
@@ -437,25 +444,34 @@ ${gsapScript.replace(/<\/script/gi, (match) => `<\\${match.slice(1)}`)}
     : "";
 
   const resolutionAttr = ` data-resolution="${escapeHtmlAttributeValue(resolution)}"`;
+  const styleSection = styleTags ? joinHtmlFragments(["  ", styleTags]) : "";
 
-  return `<!DOCTYPE html>
+  return joinHtmlFragments([
+    `<!DOCTYPE html>
 <html data-composition-id="${escapeHtmlAttributeValue(compositionId)}" data-composition-duration="${calculatedDuration}"${resolutionAttr}${customStylesAttr}>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  ${googleFontsLink}
-  ${gsapCdnTag}
-${styleTags ? `  ${styleTags}` : ""}
+  `,
+    googleFontsLink,
+    "\n  ",
+    gsapCdnTag,
+    "\n",
+    styleSection,
+    `
 </head>
 <body>
   <div id="stage">
     <div id="stage-zoom-container"${zoomKeyframesAttr}>
-      ${elementsHtml}
+      `,
+    elementsHtml,
+    `
     </div>
   </div>
-  ${gsapScriptTag}
-</body>
-</html>`;
+  `,
+    gsapScriptTag,
+    "\n</body>\n</html>",
+  ]);
 }
 
 function calculateZoomTransform(
