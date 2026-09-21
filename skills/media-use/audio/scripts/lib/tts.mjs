@@ -330,7 +330,7 @@ export async function synthesizeHeygen({ text, voiceId, lang, speed, wavAbs }, d
       }
     } else {
       mkdirSync(dirname(wavAbs), { recursive: true });
-      writeFileSync(wavAbs, bytes);
+      writeFileSync(wavAbs, bytes, { mode: 0o600 });
     }
     const words = Array.isArray(inner.word_timestamps)
       ? inner.word_timestamps

@@ -21,11 +21,11 @@ export function freezeBytes(bytes: Uint8Array, destPath: string): number {
   // Exclusive create; on EEXIST remove and retry — never write through an
   // existing file or planted symlink (CodeQL js/insecure-temporary-file).
   try {
-    writeFileSync(destPath, bytes, { flag: "wx" });
+    writeFileSync(destPath, bytes, { flag: "wx", mode: 0o600 });
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code !== "EEXIST") throw err;
     rmSync(destPath);
-    writeFileSync(destPath, bytes, { flag: "wx" });
+    writeFileSync(destPath, bytes, { flag: "wx", mode: 0o600 });
   }
   return bytes.length;
 }

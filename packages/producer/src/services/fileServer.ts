@@ -731,7 +731,7 @@ function openRegularFile(filePath: string) {
   let fd: number;
   try {
     // Reject FIFOs with fstat without waiting for a writer to connect.
-    fd = openSync(filePath, constants.O_RDONLY | constants.O_NONBLOCK);
+    fd = openSync(filePath, constants.O_RDONLY | constants.O_NONBLOCK, 0o600);
   } catch (error) {
     if (
       error instanceof Error &&

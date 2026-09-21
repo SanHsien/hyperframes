@@ -85,7 +85,7 @@ function byteOrderMarkLength(head: Buffer): number {
 
 /** Read up to {@link SNIFF_BYTES} from the front of the file. */
 async function readHead(filePath: string): Promise<Buffer> {
-  const fh = await openFile(filePath, "r");
+  const fh = await openFile(filePath, "r", 0o600);
   try {
     const buf = Buffer.alloc(SNIFF_BYTES);
     let filled = 0;
