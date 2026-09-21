@@ -236,10 +236,10 @@ function writeSsimStatsOnFailure(referencePath: string, actualPath: string, runD
         "-i",
         actualPath,
         "-lavfi",
-        // ffmpeg's lavfi parser uses '\:' to escape the path separator inside
-        // a filter argument. We don't expect ':' in `statsPath` but escape
-        // defensively to keep this robust on weird mounts.
-        `ssim=stats_file=${statsPath.replace(/:/g, "\\:")}`,
+        // ffmpeg's lavfi parser treats both '\\' and ':' as syntax inside a
+        // filter option. Escape backslashes first so the colon pass cannot
+        // leave an earlier escape sequence ambiguous on Windows paths.
+        `ssim=stats_file=${statsPath.replace(/\\/g, "\\\\").replace(/:/g, "\\:")}`,
         "-f",
         "null",
         "-",
