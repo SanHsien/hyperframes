@@ -2210,16 +2210,6 @@ async function processUploadedFiles(
     const base = dotIdx > 0 ? name.slice(0, dotIdx) : name;
     const MAX_COPY_INDEX = 10000;
     let n = 1;
-    if (existsSync(finalPath)) {
-      n = 2;
-      while (n < MAX_COPY_INDEX && existsSync(resolve(targetDir, `${base} (${n})${ext}`))) n++;
-      if (n >= MAX_COPY_INDEX) {
-        skipped.push(name);
-        continue;
-      }
-      finalName = `${base} (${n})${ext}`;
-      finalPath = resolve(targetDir, finalName);
-    }
 
     // The collision suffix chooses a different path; validate that destination
     // too, including dangling symlinks that existsSync treats as absent.
@@ -2238,7 +2228,7 @@ async function processUploadedFiles(
     let written = false;
     while (n < MAX_COPY_INDEX && isSafePath(projectDir, finalPath)) {
       try {
-        const fd = openSync(finalPath, "wx");
+        const fd = openSync(finalPath, "wx", 0o600);
         try {
           writeFileSync(fd, buffer);
         } finally {
@@ -2251,6 +2241,7 @@ async function processUploadedFiles(
           throw error;
         }
         n++;
+        if (n >= MAX_COPY_INDEX) break;
         finalName = `${base} (${n})${ext}`;
         finalPath = resolve(targetDir, finalName);
       }

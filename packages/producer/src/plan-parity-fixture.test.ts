@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { mkdtempSync, readFileSync, rmSync, statSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "bun:test";
@@ -58,8 +58,9 @@ describe("plan parity generated fixtures", () => {
       target,
     );
     const pressurePath = join(target, "unused-pressure.bin");
-    expect(statSync(pressurePath).size).toBe(65_536);
-    expect(createHash("sha256").update(readFileSync(pressurePath)).digest("hex")).toBe(
+    const pressure = readFileSync(pressurePath);
+    expect(pressure.length).toBe(65_536);
+    expect(createHash("sha256").update(pressure).digest("hex")).toBe(
       "0e5f00e17597a73cf7a273d772456db0544959ed19a437954fd800a78447f468",
     );
   });

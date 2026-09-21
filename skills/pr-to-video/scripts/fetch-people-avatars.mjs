@@ -31,7 +31,7 @@
 // Usage (orchestrator already cd'd into PROJECT_DIR, so --project-dir defaults to "."):
 //   node fetch-people-avatars.mjs --people ./capture/extracted/people.json
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync, statSync } from "node:fs";
+import { closeSync, fstatSync, mkdirSync, openSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve, join, dirname, sep } from "node:path";
 
 const argv = process.argv.slice(2);
@@ -74,8 +74,6 @@ function softExit(msg) {
   process.exit(0);
 }
 
-if (!existsSync(peoplePath)) softExit(`no people.json at ${peoplePath} — skipping (no avatars)`);
-
 let doc;
 try {
   doc = JSON.parse(readFileSync(peoplePath, "utf8"));
@@ -103,8 +101,9 @@ async function fetchOne(person) {
     return "fail";
   }
   mkdirSync(dirname(dest), { recursive: true });
-  // Idempotent: a non-empty file from a prior run is reused (re-runs are free).
-  if (existsSync(dest) && statSync(dest).size > 0) {
+  // Idempotent: inspect an existing output through its descriptor so the path
+  // cannot be swapped between a metadata check and the read decision.
+  if (isNonEmptyRegularFile(dest)) {
     person.avatarFetched = true;
     return "cached";
   }
@@ -119,7 +118,19 @@ async function fetchOne(person) {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const buf = Buffer.from(await res.arrayBuffer());
     if (!buf.length) throw new Error("empty body");
-    writeFileSync(dest, buf);
+    let fd;
+    try {
+      fd = openSync(dest, "wx", 0o600);
+      writeFileSync(fd, buf);
+    } catch (error) {
+      if (error?.code === "EEXIST" && isNonEmptyRegularFile(dest)) {
+        person.avatarFetched = true;
+        return "cached";
+      }
+      throw error;
+    } finally {
+      if (fd !== undefined) closeSync(fd);
+    }
     person.avatarFetched = true;
     return "ok";
   } catch (e) {
@@ -128,6 +139,19 @@ async function fetchOne(person) {
     return "fail";
   } finally {
     clearTimeout(timer);
+  }
+}
+
+function isNonEmptyRegularFile(path) {
+  let fd;
+  try {
+    fd = openSync(path, "r");
+    const stat = fstatSync(fd);
+    return stat.isFile() && stat.size > 0;
+  } catch {
+    return false;
+  } finally {
+    if (fd !== undefined) closeSync(fd);
   }
 }
 
@@ -145,7 +169,7 @@ for (const person of people) {
 
 // Persist avatarFetched flags so story-design can reference only real avatars.
 try {
-  writeFileSync(peoplePath, JSON.stringify(doc, null, 2) + "\n");
+  writeFileSync(peoplePath, JSON.stringify(doc, null, 2) + "\n", { mode: 0o600 });
 } catch (e) {
   console.log(`  (warn: could not rewrite people.json flags: ${e.message})`);
 }

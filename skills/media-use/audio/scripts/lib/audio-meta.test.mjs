@@ -2,6 +2,9 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
   mkdtempSync,
+  closeSync,
+  fstatSync,
+  openSync,
   readFileSync,
   renameSync,
   rmSync,
@@ -26,7 +29,9 @@ test("updates the read file from byte zero, truncates, and retains its mode", (t
   writeFileSync(path, JSON.stringify({ voices: ["long existing voice metadata"] }), {
     mode: 0o600,
   });
-  const originalMode = statSync(path).mode;
+  const descriptor = openSync(path, "r");
+  const originalMode = fstatSync(descriptor).mode;
+  closeSync(descriptor);
   const handle = openAudioMeta(path);
   assert.deepEqual(handle.value, { voices: ["long existing voice metadata"] });
   handle.write({ voices: ["声"] });
