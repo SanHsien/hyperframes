@@ -77,6 +77,20 @@ const DEFAULT_META: VideoMeta = {
   videoCodec: "h264",
 };
 
+export function singleLineLogValue(value: unknown): string {
+  const singleLine = String(value).replace(/[\r\n\u2028\u2029]+/g, " ");
+  return Array.from(singleLine, (character) => {
+    const codePoint = character.codePointAt(0) ?? 0;
+    return (codePoint >= 0 && codePoint <= 8) ||
+      codePoint === 11 ||
+      codePoint === 12 ||
+      (codePoint >= 14 && codePoint <= 31) ||
+      codePoint === 127
+      ? ""
+      : character;
+  }).join("");
+}
+
 // Pin the browser runtime exactly so repeated renders do not drift as Tailwind
 // ships JIT/preflight changes on the CDN.
 const TAILWIND_BROWSER_VERSION = "4.2.4";
@@ -899,7 +913,9 @@ export default defineCommand({
           );
           if (!videoDuration) videoDuration = result.durationSeconds;
         } catch (err) {
-          console.log(`Transcription skipped: ${err instanceof Error ? err.message : err}`);
+          console.log(
+            `Transcription skipped: ${singleLineLogValue(err instanceof Error ? err.message : err)}`,
+          );
         }
       }
 
@@ -1083,7 +1099,11 @@ export default defineCommand({
             ),
           );
         } catch (err) {
-          spin.stop(c.dim(`Transcription skipped: ${err instanceof Error ? err.message : err}`));
+          spin.stop(
+            c.dim(
+              `Transcription skipped: ${singleLineLogValue(err instanceof Error ? err.message : err)}`,
+            ),
+          );
         }
       }
     }

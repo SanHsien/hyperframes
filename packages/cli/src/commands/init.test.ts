@@ -8,6 +8,7 @@ import {
   applyResolutionPreset,
   injectTailwindBrowserScript,
   resolveVideoDurationSeconds,
+  singleLineLogValue,
 } from "./init.js";
 
 const cliEntry = resolve(fileURLToPath(import.meta.url), "..", "..", "cli.ts");
@@ -48,6 +49,12 @@ function expectScaffoldedScripts(target: string): void {
 }
 
 describe("hyperframes init flag rename", () => {
+  it("keeps external error text on a single terminal line", () => {
+    expect(singleLineLogValue("first\r\nsecond\u0000\u001b[31mthird\u2028fourth")).toBe(
+      "first second[31mthird fourth",
+    );
+  });
+
   it("selects the language-compatible model before both eager init downloads", () => {
     expect(initSource).toMatch(
       /const initialTranscriptionModel = initialModelForLanguage\(\s*modelFlag \?\? DEFAULT_MODEL,\s*languageFlag,?\s*\);/,
