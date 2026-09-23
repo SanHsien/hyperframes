@@ -36,7 +36,7 @@
     "types": "./dist/index.d.ts"
   },
   "scripts": {
-    "build": "tsup",
+    "build": "tsup && node scripts/normalize-browser-bundle.mjs dist/index.global.js",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests"
   },

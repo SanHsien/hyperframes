@@ -87,5 +87,8 @@
     "@types/react-dom": "^19.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
+  },
+  "patchedDependencies": {
+    "html2canvas@1.4.1": "patches/html2canvas@1.4.1.patch"
   }
 }

@@ -1,0 +1,81 @@
+diff --git a/dist/html2canvas.esm.js b/dist/html2canvas.esm.js
+index 268e9bc26bcecad85dda44ef87ebe0709ab64608..a22fedf1035509206a7cdec2528aca88615b4ae1 100644
+--- a/dist/html2canvas.esm.js
++++ b/dist/html2canvas.esm.js
+@@ -5260,11 +5260,19 @@ var DocumentCloner = /** @class */ (function () {
+             });
+         }); });
+         documentClone.open();
+-        documentClone.write(serializeDoctype(document.doctype) + "<html></html>");
+-        // Chrome scrolls the parent document for some reason after the write to the cloned window???
++        documentClone.close();
++        if (document.doctype) {
++            var clonedDoctype = documentClone.implementation.createDocumentType(document.doctype.name, document.doctype.publicId, document.doctype.systemId);
++            if (documentClone.doctype) {
++                documentClone.replaceChild(clonedDoctype, documentClone.doctype);
++            }
++            else {
++                documentClone.insertBefore(clonedDoctype, documentClone.documentElement);
++            }
++        }
++        // Chrome can scroll the parent document while initializing the cloned window.
+         restoreOwnerScroll(this.referenceElement.ownerDocument, scrollX, scrollY);
+         documentClone.replaceChild(documentClone.adoptNode(this.documentElement), documentClone.documentElement);
+-        documentClone.close();
+         return iframeLoad;
+     };
+     DocumentCloner.prototype.createElementClone = function (node) {
+diff --git a/dist/html2canvas.js b/dist/html2canvas.js
+index 3ec00e07ff2d989c68b7b4444e4761936430a89a..e3848a7540d52fbe3644fc1b6079fba215f39274 100644
+--- a/dist/html2canvas.js
++++ b/dist/html2canvas.js
+@@ -5266,11 +5266,19 @@
+                 });
+             }); });
+             documentClone.open();
+-            documentClone.write(serializeDoctype(document.doctype) + "<html></html>");
+-            // Chrome scrolls the parent document for some reason after the write to the cloned window???
++            documentClone.close();
++            if (document.doctype) {
++                var clonedDoctype = documentClone.implementation.createDocumentType(document.doctype.name, document.doctype.publicId, document.doctype.systemId);
++                if (documentClone.doctype) {
++                    documentClone.replaceChild(clonedDoctype, documentClone.doctype);
++                }
++                else {
++                    documentClone.insertBefore(clonedDoctype, documentClone.documentElement);
++                }
++            }
++            // Chrome can scroll the parent document while initializing the cloned window.
+             restoreOwnerScroll(this.referenceElement.ownerDocument, scrollX, scrollY);
+             documentClone.replaceChild(documentClone.adoptNode(this.documentElement), documentClone.documentElement);
+-            documentClone.close();
+             return iframeLoad;
+         };
+         DocumentCloner.prototype.createElementClone = function (node) {
+diff --git a/dist/lib/dom/document-cloner.js b/dist/lib/dom/document-cloner.js
+index 7e26a26dfd1f36af25aeb47bacc5991600aef4fa..090f5668982d1a8a2a4e8307f762d550f36037d6 100644
+--- a/dist/lib/dom/document-cloner.js
++++ b/dist/lib/dom/document-cloner.js
+@@ -112,11 +112,19 @@ var DocumentCloner = /** @class */ (function () {
+             });
+         }); });
+         documentClone.open();
+-        documentClone.write(serializeDoctype(document.doctype) + "<html></html>");
+-        // Chrome scrolls the parent document for some reason after the write to the cloned window???
++        documentClone.close();
++        if (document.doctype) {
++            var clonedDoctype = documentClone.implementation.createDocumentType(document.doctype.name, document.doctype.publicId, document.doctype.systemId);
++            if (documentClone.doctype) {
++                documentClone.replaceChild(clonedDoctype, documentClone.doctype);
++            }
++            else {
++                documentClone.insertBefore(clonedDoctype, documentClone.documentElement);
++            }
++        }
++        // Chrome can scroll the parent document while initializing the cloned window.
+         restoreOwnerScroll(this.referenceElement.ownerDocument, scrollX, scrollY);
+         documentClone.replaceChild(documentClone.adoptNode(this.documentElement), documentClone.documentElement);
+-        documentClone.close();
+         return iframeLoad;
+     };
+     DocumentCloner.prototype.createElementClone = function (node) {

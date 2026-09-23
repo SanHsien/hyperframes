@@ -41,3 +41,19 @@ bun run test:regression:update hdr-regression
 
 In CI it runs in the `hdr` shard alongside `hdr-hlg-regression`
 (see `.github/workflows/regression.yml`).
+
+## Shader bundle
+
+`src/vendor/hyper-shader.global.js` is the checked-in browser build of the
+workspace `@hyperframes/shader-transitions` package. It is byte-identical to
+the vendor used by `page-side-shader-compositor-render-compat` and includes the
+repository's `html2canvas@1.4.1` patch, which constructs cloned documents with
+DOM APIs instead of parsing serialized DOM text with `document.write()`.
+
+Rebuild both copies after changing the shader package or its dependency patch:
+
+```powershell
+bun run --filter @hyperframes/shader-transitions build
+Copy-Item packages/shader-transitions/dist/index.global.js packages/producer/tests/hdr-regression/src/vendor/hyper-shader.global.js
+Copy-Item packages/shader-transitions/dist/index.global.js packages/producer/tests/page-side-shader-compositor-render-compat/src/vendor/hyper-shader.global.js
+```

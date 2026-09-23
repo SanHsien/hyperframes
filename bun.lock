@@ -386,6 +386,9 @@
       },
     },
   },
+  "patchedDependencies": {
+    "html2canvas@1.4.1": "patches/html2canvas@1.4.1.patch",
+  },
   "overrides": {
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
