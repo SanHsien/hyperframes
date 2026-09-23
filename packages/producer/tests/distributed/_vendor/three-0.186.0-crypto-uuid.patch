@@ -1,0 +1,13 @@
+diff --git a/package/build/three.core.js b/package/build/three.core.js
+--- a/package/build/three.core.js
++++ b/package/build/three.core.js
+@@ -2321,4 +2321,5 @@
+-	const d0 = Math.random() * 0xffffffff | 0;
+-	const d1 = Math.random() * 0xffffffff | 0;
+-	const d2 = Math.random() * 0xffffffff | 0;
+-	const d3 = Math.random() * 0xffffffff | 0;
++	const values = globalThis.crypto.getRandomValues( new Uint32Array( 4 ) );
++	const d0 = values[ 0 ];
++	const d1 = values[ 1 ];
++	const d2 = values[ 2 ];
++	const d3 = values[ 3 ];
