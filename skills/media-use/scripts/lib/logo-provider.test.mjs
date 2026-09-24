@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert";
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import {
   entityFrom,
   titleMatches,
@@ -107,9 +107,17 @@ test("faviconSearch rejects DDG's sub-500B placeholder with null", async (t) => 
 
 test("faviconSearch hands verified bytes over as a local file — one fetch, no re-download", async (t) => {
   const fetchMock = t.mock.method(globalThis, "fetch", async () => bin(600));
-  const res = await faviconSearch("someco logo", {});
+  let captured;
+  const res = await faviconSearch("someco logo", {
+    normalizeCloudImage: (bytes, destPath) => {
+      captured = [...bytes];
+      writeFileSync(destPath, "normalized image");
+      return true;
+    },
+  });
   assert.ok(res.localPath, "returns a localPath, not a url");
-  assert.equal(readFileSync(res.localPath).byteLength, 600, "frozen bytes are the verified bytes");
+  assert.equal(readFileSync(res.localPath, "utf8"), "normalized image");
+  assert.equal(captured.length, 600, "all fetched bytes are passed to the decoder");
   assert.equal(fetchMock.mock.callCount(), 1, "single network round-trip");
   assert.equal(res.metadata.provenance.low_res, true);
 });
@@ -131,6 +139,10 @@ test("the real logo cascade falls through tier by tier to the first hit", async 
   });
   const res = await runProviders(getProviders("logo"), "search", "zzzbrand logo", {
     entity: "zzzbrand",
+    normalizeCloudImage: (bytes, destPath) => {
+      writeFileSync(destPath, bytes);
+      return true;
+    },
   });
   assert.ok(res, "cascade must land on the favicon tier");
   assert.equal(res.metadata.provider, "favicon.ddg");

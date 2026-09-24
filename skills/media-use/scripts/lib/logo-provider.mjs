@@ -22,9 +22,10 @@ import { fetchMedia } from "./media-fetch.mjs";
 // falls through to resolve's normal failure path (`no provider could resolve
 // logo`, exit 1).
 
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { normalizeCloudImage } from "./image-normalize.mjs";
 
 const SVGL_API = "https://api.svgl.app";
 const SIMPLE_ICONS_CDN = "https://cdn.jsdelivr.net/npm/simple-icons@16.25.0/icons";
@@ -208,8 +209,13 @@ export async function faviconSearch(intent, ctx = {}) {
   // instead of re-downloading, so the size check is authoritative over what
   // gets frozen and the favicon tier costs one network round-trip, not two.
   const bytes = body.byteLength;
-  const tmp = join(mkdtempSync(join(tmpdir(), "media-use-logo-")), `${domain}.ico`);
-  writeFileSync(tmp, body);
+  const tempDir = mkdtempSync(join(tmpdir(), "media-use-logo-"));
+  const tmp = join(tempDir, `${domain}.ico`);
+  const normalizeImage = ctx.normalizeCloudImage ?? normalizeCloudImage;
+  if (!normalizeImage(body, tmp)) {
+    rmSync(tempDir, { recursive: true, force: true });
+    return null;
+  }
   return {
     localPath: tmp,
     ext: ".ico",
