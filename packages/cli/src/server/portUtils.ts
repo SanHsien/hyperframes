@@ -28,6 +28,27 @@ const PROBE_TIMEOUT_MS = 300;
 /** Max bytes to read from HTTP probe response (guards against malicious servers). */
 const PROBE_MAX_BYTES = 4096;
 
+/**
+ * Convert an external number into one of the finite TCP port values we permit.
+ *
+ * Returning the enumerated candidate, rather than the caller's value, makes
+ * the loopback request independent of configuration-file text after the
+ * allowlist check. Binary search keeps the finite allowlist check bounded to
+ * at most 16 comparisons.
+ */
+function allowedTcpPort(value: number): number | null {
+  if (!Number.isSafeInteger(value)) return null;
+  let lower = 1;
+  let upper = 65_535;
+  while (lower <= upper) {
+    const candidate = Math.floor((lower + upper) / 2);
+    if (candidate === value) return candidate;
+    if (candidate < value) lower = candidate + 1;
+    else upper = candidate - 1;
+  }
+  return null;
+}
+
 // ── Port availability ──────────────────────────────────────────────────────
 
 /**
@@ -262,9 +283,17 @@ export interface ActiveServer {
  * Returns the full config or null if not a HyperFrames server.
  */
 function probePort(port: number): Promise<HyperframesConfigResponse | null> {
+  const allowedPort = allowedTcpPort(port);
+  if (allowedPort === null) return Promise.resolve(null);
+
   return new Promise<HyperframesConfigResponse | null>((resolveResult) => {
     const req = http.get(
-      { hostname: "127.0.0.1", port, path: "/__hyperframes_config", timeout: PROBE_TIMEOUT_MS },
+      {
+        hostname: "127.0.0.1",
+        port: allowedPort,
+        path: "/__hyperframes_config",
+        timeout: PROBE_TIMEOUT_MS,
+      },
       (res) => {
         if (res.statusCode !== 200) {
           res.resume();

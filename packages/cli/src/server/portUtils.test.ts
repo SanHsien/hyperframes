@@ -164,6 +164,13 @@ describe("findPortAndServe — bind host (security: F-001)", () => {
 });
 
 describe("activeServerOnPort — PID provenance (security)", () => {
+  it.each([0, -1, 65_536, Number.NaN, Number.POSITIVE_INFINITY, 3002.5])(
+    "rejects a non-TCP port before issuing a loopback request (%s)",
+    async (port) => {
+      await expect(activeServerOnPort(port)).resolves.toBeNull();
+    },
+  );
+
   it("does not signal a server whose PID the OS could not confirm", async () => {
     // Fail closed: the only evidence for a blind port-range sweep is an
     // unauthenticated config response, so an unconfirmed PID is skipped and
