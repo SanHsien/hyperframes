@@ -132,12 +132,13 @@ if (only.has("tts") && lines.length) {
   } catch (e) {
     die(e.message);
   }
-  voiceId = await resolveVoiceId({
+  const synthesisVoiceId = await resolveVoiceId({
     provider: ttsProvider,
     userVoice: voiceOverride || request.voice,
     lang,
   });
-  console.error(`· tts: ${ttsProvider} · voice ${voiceId} · ${lines.length} line(s)`);
+  voiceId = synthesisVoiceId;
+  console.error(`· tts: ${ttsProvider} · voice ${synthesisVoiceId} · ${lines.length} line(s)`);
   const synthLine = async (line) => {
     const id = String(line.id);
     const text = String(line.text ?? "").trim();
@@ -150,7 +151,7 @@ if (only.has("tts") && lines.length) {
     const { ok, words, error } = await synthesizeOne({
       provider: ttsProvider,
       text,
-      voiceId,
+      voiceId: synthesisVoiceId,
       lang,
       speed,
       wavAbs: abs,
