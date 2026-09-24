@@ -6,10 +6,26 @@ import { tmpdir } from "node:os";
 import {
   parseFfmpegDurationBanner,
   ffprobeDuration,
+  resolveVoiceId,
   synthesizeOne,
   synthesizeHeygen,
   synthResult,
 } from "./tts.mjs";
+
+test("resolveVoiceId keeps HeyGen defaults deterministic", async () => {
+  assert.equal(
+    await resolveVoiceId({ provider: "heygen", lang: "en" }),
+    "05f19352e8f74b0392a8f411eba40de1",
+  );
+  assert.equal(
+    await resolveVoiceId({ provider: "heygen", lang: "es", userVoice: "voice-es" }),
+    "voice-es",
+  );
+  await assert.rejects(
+    resolveVoiceId({ provider: "heygen", lang: "es" }),
+    /non-English needs an explicit --voice/,
+  );
+});
 
 test("parseFfmpegDurationBanner reads ffmpeg's stderr Duration line", () => {
   const stderr = [

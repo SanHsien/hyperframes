@@ -51,9 +51,10 @@ export function pickProvider(userProvider) {
 }
 
 // ── voice resolution ──────────────────────────────────────────────────────────
-// HeyGen /v3/voices/speech only accepts STARFISH voice_ids; auto-pick the first
-// English public starfish voice when none is pinned. ElevenLabs/Kokoro have
-// their own defaults.
+// HeyGen /v3/voices/speech only accepts STARFISH voice_ids. Keep the English
+// default pinned and require an explicit voice for every other language. This
+// avoids silently persisting a mutable catalog response into audio_meta.json.
+// ElevenLabs/Kokoro have their own defaults.
 export async function resolveVoiceId({ provider, userVoice, lang = "en" }) {
   if (userVoice) return userVoice;
   if (provider === "elevenlabs") return "21m00Tcm4TlvDq8ikWAM"; // Rachel
@@ -65,14 +66,7 @@ export async function resolveVoiceId({ provider, userVoice, lang = "en" }) {
   // "first English voice the API returns" drifts whenever HeyGen re-sorts the
   // public catalog. Marcia (mature, low female). Override with --voice / request.voice.
   if (lang === "en") return "05f19352e8f74b0392a8f411eba40de1"; // Marcia · English · female
-  // Non-English: no fixed default — fall back to the first matching catalog voice.
-  const payload = await heygenJSON(`/voices?engine=starfish&type=public&limit=50`, {
-    headers: heygenAuthHeaders(),
-  });
-  const voices = payload.data ?? payload.voices ?? [];
-  const pick = voices.find((v) => v.language === "English") ?? voices[0];
-  if (!pick) throw new Error("no public starfish voice to default to — pass --voice");
-  return pick.voice_id;
+  throw new Error("HeyGen non-English needs an explicit --voice (see references/tts.md)");
 }
 
 // ── helpers ─────────────────────────────────────────────────────────────────
