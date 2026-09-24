@@ -151,7 +151,7 @@ vi.mock("../registry/localSemantic.js", () => ({
   localVectorNames: () => state.indexed,
   cachedLocalVectorRevision: () => state.cachedVectorRevision,
   hasLocalVectors: () => true,
-  fetchLocalVectors: async (_registry: string, options: { expectedRevision?: string } = {}) => {
+  installLocalVectors: async (options: { expectedRevision?: string } = {}) => {
     state.vectorFetches += 1;
     if (state.vectorFetchSucceeds && options.expectedRevision !== undefined) {
       state.cachedVectorRevision = options.expectedRevision;

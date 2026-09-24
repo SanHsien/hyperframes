@@ -1,8 +1,9 @@
 # Catalog artifact
 
-Two files ship from here, and only these two. The CLI fetches them over HTTP
-when a user opts into offline catalog search (`catalog --query ... --on-device`),
-so they are served from the registry rather than bundled in the package.
+Two files ship from here, and only these two. The CLI build copies them into
+the published package, then installs them locally when a user opts into offline
+catalog search (`catalog --query ... --on-device`). They are never fetched
+from a registry at runtime.
 
 | File                 | What it is                                                              |
 | -------------------- | ----------------------------------------------------------------------- |

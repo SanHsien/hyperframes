@@ -30,8 +30,8 @@ import {
 import { localRuntimeAvailable } from "../registry/localEmbedder.js";
 import {
   cachedLocalVectorRevision,
-  fetchLocalVectors,
   hasLocalVectors,
+  installLocalVectors,
   localSemanticRanking,
   localVectorNames,
 } from "../registry/localSemantic.js";
@@ -51,7 +51,6 @@ async function prepareOnDeviceTier(opts: {
   assumedYes: boolean;
   artifactRevision?: string;
   canPrompt: boolean;
-  registry: string;
   registryNames: ReadonlySet<string>;
   status: LocalModelStatus;
 }): Promise<string[]> {
@@ -111,16 +110,16 @@ async function prepareOnDeviceTier(opts: {
     revisionStale ||
     countUnindexed(opts.registryNames, localVectorNames()) > 0
   ) {
-    await fetchLocalVectors(opts.registry, { expectedRevision: opts.artifactRevision });
+    await installLocalVectors({ expectedRevision: opts.artifactRevision });
   }
-  // Deliberately not the fetch's own answer. A refresh that fails still leaves
+  // Deliberately not the install's own answer. A refresh that fails still leaves
   // the previous vectors on disk, and those still rank: reporting the tier
   // unavailable there would be false, and the search that follows says what is
   // actually wrong with them.
   const vectors = hasLocalVectors();
   if (!model || !vectors) {
     warn(
-      `on-device search unavailable: ${!model ? "model" : "catalog vectors"} could not be fetched`,
+      `on-device search unavailable: ${!model ? "model" : "catalog vectors"} could not be installed`,
     );
   } else if (
     opts.artifactRevision !== undefined &&
@@ -228,7 +227,6 @@ export default defineCommand({
         assumedYes: args.yes === true,
         artifactRevision,
         canPrompt: process.stdout.isTTY === true && !json,
-        registry: config.registry,
         registryNames,
         status: searchContext.status,
       });
@@ -325,7 +323,7 @@ export default defineCommand({
           }
         }
       }
-      if (query) await offerLocalModel(0, json, config.registry, artifactRevision);
+      if (query) await offerLocalModel(0, json, artifactRevision);
       // A query with no searchable words is bad input, not an empty shelf, so it
       // exits non-zero like an invalid --type does. An agent that only checks the
       // exit code would otherwise read "searched successfully, catalog has
@@ -409,7 +407,7 @@ export default defineCommand({
         if (warnings.length === 0) {
           const hint = localModelHint(json, effectiveStatus);
           if (hint) console.error(hint);
-          await offerLocalModel(matching.length, json, config.registry, artifactRevision);
+          await offerLocalModel(matching.length, json, artifactRevision);
         }
       }
       if (query) {
@@ -521,8 +519,8 @@ export function pickByName<T extends { name: string }>(
  * registry cannot install, which only wastes a rank. This is under-coverage:
  * moves the registry has that were never embedded, so meaning search cannot
  * return them at any rank, for any query, and until now nothing in the output
- * said so. The vectors are fetched once and never invalidated, so every move
- * published since that fetch lands here.
+ * said so. The vectors are release-bundled, so every move published after the
+ * installed CLI release lands here until the next release refreshes them.
  *
  * Measured against the unfiltered registry, matching `missing`: a --type or
  * --tag filter removing a move is the user narrowing their own search, not an
@@ -688,7 +686,6 @@ function localModelHint(json: boolean, status: LocalModelStatus | undefined): st
 async function offerLocalModel(
   matchCount: number,
   json: boolean,
-  registryBaseUrl: string,
   artifactRevision?: string,
 ): Promise<void> {
   if (json || !process.stdout.isTTY) return;
@@ -706,17 +703,17 @@ async function offerLocalModel(
   recordLocalModelConsent(answer === true);
   if (answer !== true) return;
 
-  // The vectors come from the registry rather than the package, so consent is
-  // also the moment to fetch them. A failure here is reported: the alternative
-  // is an offline tier the user turned on that silently never ranks anything.
+  // The model still needs explicit download consent. Once granted, install the
+  // release-bundled vectors alongside it. A failure here is reported: the
+  // alternative is an offline tier the user turned on that silently never
+  // ranks anything.
   const vectors =
-    hasLocalVectors() ||
-    (await fetchLocalVectors(registryBaseUrl, { expectedRevision: artifactRevision }));
+    hasLocalVectors() || (await installLocalVectors({ expectedRevision: artifactRevision }));
   console.log(
     c.dim(
       vectors
         ? "  Run the search again to download the model and rank by meaning."
-        : "  Could not fetch the catalog vectors; offline ranking stays off until they are available.",
+        : "  Could not install the catalog vectors; offline ranking stays off until they are available.",
     ),
   );
 }

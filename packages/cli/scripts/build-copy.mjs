@@ -57,7 +57,7 @@ function copyMdFiles(srcDir, destDir) {
 
 // fallow-ignore-next-line complexity
 async function main() {
-  for (const sub of ["studio", "docs", "templates", "skills", "docker"]) {
+  for (const sub of ["studio", "docs", "templates", "skills", "docker", "catalog-artifact"]) {
     mkdirSync(join(DIST, sub), { recursive: true });
   }
   mkdirSync(join(DIST, "commands"), { recursive: true });
@@ -131,6 +131,11 @@ async function main() {
   }
 
   copyMdFiles(join(CLI_ROOT, "src", "docs"), join(DIST, "docs"));
+
+  const catalogArtifact = join(REPO_ROOT, "registry", "catalog-artifact");
+  for (const name of ["local-vectors.json", "local-vectors.bin"]) {
+    cpSync(join(catalogArtifact, name), join(DIST, "catalog-artifact", name));
+  }
 
   console.log("[build-copy] done");
 }

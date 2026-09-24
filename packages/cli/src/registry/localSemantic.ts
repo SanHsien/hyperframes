@@ -14,7 +14,8 @@
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { cosine, loadLocalEmbedder } from "./localEmbedder.js";
 import { LOCAL_MODEL_DIMENSIONS, isLocalModelReady } from "./localModel.js";
@@ -31,12 +32,20 @@ interface LocalVectorMetadata {
   revision?: string;
 }
 
-export interface FetchLocalVectorOptions {
+export interface InstallLocalVectorOptions {
   directory?: string;
   expectedRevision?: string;
+  sourceDirectory?: string;
 }
 
-const CATALOG_ARTIFACT_TIMEOUT_MS = 30_000;
+const MODULE_DIRECTORY = dirname(fileURLToPath(import.meta.url));
+
+/** Locate the release-bundled vector pair in built and source-tree layouts. */
+function bundledVectorDirectory(): string {
+  const built = join(MODULE_DIRECTORY, "catalog-artifact");
+  if (existsSync(built)) return built;
+  return resolve(MODULE_DIRECTORY, "../../../..", "registry", "catalog-artifact");
+}
 
 /** Where the bundled vector set lives, overridable for development. */
 function localVectorDirectory(): string {
@@ -46,18 +55,7 @@ function localVectorDirectory(): string {
 }
 
 /**
- * Put the catalog vectors in the user's cache, once.
- *
- * They are fetched rather than bundled: every install would otherwise carry a
- * copy of a file only people who opt into offline ranking will ever read, and
- * the vectors have to track the registry anyway, so shipping them inside the
- * package would freeze them to the release instead.
- *
- * Returns false rather than throwing. A download that fails costs the offline
- * tier, never the command, and the caller says so.
- */
-/**
- * Do a freshly fetched metadata/matrix pair describe the same index?
+ * Do the bundled metadata/matrix files describe the same index?
  *
  * `names.length * dimensions` floats, at four bytes each, is the whole
  * contract. A pair that fails it is a truncated download or a different
@@ -79,7 +77,7 @@ function vectorPairAgrees(fetched: Array<[string, Buffer]>): boolean {
   }
 }
 
-/** The registry manifest and fetched pair must describe the same generation. */
+/** The registry manifest and bundled pair must describe the same generation. */
 function vectorRevisionAgrees(
   fetched: Array<[string, Buffer]>,
   expectedRevision?: string,
@@ -95,36 +93,38 @@ function vectorRevisionAgrees(
   }
 }
 
-export async function fetchLocalVectors(
-  registryBaseUrl: string,
-  options: FetchLocalVectorOptions = {},
+/**
+ * Put the release-bundled catalog vectors in the user's cache.
+ *
+ * Keeping the bytes inside the published package avoids downloading registry
+ * data into a trusted local cache. A newer registry revision fails closed
+ * before replacing any previous pair. Installation failures disable only the
+ * offline tier, so this returns false rather than throwing.
+ */
+export async function installLocalVectors(
+  options: InstallLocalVectorOptions = {},
 ): Promise<boolean> {
   const directory = options.directory ?? localVectorDirectory();
-  const base = registryBaseUrl.replace(/\/+$/, "");
+  const sourceDirectory = options.sourceDirectory ?? bundledVectorDirectory();
   try {
     mkdirSync(directory, { recursive: true, mode: 0o700 });
-    // Downloaded in full before anything is written. The two files have to
-    // agree on how many rows there are, so a fetch that fails halfway through
-    // must leave the previous pair intact rather than pairing a new name list
-    // with an old matrix, which loads as an error instead of as stale data.
-    const fetched: Array<[string, Buffer]> = [];
-    for (const file of ["local-vectors.json", "local-vectors.bin"] as const) {
-      const response = await fetch(`${base}/catalog-artifact/${file}`, {
-        signal: AbortSignal.timeout(CATALOG_ARTIFACT_TIMEOUT_MS),
-      });
-      if (!response.ok) return false;
-      fetched.push([file, Buffer.from(await response.arrayBuffer())]);
-    }
+    // Read and validate both files before either is written. The two files have
+    // to agree on how many rows there are, so a broken package must not pair a
+    // new name list with an old matrix.
+    const bundled: Array<[string, Buffer]> = [
+      ["local-vectors.json", readFileSync(join(sourceDirectory, "local-vectors.json"))],
+      ["local-vectors.bin", readFileSync(join(sourceDirectory, "local-vectors.bin"))],
+    ];
     // Check the pair agrees BEFORE either file lands. Writing first and
     // discovering the mismatch at load time leaves a cache that fails every
     // subsequent search until someone deletes it by hand, and it is the only
     // point where a truncated or wrong-model response can still be refused.
-    if (!vectorPairAgrees(fetched) || !vectorRevisionAgrees(fetched, options.expectedRevision)) {
+    if (!vectorPairAgrees(bundled) || !vectorRevisionAgrees(bundled, options.expectedRevision)) {
       return false;
     }
     // 0o600: the cache is this user's, and the directory may be world-writable
     // when the caller overrides it.
-    for (const [file, bytes] of fetched) {
+    for (const [file, bytes] of bundled) {
       writeFileSync(join(directory, file), bytes, { mode: 0o600 });
     }
     return hasLocalVectors(directory);
