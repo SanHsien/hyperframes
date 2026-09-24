@@ -5,9 +5,10 @@ import { fetchMedia } from "../../../scripts/lib/media-fetch.mjs";
 // credentials (oauth → Bearer, else api_key → X-Api-Key; $HEYGEN_CONFIG_DIR
 // overrides the dir). Vendored so the skill ships standalone. Pure node.
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { join, resolve } from "node:path";
+import { normalizeCloudAudio } from "./audio-normalize.mjs";
 
 export const HEYGEN_BASE = "https://api.heygen.com/v3";
 export const HEYGEN_CLI_SOURCE_HEADERS = { "X-HeyGen-Source": "cli" };
@@ -124,13 +125,16 @@ export async function heygenJSON(path, { method = "GET", headers = {}, body } = 
   return res.json();
 }
 
-// Download a (presigned) URL to destPath; returns byte length.
-export async function downloadTo(url, destPath) {
-  const res = await fetchMedia(url);
+// Download cloud audio, decode/re-encode it, and return the response byte length.
+export async function downloadTo(url, destPath, deps = {}) {
+  const requestMedia = deps.fetchMedia ?? fetchMedia;
+  const normalizeAudio = deps.normalizeCloudAudio ?? normalizeCloudAudio;
+  const res = await requestMedia(url);
   if (!res.ok) throw new Error(`download HTTP ${res.status}: ${String(url).slice(0, 80)}`);
   const bytes = Buffer.from(await res.arrayBuffer());
-  mkdirSync(dirname(destPath), { recursive: true });
-  writeFileSync(destPath, bytes);
+  if (!normalizeAudio(bytes, destPath)) {
+    throw new Error("download audio transcode failed (ffmpeg; output must be .wav or .mp3)");
+  }
   return bytes.length;
 }
 

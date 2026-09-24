@@ -15,9 +15,10 @@ import { fetchMedia } from "../../../scripts/lib/media-fetch.mjs";
 // by the CLI — see the note above.
 
 import { spawn, spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, extname, join } from "node:path";
+import { dirname, join } from "node:path";
+import { normalizeCloudAudio } from "./audio-normalize.mjs";
 import { heygenAuthHeaders, heygenCredential, heygenJSON } from "./heygen.mjs";
 import { pythonInvocation } from "./python.mjs";
 
@@ -206,29 +207,7 @@ export function spawnP(
 // Decode and re-encode cloud audio before publishing it. Feeding the response
 // over stdin keeps untrusted network bytes off disk; only ffmpeg's normalized
 // output is copied into the requested destination with exclusive creation.
-export function transcodeAudio(bytes, destPath) {
-  const ext = extname(destPath).toLowerCase();
-  if (ext !== ".wav" && ext !== ".mp3") return false;
-  mkdirSync(dirname(destPath), { recursive: true });
-  const td = mkdtempSync(join(dirname(destPath), ".hf-tts-"));
-  const normalized = join(td, `audio${ext}`);
-  try {
-    const args = ["-y", "-loglevel", "error", "-i", "pipe:0"];
-    if (ext === ".wav") args.push("-ar", "44100", "-ac", "1");
-    args.push(normalized);
-    const ff = spawnSync("ffmpeg", args, {
-      input: bytes,
-      stdio: ["pipe", "ignore", "ignore"],
-      windowsHide: true,
-    });
-    if (ff.status !== 0 || !existsSync(normalized)) return false;
-    rmSync(destPath, { force: true });
-    writeFileSync(destPath, readFileSync(normalized), { flag: "wx", mode: 0o600 });
-    return true;
-  } finally {
-    rmSync(td, { recursive: true, force: true });
-  }
-}
+export const transcodeAudio = normalizeCloudAudio;
 
 const ELEVENLABS_PY = `
 import os, sys

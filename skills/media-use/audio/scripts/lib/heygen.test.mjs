@@ -1,9 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { heygenAuthHeaders, heygenAuthMethod } from "./heygen.mjs";
+import { downloadTo, heygenAuthHeaders, heygenAuthMethod } from "./heygen.mjs";
 
 function withCleanHeygenEnv(fn) {
   const previousApiKey = process.env.HEYGEN_API_KEY;
@@ -100,4 +100,28 @@ test("heygenAuthMethod returns null with no credential at all", () => {
       rmSync(dir, { recursive: true, force: true });
     }
   });
+});
+
+test("downloadTo normalizes cloud audio instead of writing response bytes directly", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "heygen-download-"));
+  const output = join(dir, "audio.mp3");
+  let captured;
+  try {
+    const length = await downloadTo("https://cdn.example/audio", output, {
+      fetchMedia: async () => ({
+        ok: true,
+        status: 200,
+        arrayBuffer: async () => Uint8Array.from([1, 2, 3]).buffer,
+      }),
+      normalizeCloudAudio: (bytes, destPath) => {
+        captured = { bytes: [...bytes], destPath };
+        return true;
+      },
+    });
+    assert.equal(length, 3);
+    assert.deepEqual(captured, { bytes: [1, 2, 3], destPath: output });
+    assert.equal(existsSync(output), false, "the network response is never written directly");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
