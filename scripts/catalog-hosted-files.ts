@@ -1,5 +1,7 @@
-import { existsSync, readFileSync, realpathSync, mkdirSync, writeFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { spawnSync } from "node:child_process";
+import { existsSync, readFileSync, realpathSync } from "node:fs";
+import { basename, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { isContainedIn } from "./registry-target-paths.mjs";
 
 // All published registry assets use this CDN. Keep every redirect on the same
@@ -81,13 +83,40 @@ function hostedFilesOf(root: string): HostedFile[] {
     .filter((file) => file.url.startsWith("https://") && isContainedIn(root, file.path));
 }
 
+function digestPrefix(url: string): string {
+  const match = basename(new URL(url).pathname).match(/^([0-9a-f]{16})\./);
+  if (!match) throw new Error("Hosted asset URL is not content-addressed");
+  return match[1]!;
+}
+
+function publishHostedAsset(bytes: Uint8Array, destination: string, url: string): void {
+  const published = spawnSync(
+    process.execPath,
+    [
+      fileURLToPath(new URL("./catalog-hosted-publisher.mjs", import.meta.url)),
+      destination,
+      digestPrefix(url),
+    ],
+    {
+      input: bytes,
+      encoding: "utf8",
+      maxBuffer: 1024 * 1024,
+      timeout: 30_000,
+      windowsHide: true,
+    },
+  );
+  if (published.status !== 0) {
+    const detail = published.error?.message || published.stderr.trim() || "publish failed";
+    throw new Error(`Hosted asset integrity check failed: ${detail}`);
+  }
+}
+
 /** Materialize manifest-hosted bytes only inside the copied preview project. */
 export async function fetchHostedFiles(projectDir: string): Promise<void> {
   const root = realpathSync(projectDir);
   for (const file of hostedFilesOf(root)) {
     const bytes = await fetchHostedAsset(file.url);
     const destination = resolve(root, file.path);
-    mkdirSync(dirname(destination), { recursive: true });
-    writeFileSync(destination, bytes);
+    publishHostedAsset(bytes, destination, file.url);
   }
 }

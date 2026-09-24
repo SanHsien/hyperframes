@@ -5,7 +5,10 @@ import { join } from "node:path";
 import { test } from "node:test";
 import { fetchHostedFiles } from "./catalog-hosted-files.js";
 
-function fixture(url = "https://static.heygen.ai/asset", path = "asset.bin") {
+function fixture(
+  url = "https://static.heygen.ai/hyperframes-oss/registry-assets/c3e2d6ce9638c39f.bin",
+  path = "asset.bin",
+) {
   const root = mkdtempSync(join(tmpdir(), "hf-hosted-test-"));
   writeFileSync(join(root, "registry-item.json"), JSON.stringify({ files: [{ url, path }] }));
   return root;
@@ -28,8 +31,23 @@ test("downloads exact bytes through a relative CDN redirect", async (t) => {
   );
   try {
     await fetchHostedFiles(root);
-    assert.deepEqual(calls, ["https://static.heygen.ai/asset", "https://static.heygen.ai/final"]);
+    assert.deepEqual(calls, [
+      "https://static.heygen.ai/hyperframes-oss/registry-assets/c3e2d6ce9638c39f.bin",
+      "https://static.heygen.ai/final",
+    ]);
     assert.deepEqual(readFileSync(join(root, "asset.bin")), Buffer.from([0, 255, 42]));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("rejects bytes that do not match the content-addressed URL", async (t) => {
+  const root = fixture();
+  writeFileSync(join(root, "asset.bin"), "previous");
+  t.mock.method(globalThis, "fetch", async () => new Response("replacement"));
+  try {
+    await assert.rejects(fetchHostedFiles(root), /digest does not match/);
+    assert.equal(readFileSync(join(root, "asset.bin"), "utf8"), "previous");
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
