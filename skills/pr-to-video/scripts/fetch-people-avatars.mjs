@@ -33,6 +33,7 @@
 
 import { closeSync, fstatSync, mkdirSync, openSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve, join, dirname, sep } from "node:path";
+import { normalizeCloudImage } from "../../media-use/scripts/lib/image-normalize.mjs";
 
 const argv = process.argv.slice(2);
 const flag = (name, def) => {
@@ -118,18 +119,16 @@ async function fetchOne(person) {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const buf = Buffer.from(await res.arrayBuffer());
     if (!buf.length) throw new Error("empty body");
-    let fd;
     try {
-      fd = openSync(dest, "wx", 0o600);
-      writeFileSync(fd, buf);
+      if (!normalizeCloudImage(buf, dest, { replaceExisting: false })) {
+        throw new Error("avatar image decode failed");
+      }
     } catch (error) {
       if (error?.code === "EEXIST" && isNonEmptyRegularFile(dest)) {
         person.avatarFetched = true;
         return "cached";
       }
       throw error;
-    } finally {
-      if (fd !== undefined) closeSync(fd);
     }
     person.avatarFetched = true;
     return "ok";

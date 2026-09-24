@@ -17,7 +17,7 @@ const OUTPUT_FORMATS = new Map([
 // Decode and re-encode a cloud image before publishing it. The response is fed
 // to ffmpeg over stdin, so malformed or polyglot source bytes never become the
 // saved asset.
-export function normalizeCloudImage(bytes, destPath) {
+export function normalizeCloudImage(bytes, destPath, { replaceExisting = true } = {}) {
   const ext = extname(destPath).toLowerCase();
   const format = OUTPUT_FORMATS.get(ext);
   if (!format) return false;
@@ -35,7 +35,7 @@ export function normalizeCloudImage(bytes, destPath) {
       },
     );
     if (ff.status !== 0 || !existsSync(normalized)) return false;
-    rmSync(destPath, { force: true });
+    if (replaceExisting) rmSync(destPath, { force: true });
     writeFileSync(destPath, readFileSync(normalized), { flag: "wx", mode: 0o600 });
     return true;
   } finally {
