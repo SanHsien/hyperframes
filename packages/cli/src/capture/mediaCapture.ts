@@ -10,6 +10,7 @@
 import type { Browser, Page } from "puppeteer-core";
 import { mkdirSync, writeFileSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, extname } from "node:path";
+import { findFFmpeg } from "../browser/ffmpeg.js";
 import { isPrivateUrl, safeFetch } from "./assetDownloader.js";
 import { CAPTURE_USER_AGENT } from "./userAgent.js";
 import { MAX_LOTTIE_BYTES, readLottieArchive, validLottieJson } from "./lottieValidation.js";
@@ -19,6 +20,7 @@ import {
   createCaptureDownloadBudget,
   type DownloadByteBudget,
 } from "./readBoundedResponse.js";
+import { normalizeVideoBuffer } from "./videoNormalization.js";
 
 /** Discovered Lottie item from network interception or DOM scan. */
 export interface DiscoveredLottie {
@@ -283,7 +285,11 @@ async function downloadVideoBody(
     }
     if (total < 1024) return null; // too small to be a real video (likely an error blob)
     const safe = /\.[a-z0-9]+$/i.test(filename) ? filename.replace(/[^\w.-]/g, "_") : `video${ext}`;
-    writeFileSync(join(videosDir, safe), Buffer.concat(chunks));
+    const ffmpegPath = findFFmpeg();
+    if (!ffmpegPath) return null;
+    if (!normalizeVideoBuffer(Buffer.concat(chunks, total), join(videosDir, safe), ffmpegPath)) {
+      return null;
+    }
     return `assets/videos/${safe}`;
   } catch {
     return null;

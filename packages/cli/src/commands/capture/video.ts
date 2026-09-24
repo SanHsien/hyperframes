@@ -1,9 +1,11 @@
 import { setCommandExitCode } from "../../utils/commandResult.js";
-import { createWriteStream, existsSync, mkdirSync, readFileSync, unlinkSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { resolve, join, basename } from "node:path";
 import { c } from "../../ui/colors.js";
 import { safeFetch } from "../../capture/assetDownloader.js";
 import { CAPTURE_USER_AGENT } from "../../capture/userAgent.js";
+import { normalizeVideoStream } from "../../capture/videoNormalization.js";
+import { findFFmpeg } from "../../browser/ffmpeg.js";
 
 const MAX_VIDEO_BYTES = 250 * 1024 * 1024;
 const VIDEO_CONTENT_TYPE_RE = /^(video\/|application\/(mp4|octet-stream|x-mpegurl))/i;
@@ -35,57 +37,14 @@ async function streamToFile(url: string, destPath: string): Promise<number> {
   }
   if (!r.body) throw new Error(`empty response body for ${url}`);
 
-  // `flags: "wx"` = exclusive-create; throws EEXIST if destPath exists. Stream chunks
-  // and abort mid-transfer if cumulative bytes exceed the cap so a hostile CDN can't
-  // OOM the process by lying about content-length.
-  const file = createWriteStream(destPath, { flags: "wx" });
-  // Single shared error promise: avoids re-attaching `error` listeners per chunk (MaxListeners warning).
-  let streamError: Error | null = null;
-  const streamErrored = new Promise<never>((_, reject) => {
-    file.once("error", (e) => {
-      streamError = e;
-      reject(e);
-    });
-  });
-  let bytes = 0;
-  try {
-    await Promise.race([
-      streamErrored,
-      new Promise<void>((resolveOpen) => file.once("open", () => resolveOpen())),
-    ]);
-    for await (const chunk of r.body as unknown as AsyncIterable<Uint8Array>) {
-      if (streamError) throw streamError;
-      bytes += chunk.byteLength;
-      if (bytes > MAX_VIDEO_BYTES) {
-        throw new Error(
-          `video exceeded ${Math.round(MAX_VIDEO_BYTES / 1024 / 1024)}MB cap mid-stream for ${url}`,
-        );
-      }
-      // lgtm[js/http-to-file-access] — manifest-vetted URL, content-type whitelist, 250MB cap with mid-stream abort, SSRF-safe fetch
-      if (!file.write(chunk)) {
-        await Promise.race([
-          streamErrored,
-          new Promise<void>((resolveDrain) => file.once("drain", () => resolveDrain())),
-        ]);
-      }
-    }
-    await new Promise<void>((resolveEnd, rejectEnd) => {
-      file.end((err?: Error | null) => (err ? rejectEnd(err) : resolveEnd()));
-    });
-    return bytes;
-  } catch (e) {
-    file.destroy();
-    // EEXIST means destPath ALREADY existed before we wrote anything — leave it alone.
-    // Any other error means we created a partial file that the caller should not see.
-    if ((e as NodeJS.ErrnoException).code !== "EEXIST") {
-      try {
-        unlinkSync(destPath);
-      } catch {
-        /* partial file may not exist */
-      }
-    }
-    throw e;
-  }
+  const ffmpegPath = findFFmpeg();
+  if (!ffmpegPath) throw new Error("FFmpeg is required to validate downloaded video");
+  return normalizeVideoStream(
+    r.body as unknown as AsyncIterable<Uint8Array>,
+    destPath,
+    ffmpegPath,
+    MAX_VIDEO_BYTES,
+  );
 }
 
 export function safeFilename(name: string): string {
