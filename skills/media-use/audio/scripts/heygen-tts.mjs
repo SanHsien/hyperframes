@@ -11,9 +11,9 @@
 //   node heygen-tts.mjs "Bonjour"        -o fr.wav --lang fr --voice <id>
 //   node heygen-tts.mjs --list           # list starfish voices and exit
 //
-// Flags: -o/--output (.wav → ffmpeg transcode; .mp3 → raw bytes), --words,
+// Flags: -o/--output (.wav/.mp3 → validated ffmpeg transcode), --words,
 //   --voice (starfish id), --speed, --lang, --list.
-// Requires: $HEYGEN_API_KEY / OAuth ~/.heygen credentials and ffmpeg for .wav output.
+// Requires: $HEYGEN_API_KEY / OAuth ~/.heygen credentials and ffmpeg.
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";

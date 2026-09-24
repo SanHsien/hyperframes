@@ -17,7 +17,7 @@ import { fetchMedia } from "../../../scripts/lib/media-fetch.mjs";
 import { spawn, spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { dirname, extname, join } from "node:path";
 import { heygenAuthHeaders, heygenCredential, heygenJSON } from "./heygen.mjs";
 import { pythonInvocation } from "./python.mjs";
 
@@ -203,19 +203,31 @@ export function spawnP(
   });
 }
 
-// mp3/whatever bytes → wav 44.1k mono at destWav (ffmpeg detects true format).
-function transcodeToWav(bytes, destWav) {
-  const td = mkdtempSync(join(tmpdir(), "hf-tts-"));
-  const tmp = join(td, "a.mp3");
-  writeFileSync(tmp, bytes);
-  mkdirSync(dirname(destWav), { recursive: true });
-  const ff = spawnSync(
-    "ffmpeg",
-    ["-y", "-loglevel", "error", "-i", tmp, "-ar", "44100", "-ac", "1", destWav],
-    { stdio: "ignore" },
-  );
-  rmSync(td, { recursive: true, force: true });
-  return ff.status === 0 && existsSync(destWav);
+// Decode and re-encode cloud audio before publishing it. Feeding the response
+// over stdin keeps untrusted network bytes off disk; only ffmpeg's normalized
+// output is copied into the requested destination with exclusive creation.
+export function transcodeAudio(bytes, destPath) {
+  const ext = extname(destPath).toLowerCase();
+  if (ext !== ".wav" && ext !== ".mp3") return false;
+  mkdirSync(dirname(destPath), { recursive: true });
+  const td = mkdtempSync(join(dirname(destPath), ".hf-tts-"));
+  const normalized = join(td, `audio${ext}`);
+  try {
+    const args = ["-y", "-loglevel", "error", "-i", "pipe:0"];
+    if (ext === ".wav") args.push("-ar", "44100", "-ac", "1");
+    args.push(normalized);
+    const ff = spawnSync("ffmpeg", args, {
+      input: bytes,
+      stdio: ["pipe", "ignore", "ignore"],
+      windowsHide: true,
+    });
+    if (ff.status !== 0 || !existsSync(normalized)) return false;
+    rmSync(destPath, { force: true });
+    writeFileSync(destPath, readFileSync(normalized), { flag: "wx", mode: 0o600 });
+    return true;
+  } finally {
+    rmSync(td, { recursive: true, force: true });
+  }
 }
 
 const ELEVENLABS_PY = `
@@ -294,7 +306,7 @@ export async function synthesizeHeygen({ text, voiceId, lang, speed, wavAbs }, d
   const requestJSON = deps.heygenJSON ?? heygenJSON;
   const authHeaders = deps.heygenAuthHeaders ?? heygenAuthHeaders;
   const fetchImpl = deps.fetch ?? fetch;
-  const transcode = deps.transcodeToWav ?? transcodeToWav;
+  const transcode = deps.transcodeAudio ?? deps.transcodeToWav ?? transcodeAudio;
   try {
     const body = { text, voice_id: voiceId, speed };
     if (lang !== "en") body.language = lang;
@@ -312,19 +324,12 @@ export async function synthesizeHeygen({ text, voiceId, lang, speed, wavAbs }, d
       return { ok: false, words: null, error: `audio_url fetch failed: HTTP ${res.status}` };
     }
     const bytes = Buffer.from(await res.arrayBuffer());
-    // .wav output → transcode to 44.1k mono; .mp3 → raw bytes (no ffmpeg). The
-    // engine always asks for .wav; the standalone heygen-tts CLI may ask for .mp3.
-    if (wavAbs.endsWith(".wav")) {
-      if (!transcode(bytes, wavAbs)) {
-        return {
-          ok: false,
-          words: null,
-          error: "wav transcode failed (ffmpeg)",
-        };
-      }
-    } else {
-      mkdirSync(dirname(wavAbs), { recursive: true });
-      writeFileSync(wavAbs, bytes, { mode: 0o600 });
+    if (!transcode(bytes, wavAbs)) {
+      return {
+        ok: false,
+        words: null,
+        error: "audio transcode failed (ffmpeg; output must be .wav or .mp3)",
+      };
     }
     const words = Array.isArray(inner.word_timestamps)
       ? inner.word_timestamps

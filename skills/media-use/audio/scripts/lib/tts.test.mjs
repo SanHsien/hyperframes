@@ -1,6 +1,14 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, writeFileSync, chmodSync, rmSync, existsSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import {
+  chmodSync,
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { join, dirname } from "node:path";
 import { tmpdir } from "node:os";
 import {
@@ -10,6 +18,7 @@ import {
   synthesizeOne,
   synthesizeHeygen,
   synthResult,
+  transcodeAudio,
 } from "./tts.mjs";
 
 test("resolveVoiceId keeps HeyGen defaults deterministic", async () => {
@@ -160,11 +169,71 @@ test("synthesizeHeygen reports wav transcode failures", async () => {
       },
     );
     assert.equal(res.ok, false);
-    assert.equal(res.error, "wav transcode failed (ffmpeg)");
+    assert.equal(res.error, "audio transcode failed (ffmpeg; output must be .wav or .mp3)");
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test("synthesizeHeygen normalizes mp3 output instead of writing response bytes directly", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "hf-tts-test-"));
+  const output = join(dir, "voice.mp3");
+  let captured;
+  try {
+    const res = await synthesizeHeygen(
+      { text: "hi", voiceId: "v1", lang: "en", speed: 1, wavAbs: output },
+      {
+        heygenAuthHeaders: () => ({}),
+        heygenJSON: async () => ({ data: { audio_url: "http://audio.example/x" } }),
+        fetch: async () => ({
+          ok: true,
+          status: 200,
+          arrayBuffer: async () => Uint8Array.from([1, 2, 3]).buffer,
+        }),
+        transcodeAudio: (bytes, destPath) => {
+          captured = { bytes: [...bytes], destPath };
+          return true;
+        },
+      },
+    );
+    assert.equal(res.ok, true);
+    assert.deepEqual(captured, { bytes: [1, 2, 3], destPath: output });
+    assert.equal(existsSync(output), false, "the network response is never written directly");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test(
+  "transcodeAudio decodes cloud bytes from stdin before publishing",
+  { skip: spawnSync("ffmpeg", ["-version"], { stdio: "ignore" }).status !== 0 },
+  (t) => {
+    const dir = mkdtempSync(join(tmpdir(), "hf-tts-transcode-"));
+    t.after(() => rmSync(dir, { recursive: true, force: true }));
+    const source = spawnSync(
+      "ffmpeg",
+      [
+        "-loglevel",
+        "error",
+        "-f",
+        "lavfi",
+        "-i",
+        "anullsrc=r=44100:cl=mono",
+        "-t",
+        "0.05",
+        "-f",
+        "mp3",
+        "pipe:1",
+      ],
+      { encoding: null, maxBuffer: 1024 * 1024 },
+    );
+    assert.equal(source.status, 0, source.stderr?.toString());
+    const output = join(dir, "normalized.wav");
+    assert.equal(transcodeAudio(source.stdout, output), true);
+    assert.ok(existsSync(output));
+    assert.equal(Buffer.from(readFileSync(output)).subarray(0, 4).toString("ascii"), "RIFF");
+  },
+);
 
 test("synthResult names a non-zero subprocess exit", () => {
   const res = synthResult({ status: 2 }, "/tmp/none.wav", "kokoro (npx hyperframes tts)");

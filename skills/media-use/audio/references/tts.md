@@ -77,7 +77,7 @@ node skills/media-use/audio/scripts/heygen-tts.mjs --list   # public starfish vo
 ```
 
 - **Voice:** `--voice <id>` must be a **starfish** voice_id (`--list`, or `GET /v3/voices?engine=starfish`). v2-catalog ids are rejected with HTTP 400. Omit `--voice` for English and it defaults to **Marcia** (`05f19352e8f74b0392a8f411eba40de1`, a fixed default so the choice is deterministic). Non-English requests require `--voice`; the engine never persists a mutable catalog choice as a default.
-- **Output:** `.wav` → transcoded to 44.1k mono via ffmpeg; `.mp3` → raw bytes (no ffmpeg needed).
+- **Output:** `.wav` and `.mp3` are decoded and re-encoded by ffmpeg before publication; `.wav` is normalized to 44.1k mono.
 - **Words:** `--words <path>` writes the flat `[{id,text,start,end}]` shape below, drop-in for the captions pipeline. HeyGen's `<start>`/`<end>` boundary sentinels are filtered out and ids are re-contiguous.
 - **Non-English:** `--lang <code>` (anything but `en`) is sent as the request `language`.
 
@@ -92,10 +92,10 @@ node skills/media-use/audio/scripts/heygen-tts.mjs --list   # public starfish vo
 
 ## ffmpeg requirement
 
-HeyGen + ElevenLabs return mp3. The bundled HeyGen helper transcodes to wav
-when `--output` ends in `.wav` (the default and what downstream `ffprobe` +
-Whisper expect). If you'd rather skip the transcode, pass `-o file.mp3`.
-Without `ffmpeg` on PATH, wav output from cloud providers fails; the local
+HeyGen + ElevenLabs return mp3. The bundled HeyGen helper decodes and re-encodes
+cloud audio before writing it, and normalizes wav output to 44.1 kHz mono (the
+format downstream `ffprobe` and Whisper expect). Without `ffmpeg` on PATH,
+cloud-provider output fails; the local
 Kokoro CLI writes wav directly.
 
 ## Voice selection (Kokoro)
