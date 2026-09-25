@@ -35,8 +35,16 @@ test("updates the read file from byte zero, truncates, and retains its mode", (t
   const handle = openAudioMeta(path);
   assert.deepEqual(handle.value, { voices: ["long existing voice metadata"] });
   handle.write({ voices: ["声"] });
-  assert.equal(readFileSync(path, "utf8"), JSON.stringify({ voices: ["声"] }, null, 2));
-  assert.equal(statSync(path).mode, originalMode);
+  const resultDescriptor = openSync(path, "r");
+  try {
+    assert.equal(
+      readFileSync(resultDescriptor, "utf8"),
+      JSON.stringify({ voices: ["声"] }, null, 2),
+    );
+    assert.equal(fstatSync(resultDescriptor).mode, originalMode);
+  } finally {
+    closeSync(resultDescriptor);
+  }
 });
 
 test("pathname replacement cannot redirect the existing-file write", (t) => {
