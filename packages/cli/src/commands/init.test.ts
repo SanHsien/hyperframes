@@ -51,7 +51,7 @@ function expectScaffoldedScripts(target: string): void {
 describe("hyperframes init flag rename", () => {
   it("keeps external error text on a single terminal line", () => {
     expect(singleLineLogValue("first\r\nsecond\u0000\u001b[31mthird\u2028fourth")).toBe(
-      "first second[31mthird fourth",
+      '"first\\r\\nsecond\\u0000\\u001b[31mthird\\u2028fourth"',
     );
   });
 

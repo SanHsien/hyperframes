@@ -78,17 +78,9 @@ const DEFAULT_META: VideoMeta = {
 };
 
 export function singleLineLogValue(value: unknown): string {
-  const singleLine = String(value).replace(/[\r\n\u2028\u2029]+/g, " ");
-  return Array.from(singleLine, (character) => {
-    const codePoint = character.codePointAt(0) ?? 0;
-    return (codePoint >= 0 && codePoint <= 8) ||
-      codePoint === 11 ||
-      codePoint === 12 ||
-      (codePoint >= 14 && codePoint <= 31) ||
-      codePoint === 127
-      ? ""
-      : character;
-  }).join("");
+  return JSON.stringify(String(value))
+    .replace(/\u2028/g, "\\u2028")
+    .replace(/\u2029/g, "\\u2029");
 }
 
 // Pin the browser runtime exactly so repeated renders do not drift as Tailwind
