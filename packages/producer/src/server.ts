@@ -15,16 +15,19 @@
 
 import {
   existsSync,
+  chmodSync,
+  lstatSync,
   mkdirSync,
   statSync,
   mkdtempSync,
-  writeFileSync,
   rmSync,
   createReadStream,
 } from "node:fs";
+import { spawnSync } from "node:child_process";
 import { resolve, dirname, join } from "node:path";
 import { tmpdir } from "node:os";
 import { parseArgs } from "node:util";
+import { fileURLToPath } from "node:url";
 import crypto from "node:crypto";
 import { Hono, type Context } from "hono";
 import { streamSSE } from "hono/streaming";
@@ -119,6 +122,12 @@ interface PreparedRenderInput {
 }
 
 const DEFAULT_SERVER_FPS = { num: 30, den: 1 } as const;
+const MAX_INLINE_HTML_BYTES = 8 * 1024 * 1024;
+const MAX_PREVIEW_RESPONSE_BYTES = 8 * 1024 * 1024;
+const INLINE_PROJECT_ROOT_NAME = "hyperframes-producer-projects";
+const INLINE_PROJECT_PUBLISHER = fileURLToPath(
+  new URL("./inline-project-publisher.mjs", import.meta.url),
+);
 const SAFE_RENDER_ERROR_CODES = new Set<string>([
   "ASSET_MEDIA_TYPE_MISMATCH",
   "NOT_MEDIA_PAYLOAD",
@@ -419,12 +428,55 @@ async function resolveInlineRenderHtml(body: Record<string, unknown>): Promise<
   const previewUrl = nonEmptyString(body.previewUrl);
   if (!previewUrl)
     return { error: "Missing render source: provide projectDir, previewUrl, or html" };
+  let parsedPreviewUrl: URL;
   try {
-    const response = await fetch(previewUrl, { method: "GET" });
+    parsedPreviewUrl = new URL(previewUrl);
+  } catch {
+    return { error: "previewUrl must be a valid http(s) URL" };
+  }
+  if (parsedPreviewUrl.protocol !== "http:" && parsedPreviewUrl.protocol !== "https:") {
+    return { error: "previewUrl must use http or https" };
+  }
+  try {
+    const response = await fetch(previewUrl, { method: "GET", redirect: "error" });
     if (!response.ok) {
       return { error: `Failed to fetch previewUrl: ${response.status} ${response.statusText}` };
     }
-    return { html: await response.text() };
+    const declaredLength = Number(response.headers.get("content-length"));
+    if (Number.isFinite(declaredLength) && declaredLength > MAX_PREVIEW_RESPONSE_BYTES) {
+      return { error: `previewUrl response exceeds ${MAX_PREVIEW_RESPONSE_BYTES} byte limit` };
+    }
+    if (!response.body) return { error: "previewUrl response has no body" };
+    const reader = response.body.getReader();
+    const chunks: Uint8Array[] = [];
+    let total = 0;
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        total += value.byteLength;
+        if (total > MAX_PREVIEW_RESPONSE_BYTES) {
+          await reader.cancel();
+          return { error: `previewUrl response exceeds ${MAX_PREVIEW_RESPONSE_BYTES} byte limit` };
+        }
+        chunks.push(value);
+      }
+    } finally {
+      reader.releaseLock();
+    }
+    let html: string;
+    try {
+      html = new TextDecoder("utf-8", { fatal: true }).decode(
+        Buffer.concat(
+          chunks.map((chunk) => Buffer.from(chunk)),
+          total,
+        ),
+      );
+    } catch {
+      return { error: "previewUrl response must be valid UTF-8 HTML" };
+    }
+    const validationError = validateInlineHtml(html);
+    return validationError ? { error: validationError } : { html };
   } catch (error) {
     return {
       error: `Failed to fetch previewUrl: ${error instanceof Error ? error.message : String(error)}`,
@@ -432,13 +484,59 @@ async function resolveInlineRenderHtml(body: Record<string, unknown>): Promise<
   }
 }
 
+/**
+ * Inline render input is intentionally executable HTML. Keep the payload
+ * bounded and structurally safe for materialization; asset containment is
+ * enforced by the downstream project file server.
+ */
+export function validateInlineHtml(html: string): string | undefined {
+  const size = Buffer.byteLength(html, "utf8");
+  if (size === 0) return "HTML source must not be empty";
+  if (size > MAX_INLINE_HTML_BYTES) {
+    return `HTML source exceeds ${MAX_INLINE_HTML_BYTES} byte limit`;
+  }
+  if (html.includes("\0")) return "HTML source contains a NUL byte";
+  return undefined;
+}
+
+function createPrivateInlineProject(): string {
+  const root = resolve(
+    process.env.PRODUCER_TMP_PROJECT_DIR || join(tmpdir(), INLINE_PROJECT_ROOT_NAME),
+  );
+  mkdirSync(root, { recursive: true, mode: 0o700 });
+  const rootStat = lstatSync(root);
+  if (!rootStat.isDirectory() || rootStat.isSymbolicLink()) {
+    throw new Error("producer inline project root must be a private directory");
+  }
+  // Best effort on Windows, where ACLs are the effective permission model.
+  try {
+    chmodSync(root, 0o700);
+  } catch {
+    // The directory was created by this process and remains bounded below tmpdir.
+  }
+  return mkdtempSync(join(root, "project-"));
+}
+
 function materializeInlineProject(
   html: string,
   options: Omit<RenderInput, "projectDir">,
 ): PrepareRenderResult {
-  const tempRoot = process.env.PRODUCER_TMP_PROJECT_DIR || tmpdir();
-  const tempProjectDir = mkdtempSync(join(tempRoot, "producer-project-"));
-  writeFileSync(join(tempProjectDir, "index.html"), html, "utf-8");
+  const validationError = validateInlineHtml(html);
+  if (validationError) return { error: validationError };
+  const tempProjectDir = createPrivateInlineProject();
+  const published = spawnSync(process.execPath, [INLINE_PROJECT_PUBLISHER, tempProjectDir], {
+    input: Buffer.from(html, "utf8"),
+    maxBuffer: MAX_INLINE_HTML_BYTES + 1024,
+    timeout: 15_000,
+    windowsHide: true,
+  });
+  if (published.status !== 0) {
+    const detail =
+      published.error?.message || published.stderr?.toString().trim() || "publisher failed";
+    return {
+      error: `Failed to materialize inline HTML: ${detail}; recovery preserved at ${tempProjectDir}`,
+    };
+  }
   return {
     prepared: {
       input: { projectDir: tempProjectDir, ...options },

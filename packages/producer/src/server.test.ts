@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
-import { parseRenderOptions, prepareRenderBody } from "./server.js";
+import { parseRenderOptions, prepareRenderBody, validateInlineHtml } from "./server.js";
 
 describe("parseRenderOptions — variables", () => {
   it("forwards a plain JSON object", () => {
@@ -74,6 +74,19 @@ describe("parseRenderOptions — outputDynamicRange", () => {
 });
 
 describe("prepareRenderBody — validation", () => {
+  it("bounds inline HTML and rejects invalid text", () => {
+    expect(validateInlineHtml("<html><body>ok</body></html>")).toBeUndefined();
+    expect(validateInlineHtml('<img src="/assets/logo.png">')).toBeUndefined();
+    expect(validateInlineHtml("<html>\0</html>")).toContain("NUL");
+    expect(validateInlineHtml("")).toContain("must not be empty");
+  });
+
+  it("rejects oversized inline HTML before creating a project", async () => {
+    const result = await prepareRenderBody({ html: "x".repeat(8 * 1024 * 1024 + 1) });
+    expect(result).toHaveProperty("error");
+    expect((result as { error: string }).error).toContain("byte limit");
+  });
+
   it.each(["", "   "])(
     "treats an empty projectDir as absent and uses inline HTML",
     async (projectDir) => {

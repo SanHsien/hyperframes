@@ -76,6 +76,10 @@ await Promise.all([
 // Copy core runtime artifacts so the producer can find them at dist/
 import { copyFileSync, existsSync, readFileSync } from "fs";
 const coreDistDir = resolve(scriptDir, "../core/dist");
+copyFileSync(
+  resolve(scriptDir, "src/inline-project-publisher.mjs"),
+  "dist/inline-project-publisher.mjs",
+);
 try {
   const manifestSrc = resolve(coreDistDir, "hyperframe.manifest.json");
   if (existsSync(manifestSrc)) {
