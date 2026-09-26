@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it, afterEach, vi } from "vitest";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { exceedsFreezeCap, freezeBytes, MAX_FREEZE_BYTES } from "./freeze";
@@ -123,6 +123,40 @@ describe("freezeUrl allowlist", () => {
       /destination format/,
     );
     expect(readFileSync(destination, "utf8")).toBe("existing");
+    vi.restoreAllMocks();
+  });
+
+  it("refuses to replace a directory at the destination and keeps its contents", async () => {
+    const { freezeUrl } = await import("./freeze");
+    const png = Uint8Array.from([137, 80, 78, 71, 13, 10, 26, 10, 1]);
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(png, { headers: { "content-type": "image/png" } }),
+    );
+    const destination = join(scratch(), "x.png");
+    mkdirSync(destination);
+    writeFileSync(join(destination, "keep.txt"), "keep");
+    await expect(freezeUrl("https://s3-alpha-sig.figma.com/img/x", destination)).rejects.toThrow(
+      /not a regular file/,
+    );
+    expect(readFileSync(join(destination, "keep.txt"), "utf8")).toBe("keep");
+    vi.restoreAllMocks();
+  });
+
+  it("stops reading a chunked body once it crosses the cap", async () => {
+    const { freezeUrl } = await import("./freeze");
+    const chunk = new Uint8Array(MAX_FREEZE_BYTES / 4);
+    let pulls = 0;
+    const body = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        pulls += 1;
+        controller.enqueue(chunk);
+      },
+    });
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(body));
+    await expect(
+      freezeUrl("https://s3-alpha-sig.figma.com/img/x", join(scratch(), "x.png")),
+    ).rejects.toThrow(/exceeds/);
+    expect(pulls).toBeLessThanOrEqual(6);
     vi.restoreAllMocks();
   });
 });

@@ -80,3 +80,34 @@ test("preserves a recoverable backup when publish and rollback both fail", () =>
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test("restores a directory swapped in between the type check and the move", () => {
+  const root = fixture();
+  const destination = join(root, "asset.bin");
+  const bytes = Buffer.from("replacement");
+  writeFileSync(destination, "previous");
+  let calls = 0;
+  const rename = (from, to) => {
+    calls += 1;
+    if (calls === 1) {
+      // A concurrent writer replaces the checked file with a directory.
+      rmSync(from);
+      mkdirSync(from);
+      writeFileSync(join(from, "keep.txt"), "keep");
+    }
+    renameSync(from, to);
+  };
+  try {
+    assert.throws(
+      () => publishHostedBytes(bytes, destination, prefix(bytes), { rename }),
+      /non-regular file/,
+    );
+    assert.equal(readFileSync(join(destination, "keep.txt"), "utf8"), "keep");
+    assert.deepEqual(
+      readdirSync(root).filter((name) => name.startsWith(".hf-hosted-")),
+      [],
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});

@@ -53,7 +53,16 @@ export function isAllowedFreezeUrl(url: string): boolean {
 }
 
 const FIGMA_ASSET_PUBLISHER = String.raw`
-const { mkdtempSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } = require("node:fs");
+const {
+  lstatSync,
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  renameSync,
+  rmdirSync,
+  unlinkSync,
+  writeFileSync,
+} = require("node:fs");
 const { basename, dirname, extname, join } = require("node:path");
 
 const destination = process.argv[1];
@@ -98,11 +107,25 @@ if (contentType && contentType !== "application/octet-stream" && contentType !==
   fail("response content-type does not match the destination format");
 }
 
+function isRegularFile(path) {
+  try {
+    return lstatSync(path).isFile();
+  } catch (error) {
+    if (error.code === "ENOENT") return null;
+    throw error;
+  }
+}
+
+// Only ever replace a regular file: a directory or symlink at the destination
+// would otherwise be moved into the staging dir and lost on cleanup.
+if (isRegularFile(destination) === false) fail("destination is not a regular file");
+
 mkdirSync(dirname(destination), { recursive: true });
 const tempDir = mkdtempSync(join(dirname(destination), ".hf-figma-"));
 const staged = join(tempDir, basename(destination));
 const backup = join(tempDir, "previous");
 let movedPrevious = false;
+let failure = null;
 try {
   writeFileSync(staged, bytes, { flag: "wx", mode: 0o600 });
   try {
@@ -111,15 +134,33 @@ try {
   } catch (error) {
     if (error.code !== "ENOENT") throw error;
   }
+  if (movedPrevious && isRegularFile(backup) !== true) {
+    // Swapped between the check and the move: put it back untouched.
+    renameSync(backup, destination);
+    movedPrevious = false;
+    throw new Error("destination changed to a non-regular file");
+  }
   try {
     renameSync(staged, destination);
   } catch (error) {
     if (movedPrevious) renameSync(backup, destination);
     throw error;
   }
+} catch (error) {
+  failure = error;
 } finally {
-  rmSync(tempDir, { recursive: true, force: true });
+  // Remove only entries confirmed to be regular files; anything unexpected
+  // keeps the staging dir (rmdir fails when non-empty) for manual recovery.
+  for (const entry of [staged, backup]) {
+    if (isRegularFile(entry) === true) unlinkSync(entry);
+  }
+  try {
+    rmdirSync(tempDir);
+  } catch {
+    process.stderr.write("kept " + tempDir + " for recovery\n");
+  }
 }
+if (failure) fail(failure.message);
 `;
 
 async function fetchAllowedFreezeUrl(url: string): Promise<Response> {
@@ -138,6 +179,31 @@ async function fetchAllowedFreezeUrl(url: string): Promise<Response> {
   throw new Error("freeze failed: redirect limit exceeded");
 }
 
+/** Read the body chunk by chunk, aborting as soon as it crosses the cap. */
+async function readCappedBody(response: Response): Promise<Uint8Array> {
+  if (!response.body) return new Uint8Array(0);
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (exceedsFreezeCap(total)) {
+      await reader.cancel();
+      throw new Error(`freeze failed: body exceeds ${MAX_FREEZE_BYTES} cap`);
+    }
+    chunks.push(value);
+  }
+  const bytes = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return bytes;
+}
+
 export async function freezeUrl(url: string, destPath: string): Promise<number> {
   if (!isAllowedFreezeUrl(url))
     throw new Error(`freeze failed: refusing non-figma url ${url} (https + figma hosts only)`);
@@ -146,10 +212,8 @@ export async function freezeUrl(url: string, destPath: string): Promise<number> 
   const declared = Number(res.headers.get("content-length") ?? 0);
   if (exceedsFreezeCap(declared))
     throw new Error(`freeze failed: content-length ${declared} exceeds ${MAX_FREEZE_BYTES} cap`);
-  const bytes = new Uint8Array(await res.arrayBuffer());
+  const bytes = await readCappedBody(res);
   if (bytes.length === 0) throw new Error("freeze failed: empty bytes");
-  if (exceedsFreezeCap(bytes.length))
-    throw new Error(`freeze failed: ${bytes.length} bytes exceeds ${MAX_FREEZE_BYTES} cap`);
   const publish = spawnSync(
     process.execPath,
     ["-e", FIGMA_ASSET_PUBLISHER, destPath, res.headers.get("content-type") ?? ""],

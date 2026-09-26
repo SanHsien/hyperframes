@@ -6,7 +6,8 @@ import {
   mkdtempSync,
   readFileSync,
   renameSync,
-  rmSync,
+  rmdirSync,
+  unlinkSync,
   writeFileSync,
 } from "node:fs";
 import { basename, dirname, join } from "node:path";
@@ -46,6 +47,12 @@ export function publishHostedBytes(
     } catch (error) {
       if (error.code !== "ENOENT") throw error;
     }
+    if (movedPrevious && isRegularFile(backup) !== true) {
+      // Swapped between the check and the move: put it back untouched.
+      rename(backup, destination);
+      movedPrevious = false;
+      throw new Error("hosted asset destination changed to a non-regular file");
+    }
     try {
       rename(staged, destination);
     } catch (publishError) {
@@ -66,7 +73,29 @@ export function publishHostedBytes(
       throw publishError;
     }
   } finally {
-    if (!preserveRecovery) rmSync(tempDir, { recursive: true, force: true });
+    if (!preserveRecovery) removeStaging(tempDir, [staged, backup]);
+  }
+}
+
+function isRegularFile(path) {
+  try {
+    return lstatSync(path).isFile();
+  } catch (error) {
+    if (error.code === "ENOENT") return null;
+    throw error;
+  }
+}
+
+// Remove only entries confirmed to be regular files. Anything unexpected keeps
+// the staging dir (rmdir fails when non-empty) so it can be recovered by hand.
+function removeStaging(tempDir, entries) {
+  for (const entry of entries) {
+    if (isRegularFile(entry) === true) unlinkSync(entry);
+  }
+  try {
+    rmdirSync(tempDir);
+  } catch {
+    process.stderr.write(`kept ${tempDir} for recovery\n`);
   }
 }
 
