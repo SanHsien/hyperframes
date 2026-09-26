@@ -30,20 +30,15 @@ test("updates the read file from byte zero, truncates, and retains its mode", (t
     mode: 0o600,
   });
   const descriptor = openSync(path, "r");
-  const originalMode = fstatSync(descriptor).mode;
-  closeSync(descriptor);
-  const handle = openAudioMeta(path);
-  assert.deepEqual(handle.value, { voices: ["long existing voice metadata"] });
-  handle.write({ voices: ["声"] });
-  const resultDescriptor = openSync(path, "r");
   try {
-    assert.equal(
-      readFileSync(resultDescriptor, "utf8"),
-      JSON.stringify({ voices: ["声"] }, null, 2),
-    );
-    assert.equal(fstatSync(resultDescriptor).mode, originalMode);
+    const originalMode = fstatSync(descriptor).mode;
+    const handle = openAudioMeta(path);
+    assert.deepEqual(handle.value, { voices: ["long existing voice metadata"] });
+    handle.write({ voices: ["声"] });
+    assert.equal(readFileSync(descriptor, "utf8"), JSON.stringify({ voices: ["声"] }, null, 2));
+    assert.equal(fstatSync(descriptor).mode, originalMode);
   } finally {
-    closeSync(resultDescriptor);
+    closeSync(descriptor);
   }
 });
 
