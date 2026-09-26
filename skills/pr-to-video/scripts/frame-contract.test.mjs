@@ -196,7 +196,7 @@ test("Code editorial preset stages renderer-parity fonts for an empty PR token s
   assert.match(frameMd, /@font-face\{font-family:"EB Garamond";font-weight:400/);
   assert.match(frameMd, /@font-face\{font-family:"Inter";font-weight:700/);
   assert.match(frameMd, /@font-face\{font-family:"JetBrains Mono";font-weight:400/);
-  assert.equal(frameMd.includes("fonts.googleapis.com"), false);
+  assert.doesNotMatch(frameMd, /fonts\.googleapis\.com/);
 });
 
 test("bundled Code editorial font licenses are shipped beside the assets", () => {
