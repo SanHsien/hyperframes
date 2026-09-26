@@ -975,8 +975,10 @@ describe("bundleToSingleHtml", () => {
     expect(bundled).toContain('[data-composition-id="scene"] .title { color: red; }');
     expect(bundled).toContain("new Proxy(window.document");
     expect(bundled).toContain("new Proxy(__hfBaseGsap");
-    expect(bundled).toContain("(function(document, gsap, window, __hyperframes)");
-    expect(bundled).toContain('tl.to(".title"');
+    expect(bundled).toContain('Function("document", "gsap", "window", "__hyperframes"');
+    // The authored source is now carried as string data, so its quoting survives
+    // the final esbuild pass verbatim.
+    expect(bundled).toContain("tl.to('.title'");
   });
 
   it("isolates sibling instances of the same external sub-composition", async () => {
