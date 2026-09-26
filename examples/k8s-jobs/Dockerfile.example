@@ -99,6 +99,7 @@ ENV PRODUCER_HEADLESS_SHELL_PATH=${CHROME_DIR}/chrome-headless-shell/linux-${CHR
 # is needed at run time.
 WORKDIR /app
 COPY package.json bun.lock ./
+COPY patches/ patches/
 COPY packages/aws-lambda/package.json packages/aws-lambda/
 COPY packages/core/package.json packages/core/
 COPY packages/engine/package.json packages/engine/

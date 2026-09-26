@@ -74,6 +74,7 @@ ENV PATH="/root/.bun/bin:$PATH"
 # --frozen-lockfile` treats any member missing from the build context as a
 # lockfile change and fails.
 COPY package.json bun.lock ./
+COPY patches/ patches/
 COPY packages/parsers/package.json packages/parsers/package.json
 COPY packages/lint/package.json packages/lint/package.json
 COPY packages/studio-server/package.json packages/studio-server/package.json
