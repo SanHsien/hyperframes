@@ -7,7 +7,7 @@ import { fetchMedia } from "../../../scripts/lib/media-fetch.mjs";
 
 import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { normalizeCloudAudio } from "./audio-normalize.mjs";
 
 export const HEYGEN_BASE = "https://api.heygen.com/v3";
