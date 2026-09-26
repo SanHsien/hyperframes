@@ -345,6 +345,19 @@ function decodeSingleQuotedString(inner: string): string {
       continue;
     }
 
+    if (escaped === "u" && inner[index + 1] === "{") {
+      const close = inner.indexOf("}", index + 2);
+      const codePointHex = close > 0 ? inner.slice(index + 2, close) : "";
+      const codePoint = /^[0-9a-f]{1,6}$/i.test(codePointHex)
+        ? Number.parseInt(codePointHex, 16)
+        : -1;
+      if (codePoint >= 0 && codePoint <= 0x10ffff) {
+        decoded.push(String.fromCodePoint(codePoint));
+        index = close;
+        continue;
+      }
+    }
+
     const digits = escaped === "x" ? 2 : escaped === "u" ? 4 : 0;
     const hex = digits > 0 ? inner.slice(index + 1, index + 1 + digits) : "";
     if (digits > 0 && hex.length === digits && /^[0-9a-f]+$/i.test(hex)) {

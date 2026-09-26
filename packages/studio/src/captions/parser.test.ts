@@ -156,6 +156,16 @@ describe("extractTranscript", () => {
 
       expect(words).toEqual([{ text: 'C:\\media\\clip "A" and it\'s\nready', start: 0, end: 1 }]);
     });
+
+    it("decodes Unicode code-point escapes", () => {
+      const words = extractTranscript(String.raw`
+        const TRANSCRIPT = [
+          { text: 'hi \u{1F600} \u{41}\u{110000}', start: 0, end: 1 },
+        ];
+      `);
+
+      expect(words).toEqual([{ text: "hi 😀 Au{110000}", start: 0, end: 1 }]);
+    });
   });
 
   describe("trailing commas", () => {
