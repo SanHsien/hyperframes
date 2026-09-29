@@ -21,6 +21,8 @@ on:
 
 jobs:
   sunset:
+    # Canary owners live upstream; the fork follows upstream's product code and cannot retire them.
+    if: github.repository == 'heygen-com/hyperframes'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
