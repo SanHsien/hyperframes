@@ -88,7 +88,7 @@ def test_baseline_file_is_valid_and_complete() -> None:
     assert baseline["repo"] == "https://github.com/heygen-com/hyperframes.git"
     assert baseline["branch"] == "main"
     assert len(baseline["reviewed_through"]) == 40
-    assert baseline["reviewed_through"] == "51a88b95660c5f67e66e9c5977226f6ae7b31255"
+    assert baseline["reviewed_through"] == "d1a5a05609a1c53996cb96c1ae2c9a57d09313aa"
     assert re.fullmatch(r"\d{4}-\d{2}-\d{2}", baseline["reviewed_date"])
     assert isinstance(baseline["reviewed_pr_through"], int)
     assert isinstance(baseline["reviewed_issue_through"], int)

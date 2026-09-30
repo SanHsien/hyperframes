@@ -1,7 +1,7 @@
 import type { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import { existsSync, readFileSync, mkdirSync, unlinkSync, readdirSync, statSync } from "node:fs";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import type { StudioApiAdapter, RenderJobState } from "../types.js";
 import { VALID_CANVAS_RESOLUTIONS, type CanvasResolution } from "@hyperframes/parsers";
 import { formatRenderOutputTimestamp, parseFps } from "@hyperframes/core";
@@ -208,7 +208,7 @@ export function registerRenderRoutes(api: Hono, adapter: StudioApiAdapter): void
       return c.json({ error: "not found" }, 404);
     }
     const contentType = renderContentType(job.outputPath);
-    const filename = job.outputPath.split("/").pop() ?? `render.mp4`;
+    const filename = basename(job.outputPath) || "render.mp4";
     const content = readFileSync(job.outputPath);
     return new Response(content, {
       headers: {
@@ -229,7 +229,7 @@ export function registerRenderRoutes(api: Hono, adapter: StudioApiAdapter): void
       return c.json({ error: "not found" }, 404);
     }
     const contentType = renderContentType(job.outputPath);
-    const filename = job.outputPath.split("/").pop() ?? `render.mp4`;
+    const filename = basename(job.outputPath) || "render.mp4";
     const content = readFileSync(job.outputPath);
     return new Response(content, {
       headers: {

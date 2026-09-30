@@ -60,3 +60,9 @@ Baseline 代表「已審查」，不代表「全部已合併」。
    - 每次執行 `tools/check_upstream_updates.py` 或 GitHub Actions 每週排程時，檢查器會自動過濾 `number <= watermark` 的項目。
    - 只有編號大於 **#3902** 的新開 PR / Issue，或 `main` 上高於 `51a88b9` 的新 Commit，才會出現在待審報告中。
    - 當新項目被審查完畢並於 [`docs/DECISIONS.md`](DECISIONS.md) 記錄結論後，再遞增更新 baseline 水位。
+
+
+## 2026-09-30：第二輪 triage，水位推進到 `d1a5a05`
+
+- commit 水位：`d1a5a05609a1c53996cb96c1ae2c9a57d09313aa`（675 筆歸組審查）；PR 水位 **#4784**（824 筆）；issue 水位 **#4763**（52 筆）。
+- 採用 #3982／#3984（ByteString-safe）並修正 Windows 檔名取值；其餘記為 adoption pending，見 [`DECISIONS.md`](DECISIONS.md) 2026-09-30 條目。
