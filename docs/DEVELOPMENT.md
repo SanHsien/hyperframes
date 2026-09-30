@@ -1,6 +1,6 @@
 # 開發環境
 
-維護者與 AI 接手用的開發文件。產品使用方式在 [`README.md`](../README.md)；上游同步在 [`UPSTREAM.md`](UPSTREAM.md)；決策在 [`DECISIONS.md`](DECISIONS.md)。
+維護者與 AI 接手用的開發文件。產品使用方式在 [`README.md`](https://github.com/SanHsien/hyperframes/blob/main/README.md)；上游同步在 [`UPSTREAM.md`](UPSTREAM.md)；決策在 [`DECISIONS.md`](DECISIONS.md)。
 
 ## 架構
 

@@ -54,7 +54,7 @@ Baseline 代表「已審查」，不代表「全部已合併」。
    - Commit 水位：`51a88b95660c5f67e66e9c5977226f6ae7b31255`（短 SHA `51a88b9`）
    - PR 水位：`3902`
    - Issue 水位：`3902`
-   - 記錄於 [`tools/upstream_baseline.json`](../tools/upstream_baseline.json)。
+   - 記錄於 [`tools/upstream_baseline.json`](https://github.com/SanHsien/hyperframes/blob/main/tools/upstream_baseline.json)。
 
 2. **增量巡檢機制**：
    - 每次執行 `tools/check_upstream_updates.py` 或 GitHub Actions 每週排程時，檢查器會自動過濾 `number <= watermark` 的項目。
