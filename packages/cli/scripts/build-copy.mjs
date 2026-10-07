@@ -152,7 +152,14 @@ async function main() {
   copyMdFiles(join(CLI_ROOT, "src", "docs"), join(DIST, "docs"));
 
   const catalogArtifact = join(REPO_ROOT, "registry", "catalog-artifact");
-  for (const name of ["local-vectors.json", "local-vectors.bin"]) {
+  // local-vectors power `catalog search`; media-vectors power media-use's offline SFX index. Both
+  // ship in the package so neither is ever fetched into the user's cache.
+  for (const name of [
+    "local-vectors.json",
+    "local-vectors.bin",
+    "media-vectors.json",
+    "media-vectors.bin",
+  ]) {
     cpSync(join(catalogArtifact, name), join(DIST, "catalog-artifact", name));
   }
 

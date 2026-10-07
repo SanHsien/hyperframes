@@ -54,13 +54,12 @@ import {
   versionLessThan,
 } from "./lib/heygen-cli.mjs";
 import { BundledSfxAssetsError, inspectBundledSfxAssets } from "./lib/bundled-sfx-provider.mjs";
-import {
-  fetchMediaVectors,
-  mediaVectorRows,
-  rankMediaRowsWithVectors,
-} from "./lib/local-media-search.mjs";
+import { searchLocalSfxIndex } from "./lib/local-media-search.mjs";
 
 const INGEST_TYPES = listTypes();
+// Catalog rows name files relative to the package root that holds skills/media-use/audio/assets.
+const BUNDLED_MEDIA_ROOT = join(import.meta.dirname, "..", "..", "..");
+
 const DEFAULT_EXT = {
   bgm: ".wav",
   sfx: ".mp3",
@@ -451,21 +450,11 @@ async function run() {
         provider: "bundled.sfx",
       });
       if (!searchResult && !localOnly) {
-        const registry =
-          process.env.HYPERFRAMES_REGISTRY ||
-          "https://raw.githubusercontent.com/heygen-com/hyperframes/main/registry";
         try {
-          await fetchMediaVectors(registry);
-          const ranked = await rankMediaRowsWithVectors(
-            intent,
-            mediaVectorRows().filter((row) => row.kind === "sfx"),
-          );
-          const row = ranked.rows[0];
-          const candidates = row
-            ? [resolve(row.file), join(import.meta.dirname, "..", "..", "..", row.file)]
-            : [];
-          const localPath = candidates.find((candidate) => existsSync(candidate));
-          if (row && localPath) {
+          // The vector pair and the audio files ship inside the package; nothing is fetched.
+          const hit = await searchLocalSfxIndex(intent, BUNDLED_MEDIA_ROOT);
+          if (hit) {
+            const { row, localPath, tier } = hit;
             searchResult = {
               localPath,
               ext: extname(localPath),
@@ -474,7 +463,7 @@ async function run() {
                 description: row.description,
                 duration: row.duration ?? null,
                 provider: "catalog.local",
-                provenance: { library_key: row.id, tier: ranked.tier },
+                provenance: { library_key: row.id, tier },
               },
             };
           }
