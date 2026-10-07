@@ -149,3 +149,27 @@
 | media-use node 測試 | 3 失敗（`ffprobeDuration`、`heygenAuthMethod` 符號連結迴圈、`logo-provider.test.mjs` 整檔載入失敗），與上游相同 | 相同 3 個 |
 
 **未驗證**：producer、engine、player、完整 `bun run test`、`bun run lint`、`test:scripts`、`test:skills` 與 fallow 全庫、Docker／Lambda、瀏覽器端測試；`generate-catalog-pages` 與目錄產生器的實跑；移植到新路徑的 favicon `normalizeCloudImage` 沒有被通過的測試覆蓋（`logo-provider.test.mjs` 在上游同樣整檔失敗）；符號連結相關測試在本機無權限所以被略過而非通過；LFS「should have been pointers」警告（57 個 producer 輸出檔）是上游既有狀態，未更動。本機工作目錄另有未追蹤的 `pnpm-lock.yaml`、`pnpm-workspace.yaml`，不屬於任何一側，未提交。
+
+### 合併後審查與修正
+
+PR #2 合併前由獨立審查檢視整樹採用後被上游取代的 fork 加固。逐項結論與處置如下；上面「不再生效或孤立的 fork 加固」三項與「工作流」一項的描述以本節為準。
+
+| 項目 | 嚴重度 | 處置 |
+| --- | --- | --- |
+| F1 媒體向量改由可變網路來源下載，且 `row.file` 未限制範圍 | 中 | 已修。上游 `fetchMediaVectors` 從 `raw.githubusercontent.com/heygen-com/hyperframes/main/registry`（可被 `HYPERFRAMES_REGISTRY` 覆蓋）下載 `media-vectors.*`，無逾時、無大小上限、無成對驗證且兩檔非原子寫入；之後 `resolve(row.file)` 與 `join(..., row.file)` 直接信任 JSON，竄改成 `C:/Users/<u>/.ssh/id_rsa` 或 `../..` 就會成為 `searchResult.localPath`，再被 `freezeLocalFile` 複製進專案。改為：`build-copy.mjs` 把 `media-vectors.json`／`.bin` 一併放進 `dist/catalog-artifact`；新增 `installMediaVectors()`，只從隨套件目錄安裝，套用與 `vectorPairAgrees` 相同的成對與逐列驗證並拒絕絕對路徑或含 `..` 的 `file`，以 `0o600` 經暫存檔加 rename 寫入，不做任何網路請求；新增 `resolveBundledMediaFile()`，只接受解析後仍在隨套件 SFX 根目錄內的相對路徑，並移除以工作目錄為基準的候選。`resolve.mjs` 改走 `searchLocalSfxIndex`，`fetchMediaVectors` 與 `HYPERFRAMES_REGISTRY` 路徑移除。測試涵蓋絕對路徑被拒、`..` 被拒、`fetch` 被禁止時排序仍可運作 |
+| F2 遠端媒體不再驗證魔術位元組 | 中低 | 已修。把 fork 的 `assertRemoteMediaBytes` 移植進上游 `freeze.mjs`，在 `freezeUrl` 的 `readCappedBody` 之後、`writeFrozen` 之前依目的檔副檔名驗證（`.svg` 仍交給 `sanitizeSvg`、`.cube` 用 `cube-validate.mjs`、未知副檔名一律拒絕）；`freezeLocalFile` 不驗證。呼叫端的目的副檔名已逐一確認相容（HeyGen 影片 `video.mp4`、LUT `download.cube`、`resolve` 的保留檔名來自供應商 `ext`、URL 副檔名或預設值）。上游串流測試的假資料改為合法標頭，新增「HTML 位元組寫成 `.png` 被拒」與「`#EXTM3U` 寫成 `.mp4` 被拒」。獨立發佈行程 `freeze-publisher.mjs` 與其測試無呼叫者，已刪除 |
+| F4 `capture/frameworkMarkup.ts` 無呼叫者 | 低 | 已刪除該檔與其測試。上游以 linkedom 的 DOM 解析版 `filterExtractedScripts` 處理同一威脅 |
+| F5 上游 `.github/CODEOWNERS` 指名上游維護者 | 低 | 已刪除，避免對不維護本 fork 的人請求審查 |
+| 上傳檔案 `0o600`（b） | 判斷為上游已涵蓋 | 未恢復。fork 加 `0o600` 是為了擋「檢查後寫入」的競態與舊檔／符號連結被覆寫；上游 `createFileAtomically` 先寫同目錄暫存檔，再用 `linkSync`（目標存在或為懸空符號連結即 `EEXIST`，不會跟隨）建立最終名稱，不支援硬連結的檔案系統退回 `openSync(..., "wx")`，兩條路徑都是排他建立，同樣擋下該競態，且上傳前另有 `validateUploadedMediaBuffer` 檢查音訊／影片內容。檔案權限本身（`0o600`）確實沒有保留，但上傳目的地是專案資料夾，其餘檔案本來就是預設權限，保留與否不改變威脅模型 |
+| `frameworkMarkup`（c） | 判斷為上游已涵蓋 | 見 F4。fork 版額外處理的 `data-reactroot` 屬性與巢狀 `<template>` 沒有接上任何流程，且上游以 DOM 解析而非字串處理，不會被這兩類標記繞過；沒有呼叫者的程式碼不能算防線，所以刪除而不是重接 |
+
+其他修正：
+
+- `.github/workflows/pr-captures.yml` 要求 PR 內文附 Before/After 截圖，是上游貢獻流程，fork 自己的 PR 會必然失敗。job 條件加上 `github.repository == 'heygen-com/hyperframes'`（與原有的 `merge_group` 條件以 `&&` 合併），`FORK.md` 的工作流表補上 `pr-captures.yml`、`catalog-publish.yml` 與 `canary-sunset.yml`，並在 `tools/tests/test_fork_docs.py` 新增契約測試，確認這些上游專屬工作流都帶閘門且都記載在 `FORK.md`。上方「工作流」一項說 `pr-captures` 未加閘門，現已更正。
+- `packages/studio-server/src/routes/files.ts` 上傳路徑的註解原寫「collision suffix 會選另一個路徑」，但該處驗證的是尚未加後綴的目的地；改成與程式一致的描述（後綴只在後面的排他建立迴圈選用，且每個候選都再過 `isSafePath`）。
+
+驗證與已知限制：
+
+- 同一批 media-use node 測試在修正前後的失敗集合相同，皆為 Windows 符號連結 `EPERM` 與缺少 `src/audio/scripts` 符號連結實體的既有失敗；新增的 F1、F2 測試全數通過。
+- `scripts/merge-queue-workflows.test.mjs` 預期 `ci.yml` 監聽 `merge_group`，但 fork 的 `ci.yml` 是 Windows 專用版本而沒有該事件，此項在修正前就失敗，不在本次範圍內。
+- 目前 `BUNDLED_MEDIA_ROOT` 沿用上游的 `join(import.meta.dirname, "..", "..", "..")`：在發佈佈局（`dist/skills/media-use/scripts`）指向 `dist`，列內 `skills/media-use/audio/assets/sfx/*` 可解析；在原始碼檢出中指向 `packages/`，本機索引不會命中，會落到下一層（HeyGen）。原本靠工作目錄相對路徑「碰巧可用」的開發情境因此不再命中，這是刻意的收斂。
