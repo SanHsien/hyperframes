@@ -20,8 +20,9 @@ concurrency:
 jobs:
   captures:
     name: Studio and player captures
+    # Upstream's contributor process (Before/After captures in the PR body); a fork PR carries none.
     # A merge group has no PR body to read; the queued PR passed this check already.
-    if: github.event_name != 'merge_group'
+    if: github.repository == 'heygen-com/hyperframes' && github.event_name != 'merge_group'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:

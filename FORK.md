@@ -16,23 +16,26 @@
 
 ## 與上游的差異
 
-| 項目                                                           | 說明                                                                      |
-| -------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| `README.md`                                                    | 繁中主檔；加入 fork 維護資訊與快速入口                                    |
-| `README.en.md`                                                 | 英文鏡像；加入 fork 維護資訊                                              |
-| `AGENTS.md` / `CLAUDE.md` / `GEMINI.md`                        | 本 fork 的 AI 維護單一真相源與代理指南                                    |
-| `NOTICE.md` / `FORK.md` / `LICENSE`                            | 來源、授權與歸屬說明                                                      |
-| `tools/dev_check.ps1`                                          | Windows 本機一鍵 gate（維護工具門禁）                                     |
-| `tools/bootstrap_dev.ps1`                                      | Windows 本機一鍵初始化與驗收（支援 `-All` 安裝產品依賴）                  |
-| `tools/test_product.ps1`                                       | Windows 原生產品測試執行腳本                                              |
-| `requirements-dev.txt`                                         | 維護工具依賴清單                                                          |
-| `.github/workflows/ci.yml`                                     | 純 Windows 原生 CI（windows-latest Python 3.10–3.14 矩陣執行 gate）       |
-| `.github/workflows/upstream-check.yml`                         | 每週對 `upstream/main` 做未審查 commit、PR、issue 水位檢查                |
-| `.github/workflows/dependency-freshness.yml`                   | 每月依賴新鮮度檢查                                                        |
-| `.github/workflows/publish.yml`                                | 加上 `if: github.repository == 'heygen-com/hyperframes'` 防止 fork 誤發布 |
-| `.github/workflows/sync-skills-to-clawhub.yml`                 | 加上 `if: github.repository == 'heygen-com/hyperframes'` 防止 fork 誤同步 |
-| `docs/DECISIONS.md`、`docs/UPSTREAM.md`、`docs/DEVELOPMENT.md` | fork 維護文件                                                             |
-| `REVIEW.md`                                                    | 全庫風險審查快照                                                          |
+| 項目                                                           | 說明                                                                           |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `README.md`                                                    | 繁中主檔；加入 fork 維護資訊與快速入口                                         |
+| `README.en.md`                                                 | 英文鏡像；加入 fork 維護資訊                                                   |
+| `AGENTS.md` / `CLAUDE.md` / `GEMINI.md`                        | 本 fork 的 AI 維護單一真相源與代理指南                                         |
+| `NOTICE.md` / `FORK.md` / `LICENSE`                            | 來源、授權與歸屬說明                                                           |
+| `tools/dev_check.ps1`                                          | Windows 本機一鍵 gate（維護工具門禁）                                          |
+| `tools/bootstrap_dev.ps1`                                      | Windows 本機一鍵初始化與驗收（支援 `-All` 安裝產品依賴）                       |
+| `tools/test_product.ps1`                                       | Windows 原生產品測試執行腳本                                                   |
+| `requirements-dev.txt`                                         | 維護工具依賴清單                                                               |
+| `.github/workflows/ci.yml`                                     | 純 Windows 原生 CI（windows-latest Python 3.10–3.14 矩陣執行 gate）            |
+| `.github/workflows/upstream-check.yml`                         | 每週對 `upstream/main` 做未審查 commit、PR、issue 水位檢查                     |
+| `.github/workflows/dependency-freshness.yml`                   | 每月依賴新鮮度檢查                                                             |
+| `.github/workflows/publish.yml`                                | 加上 `if: github.repository == 'heygen-com/hyperframes'` 防止 fork 誤發布      |
+| `.github/workflows/sync-skills-to-clawhub.yml`                 | 加上 `if: github.repository == 'heygen-com/hyperframes'` 防止 fork 誤同步      |
+| `.github/workflows/catalog-publish.yml`                        | 加上 `if: github.repository == 'heygen-com/hyperframes'` 防止 fork 誤開發布 PR |
+| `.github/workflows/canary-sunset.yml`                          | 加上 `if: github.repository == 'heygen-com/hyperframes'` 防止 fork 誤跑        |
+| `.github/workflows/pr-captures.yml`                            | 同上閘門；Before/After 截圖是上游貢獻流程，fork PR 不適用                      |
+| `docs/DECISIONS.md`、`docs/UPSTREAM.md`、`docs/DEVELOPMENT.md` | fork 維護文件                                                                  |
+| `REVIEW.md`                                                    | 全庫風險審查快照                                                               |
 
 核心模組在 `packages/`、Agent Skills 在 `skills/`，以上游為準。
 
