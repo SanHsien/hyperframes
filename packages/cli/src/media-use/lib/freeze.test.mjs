@@ -1,9 +1,9 @@
 import { strict as assert } from "node:assert";
 import { test } from "node:test";
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { isDirectMediaUrl, freezeUrl, freezeLocalFile } from "./freeze.mjs";
+import { assertRemoteMediaBytes, isDirectMediaUrl, freezeUrl, freezeLocalFile } from "./freeze.mjs";
 
 const HOSTILE_SVG =
   '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script>' +
@@ -58,7 +58,10 @@ test("freezeUrl strips <script>, on* handlers and javascript: hrefs from a fetch
     globalThis,
     "fetch",
     async () =>
-      new Response(HOSTILE_SVG, { status: 200, headers: { "content-type": "image/svg+xml" } }),
+      new Response(HOSTILE_SVG, {
+        status: 200,
+        headers: { "content-type": "image/svg+xml" },
+      }),
   );
   const dest = join(mkdtempSync(join(tmpdir(), "media-use-freeze-")), "logo.svg");
   await freezeUrl("https://example.com/hostile.svg", dest);
@@ -88,7 +91,9 @@ test("freezeUrl keeps streaming a slow body past the header timeout", async (t) 
         body = controller;
         // undici aborts the body stream too when the request signal fires.
         signal.addEventListener("abort", () => controller.error(signal.reason));
-        controller.enqueue(new Uint8Array([1, 2, 3]));
+        // First half of a minimal ISO base media header (size + "ftyp"), enough to pass the
+        // magic-byte check once the second half arrives.
+        controller.enqueue(new Uint8Array([0, 0, 0, 12, 0x66, 0x74]));
       },
     });
     return new Response(stream, { status: 200 });
@@ -97,10 +102,47 @@ test("freezeUrl keeps streaming a slow body past the header timeout", async (t) 
   const frozen = freezeUrl("https://cdn.example.com/clip.mp4", dest);
   await new Promise(setImmediate);
   t.mock.timers.tick(60_000);
-  body.enqueue(new Uint8Array([4, 5]));
+  body.enqueue(new Uint8Array([0x79, 0x70, 0x69, 0x73, 0x6f, 0x6d]));
   body.close();
-  assert.equal(await frozen, 5);
-  assert.deepEqual([...readFileSync(dest)], [1, 2, 3, 4, 5]);
+  assert.equal(await frozen, 12);
+  assert.deepEqual(
+    [...readFileSync(dest)],
+    [0, 0, 0, 12, 0x66, 0x74, 0x79, 0x70, 0x69, 0x73, 0x6f, 0x6d],
+  );
+});
+
+test("freezeUrl rejects HTML bytes written as .png and leaves no file", async (t) => {
+  t.mock.method(
+    globalThis,
+    "fetch",
+    async () =>
+      new Response("<!doctype html><html><body>blocked</body></html>", {
+        status: 200,
+      }),
+  );
+  const dest = join(mkdtempSync(join(tmpdir(), "media-use-freeze-")), "image.png");
+  await assert.rejects(freezeUrl("https://cdn.example.com/image.png", dest), /do not match \.png/);
+  assert.equal(existsSync(dest), false);
+});
+
+test("freezeUrl rejects an HLS playlist (#EXTM3U) written as .mp4", async (t) => {
+  t.mock.method(
+    globalThis,
+    "fetch",
+    async () => new Response("#EXTM3U\n#EXT-X-VERSION:3\n", { status: 200 }),
+  );
+  const dest = join(mkdtempSync(join(tmpdir(), "media-use-freeze-")), "clip.mp4");
+  await assert.rejects(freezeUrl("https://cdn.example.com/clip.mp4", dest), /do not match \.mp4/);
+  assert.equal(existsSync(dest), false);
+});
+
+test("assertRemoteMediaBytes accepts real signatures, fails closed on unknown extensions", () => {
+  const png = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0]);
+  assert.doesNotThrow(() => assertRemoteMediaBytes(png, "a.PNG"));
+  assert.doesNotThrow(() => assertRemoteMediaBytes(Buffer.from("<svg/>"), "a.svg"));
+  assert.throws(() => assertRemoteMediaBytes(png, "a.exe"), /unsupported destination/);
+  assert.throws(() => assertRemoteMediaBytes(png, "a"), /unsupported destination/);
+  assert.throws(() => assertRemoteMediaBytes(Buffer.from("not a cube"), "a.cube"), /do not match/);
 });
 
 test("freezeUrl times out when no response headers arrive", { timeout: 5_000 }, async (t) => {
