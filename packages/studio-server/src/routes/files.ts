@@ -2470,8 +2470,10 @@ async function processUploadedFiles(
     const MAX_COPY_INDEX = 10000;
     let n = 1;
 
-    // The collision suffix chooses a different path; validate that destination
-    // too, including dangling symlinks that existsSync treats as absent.
+    // Validate the requested destination before reading the upload, including
+    // dangling symlinks that existsSync treats as absent. Collision-suffixed
+    // names are only chosen in the exclusive-create loop below, which
+    // re-checks each candidate with isSafePath.
     if (!isSafePath(projectDir, finalPath) || isPrivateProjectFile(projectDir, finalPath)) continue;
 
     const buffer = Buffer.from(await value.arrayBuffer());
