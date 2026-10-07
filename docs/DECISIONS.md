@@ -151,7 +151,7 @@
 **lint 與 PR CI（2026-10-07 複審後）**：
 
 - 複審指出 PR CI 的 Preflight lint 失敗：`skills/media-use/audio/scripts/lib/heygen.mjs` 是 fork 帶入的版本，`downloadTo` 改走 `normalizeCloudAudio` 後 `existsSync`／`mkdirSync`／`writeFileSync` 已不使用但仍 import（上游無此問題）。已只留 `readFileSync`；本機 `bun run lint` 全套 0 warnings、0 errors。
-- 合併前就已紅、非本 fork 造成的兩項，不在本次處理：`Comments` workflow 的 comment-ratchet 以 fork `main` 為基準，整樹採用使 `packages/engine/src/services/captureFailure.ts` 的註解比例由 1.6% 升到 5.4%，`check-comment-citations.mjs` 另報 `EISDIR`（推測為 diff 中的目錄型 symlink，未證實）；`Studio drag frames` 找不到 `tests/e2e/edit-accuracy/run.mjs`，該腳本在上游 `d94708e5` 也不存在。
+- 合併前就已紅、非本 fork 造成的兩項，不在本次處理：`Comments` workflow 的 comment-ratchet 以 fork `main` 為基準，整樹採用使 `packages/engine/src/services/captureFailure.ts` 的註解比例由 1.6% 升到 5.4%，`check-comment-citations.mjs` 另報 `EISDIR`（推測為 diff 中的目錄型 symlink，未證實）；`Studio drag frames` 只在 PR 改到該 workflow 檔時觸發，且固定 checkout `main` 來量測；fork 的 `main` 還沒有 `packages/studio/tests/e2e/edit-accuracy/`，所以找不到腳本。腳本在上游與本 PR 的樹裡都存在，合併後 `main` 就有，屬一次性紅燈（先前寫成「上游也不存在」有誤）。
 
 - PR CI 的 `Tests on windows-latest: core` 失敗於上游新增的 `htmlBundler.test.ts`「emits styles and scripts in render order…」：該測試以 `push("n")` 等字面文字找腳本位置，而 fork 的 `wrapScopedCompositionScript` 把作者腳本存成 JSON 字串（引號變成 `\"`），找不到時 `indexOf` 回 -1，兩種模式排出的順序才不同；純上游樹本機通過、合併樹失敗。測試改為先還原跳脫的引號再比對，並新增「三段腳本在兩種模式都必須找得到」的斷言，避免空比對也通過；本機該檔 151 passed。
 
