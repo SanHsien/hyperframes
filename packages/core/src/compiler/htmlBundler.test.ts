@@ -2833,8 +2833,11 @@ describe("bundleToSingleHtml sceneParts", () => {
       const doc = parseHTML(html).document;
       const text = (sel: string) =>
         [...doc.querySelectorAll(sel)].map((el) => el.textContent ?? "");
-      const js = text("script").join("\n");
+      // Fork: scoped composition scripts are carried as JSON string literals
+      // (see wrapScopedCompositionScript), so their quotes appear escaped.
+      const js = text("script").join("\n").replace(/\\"/g, '"');
       const head = [...doc.head.children].map((el) => el.tagName.toLowerCase());
+      for (const marker of ['["a"]', 'push("n")', 'push("b")']) expect(js).toContain(marker);
       return {
         head: head.filter((tag, i) => tag !== head[i - 1]),
         css: text("style").join("").replace(/\s+/g, ""),
