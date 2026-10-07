@@ -7,11 +7,12 @@
  * closes that gap with a 33 MB model the user opted into.
  *
  * The vectors here are 384-dimension and were produced by a different model
- * than the hosted 1536-dimension set. The two are not comparable and are never
+ * than the hosted 3072-dimension set. The two are not comparable and are never
  * mixed: a query is embedded by whichever model produced the vectors it is
  * being compared against.
  */
 
+// Vector metadata validation is intentionally defensive at this file boundary.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -30,13 +31,57 @@ interface LocalVectorMetadata {
   names: string[];
   dimensions: number;
   revision?: string;
+  rows?: MediaVectorRow[];
+}
+
+export interface MediaVectorRow {
+  id: string;
+  kind: string;
+  title: string;
+  description: string;
+  tags: string[];
+  file: string;
+  duration?: number;
+  dimensions?: { width: number; height: number };
+}
+
+export function isMediaVectorRow(value: unknown): value is MediaVectorRow {
+  if (!value || typeof value !== "object") return false;
+  const row = value as Partial<MediaVectorRow>;
+  return (
+    typeof row.id === "string" &&
+    typeof row.kind === "string" &&
+    typeof row.title === "string" &&
+    typeof row.description === "string" &&
+    Array.isArray(row.tags) &&
+    row.tags.every((tag) => typeof tag === "string") &&
+    typeof row.file === "string" &&
+    (row.duration === undefined ||
+      (typeof row.duration === "number" && Number.isFinite(row.duration) && row.duration >= 0)) &&
+    (row.dimensions === undefined ||
+      (typeof row.dimensions === "object" &&
+        row.dimensions !== null &&
+        Number.isInteger(row.dimensions.width) &&
+        Number.isInteger(row.dimensions.height) &&
+        row.dimensions.width > 0 &&
+        row.dimensions.height > 0))
+  );
+}
+
+export interface FetchLocalVectorOptions {
+  directory?: string;
+  expectedRevision?: string;
+  artifactBasename?: "local-vectors" | "media-vectors";
 }
 
 export interface InstallLocalVectorOptions {
   directory?: string;
   expectedRevision?: string;
   sourceDirectory?: string;
+  artifactBasename?: "local-vectors" | "media-vectors";
 }
+
+const CATALOG_ARTIFACT_TIMEOUT_MS = 30_000;
 
 const MODULE_DIRECTORY = dirname(fileURLToPath(import.meta.url));
 
@@ -55,35 +100,61 @@ function localVectorDirectory(): string {
 }
 
 /**
- * Do the bundled metadata/matrix files describe the same index?
+ * Put the catalog vectors in the user's cache, once.
+ *
+ * They are fetched rather than bundled: every install would otherwise carry a
+ * copy of a file only people who opt into offline ranking will ever read, and
+ * the vectors have to track the registry anyway, so shipping them inside the
+ * package would freeze them to the release instead.
+ *
+ * Returns false rather than throwing. A download that fails costs the offline
+ * tier, never the command, and the caller says so.
+ */
+/**
+ * Do a freshly fetched metadata/matrix pair describe the same index?
  *
  * `names.length * dimensions` floats, at four bytes each, is the whole
  * contract. A pair that fails it is a truncated download or a different
  * model, never something worth caching.
  */
-function vectorPairAgrees(fetched: Array<[string, Buffer]>): boolean {
-  const meta = fetched.find(([file]) => file === "local-vectors.json")?.[1];
-  const bin = fetched.find(([file]) => file === "local-vectors.bin")?.[1];
+export function vectorPairAgrees(
+  fetched: Array<[string, Buffer]>,
+  artifactBasename: "local-vectors" | "media-vectors",
+): boolean {
+  const meta = fetched.find(([file]) => file === `${artifactBasename}.json`)?.[1];
+  const bin = fetched.find(([file]) => file === `${artifactBasename}.bin`)?.[1];
   if (!meta || !bin) return false;
   try {
     const parsed = JSON.parse(meta.toString("utf-8")) as {
       names?: string[];
       dimensions?: number;
+      rows?: Array<{ id?: string }>;
     };
     if (parsed.dimensions !== LOCAL_MODEL_DIMENSIONS) return false;
+    if (
+      artifactBasename === "media-vectors" &&
+      (!parsed.rows ||
+        parsed.rows.length !== (parsed.names?.length ?? -1) ||
+        parsed.rows.some(
+          (row, index) => !isMediaVectorRow(row) || row.id !== parsed.names?.[index],
+        ))
+    ) {
+      return false;
+    }
     return bin.byteLength === (parsed.names?.length ?? -1) * LOCAL_MODEL_DIMENSIONS * 4;
   } catch {
     return false;
   }
 }
 
-/** The registry manifest and bundled pair must describe the same generation. */
+/** The registry manifest and fetched pair must describe the same generation. */
 function vectorRevisionAgrees(
   fetched: Array<[string, Buffer]>,
   expectedRevision?: string,
+  artifactBasename: "local-vectors" | "media-vectors" = "local-vectors",
 ): boolean {
   if (expectedRevision === undefined) return true;
-  const meta = fetched.find(([file]) => file === "local-vectors.json")?.[1];
+  const meta = fetched.find(([file]) => file === `${artifactBasename}.json`)?.[1];
   if (!meta) return false;
   try {
     const parsed = JSON.parse(meta.toString("utf-8")) as { revision?: unknown };
@@ -106,20 +177,23 @@ export async function installLocalVectors(
 ): Promise<boolean> {
   const directory = options.directory ?? localVectorDirectory();
   const sourceDirectory = options.sourceDirectory ?? bundledVectorDirectory();
+  const artifactBasename = options.artifactBasename ?? "local-vectors";
   try {
     mkdirSync(directory, { recursive: true, mode: 0o700 });
     // Read and validate both files before either is written. The two files have
     // to agree on how many rows there are, so a broken package must not pair a
     // new name list with an old matrix.
-    const bundled: Array<[string, Buffer]> = [
-      ["local-vectors.json", readFileSync(join(sourceDirectory, "local-vectors.json"))],
-      ["local-vectors.bin", readFileSync(join(sourceDirectory, "local-vectors.bin"))],
-    ];
+    const bundled: Array<[string, Buffer]> = [];
+    for (const file of [`${artifactBasename}.json`, `${artifactBasename}.bin`] as const) {
+      bundled.push([file, readFileSync(join(sourceDirectory, file))]);
+    }
     // Check the pair agrees BEFORE either file lands. Writing first and
     // discovering the mismatch at load time leaves a cache that fails every
-    // subsequent search until someone deletes it by hand, and it is the only
-    // point where a truncated or wrong-model response can still be refused.
-    if (!vectorPairAgrees(bundled) || !vectorRevisionAgrees(bundled, options.expectedRevision)) {
+    // subsequent search until someone deletes it by hand.
+    if (
+      !vectorPairAgrees(bundled, artifactBasename) ||
+      !vectorRevisionAgrees(bundled, options.expectedRevision, artifactBasename)
+    ) {
       return false;
     }
     // 0o600: the cache is this user's, and the directory may be world-writable
@@ -127,7 +201,53 @@ export async function installLocalVectors(
     for (const [file, bytes] of bundled) {
       writeFileSync(join(directory, file), bytes, { mode: 0o600 });
     }
-    return hasLocalVectors(directory);
+    return artifactBasename === "media-vectors"
+      ? hasMediaVectors(directory)
+      : hasLocalVectors(directory);
+  } catch {
+    return false;
+  }
+}
+
+export async function fetchLocalVectors(
+  registryBaseUrl: string,
+  options: FetchLocalVectorOptions = {},
+): Promise<boolean> {
+  const directory = options.directory ?? localVectorDirectory();
+  const artifactBasename = options.artifactBasename ?? "local-vectors";
+  const base = registryBaseUrl.replace(/\/+$/, "");
+  try {
+    mkdirSync(directory, { recursive: true, mode: 0o700 });
+    // Downloaded in full before anything is written. The two files have to
+    // agree on how many rows there are, so a fetch that fails halfway through
+    // must leave the previous pair intact rather than pairing a new name list
+    // with an old matrix, which loads as an error instead of as stale data.
+    const fetched: Array<[string, Buffer]> = [];
+    for (const file of [`${artifactBasename}.json`, `${artifactBasename}.bin`] as const) {
+      const response = await fetch(`${base}/catalog-artifact/${file}`, {
+        signal: AbortSignal.timeout(CATALOG_ARTIFACT_TIMEOUT_MS),
+      });
+      if (!response.ok) return false;
+      fetched.push([file, Buffer.from(await response.arrayBuffer())]);
+    }
+    // Check the pair agrees BEFORE either file lands. Writing first and
+    // discovering the mismatch at load time leaves a cache that fails every
+    // subsequent search until someone deletes it by hand, and it is the only
+    // point where a truncated or wrong-model response can still be refused.
+    if (
+      !vectorPairAgrees(fetched, artifactBasename) ||
+      !vectorRevisionAgrees(fetched, options.expectedRevision, artifactBasename)
+    ) {
+      return false;
+    }
+    // 0o600: the cache is this user's, and the directory may be world-writable
+    // when the caller overrides it.
+    for (const [file, bytes] of fetched) {
+      writeFileSync(join(directory, file), bytes, { mode: 0o600 });
+    }
+    return artifactBasename === "media-vectors"
+      ? hasMediaVectors(directory)
+      : hasLocalVectors(directory);
   } catch {
     return false;
   }
@@ -137,6 +257,13 @@ export function hasLocalVectors(directory = localVectorDirectory()): boolean {
   return (
     existsSync(join(directory, "local-vectors.bin")) &&
     existsSync(join(directory, "local-vectors.json"))
+  );
+}
+
+function hasMediaVectors(directory = localVectorDirectory()): boolean {
+  return (
+    existsSync(join(directory, "media-vectors.bin")) &&
+    existsSync(join(directory, "media-vectors.json"))
   );
 }
 
@@ -159,6 +286,34 @@ function loadLocalVectors(directory = localVectorDirectory()): LocalVectorSet {
     );
   }
   return { names: meta.names, dimensions: meta.dimensions, vectors };
+}
+
+function loadMediaVectors(directory = localVectorDirectory()): LocalVectorSet & {
+  rows: MediaVectorRow[];
+} {
+  const meta = JSON.parse(
+    readFileSync(join(directory, "media-vectors.json"), "utf-8"),
+  ) as LocalVectorMetadata;
+  const buffer = readFileSync(join(directory, "media-vectors.bin"));
+  const vectors = new Float32Array(buffer.buffer, buffer.byteOffset, buffer.byteLength / 4);
+  const rows = meta.rows ?? [];
+  if (rows.length !== meta.names.length) {
+    throw new Error(`media vectors hold ${rows.length} rows, expected ${meta.names.length}`);
+  }
+  if (rows.some((row, index) => !isMediaVectorRow(row) || row.id !== meta.names[index])) {
+    throw new Error("media vector row order does not match media vector names");
+  }
+  if (vectors.length !== rows.length * meta.dimensions) {
+    throw new Error(
+      `media vectors hold ${vectors.length} floats, expected ${rows.length * meta.dimensions}`,
+    );
+  }
+  if (meta.dimensions !== LOCAL_MODEL_DIMENSIONS) {
+    throw new Error(
+      `media vectors are ${meta.dimensions}-dimension, model produces ${LOCAL_MODEL_DIMENSIONS}`,
+    );
+  }
+  return { names: meta.names, dimensions: meta.dimensions, vectors, rows };
 }
 
 /**
@@ -226,4 +381,24 @@ export async function localSemanticRanking(
   // Ties break on descending name, matching every other ranking in this system.
   scored.sort((a, b) => b.score - a.score || b.name.localeCompare(a.name));
   return scored;
+}
+
+export async function mediaSemanticRanking(
+  query: string,
+  directory = localVectorDirectory(),
+): Promise<Array<{ row: MediaVectorRow; score: number }> | null> {
+  if (!isLocalModelReady() || !hasMediaVectors(directory)) return null;
+  const set = loadMediaVectors(directory);
+  const embedder = await loadLocalEmbedder();
+  const [queryVector] = await embedder.embed([query], { isQuery: true });
+  if (!queryVector) return null;
+  return set.rows
+    .map((row, index) => ({
+      row,
+      score: cosine(
+        queryVector,
+        Array.from(set.vectors.subarray(index * set.dimensions, (index + 1) * set.dimensions)),
+      ),
+    }))
+    .sort((a, b) => b.score - a.score || b.row.id.localeCompare(a.row.id));
 }

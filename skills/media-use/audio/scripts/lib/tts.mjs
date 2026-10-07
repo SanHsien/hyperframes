@@ -19,8 +19,10 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { normalizeCloudAudio } from "./audio-normalize.mjs";
-import { heygenAuthHeaders, heygenCredential, heygenJSON } from "./heygen.mjs";
+import { heygenAuthHeaders, heygenCredential, heygenJSON, heygenMessage } from "./heygen.mjs";
 import { pythonInvocation } from "./python.mjs";
+import { synthesizeGemini } from "./gemini-tts.mjs";
+import { geminiConfigured } from "./gemini-auth.mjs";
 
 // ── provider detection ────────────────────────────────────────────────────────
 export function heygenAvailable() {
@@ -38,12 +40,14 @@ export function elevenlabsAvailable() {
 // First available provider wins; an explicit choice is honored (and validated).
 export function pickProvider(userProvider) {
   if (userProvider) {
-    if (!["heygen", "elevenlabs", "kokoro"].includes(userProvider))
-      throw new Error(`invalid provider "${userProvider}" (heygen | elevenlabs | kokoro)`);
-    if (userProvider === "heygen" && !heygenAvailable())
+    if (!["heygen", "elevenlabs", "kokoro", "gemini"].includes(userProvider))
+      throw new Error(`invalid provider "${userProvider}" (heygen | elevenlabs | kokoro | gemini)`);
+    if (userProvider === "gemini" && !geminiConfigured())
       throw new Error(
-        "provider=heygen but no HeyGen credentials (set $HEYGEN_API_KEY or run `npx hyperframes auth login`)",
+        "provider=gemini needs GEMINI_API_KEY or GOOGLE_API_KEY, or service-account credentials (GOOGLE_APPLICATION_CREDENTIALS or GCS_CREDS)",
       );
+    // heygenAuthHeaders owns the reason and its fix: no credential, or a credentials path that cannot be read.
+    if (userProvider === "heygen" && !heygenAvailable()) heygenAuthHeaders();
     if (userProvider === "elevenlabs" && !process.env.ELEVENLABS_API_KEY)
       throw new Error("provider=elevenlabs but $ELEVENLABS_API_KEY is not set");
     return userProvider;
@@ -58,6 +62,7 @@ export function pickProvider(userProvider) {
 // ElevenLabs/Kokoro have their own defaults.
 export async function resolveVoiceId({ provider, userVoice, lang = "en" }) {
   if (userVoice) return userVoice;
+  if (provider === "gemini") return "Kore";
   if (provider === "elevenlabs") return "21m00Tcm4TlvDq8ikWAM"; // Rachel
   if (provider === "kokoro") {
     if (lang === "en") return "am_michael";
@@ -233,10 +238,14 @@ export async function synthesizeOne({
   voiceId,
   lang = "en",
   speed = 1.0,
+  model,
+  style,
   wavAbs,
   hyperframesDir,
 }) {
   if (provider === "heygen") return synthesizeHeygen({ text, voiceId, lang, speed, wavAbs });
+  if (provider === "gemini")
+    return synthesizeGemini({ text, voiceId, model, style, speed, wavAbs });
   if (provider === "elevenlabs") {
     // The Python helper writes straight to wavAbs; unlike heygen (transcodeToWav)
     // and kokoro (the `hyperframes tts` CLI), it does NOT create the parent dir,
@@ -264,6 +273,7 @@ export async function synthesizeOne({
   const wavRel = relTo(hyperframesDir, wavAbs);
   const args = ["hyperframes", "tts", writeTmpText(text), "--voice", voiceId, "--output", wavRel];
   if (lang !== "en") args.push("--lang", lang);
+  if (speed !== 1) args.push("--speed", String(speed));
   const r = await spawnP("npx", args, { cwd: hyperframesDir });
   return synthResult(r, wavAbs, "kokoro (npx hyperframes tts)");
 }
@@ -318,7 +328,7 @@ export async function synthesizeHeygen({ text, voiceId, lang, speed, wavAbs }, d
       : [];
     return { ok: true, words };
   } catch (e) {
-    return { ok: false, words: null, error: e?.message ? String(e.message) : String(e) };
+    return { ok: false, words: null, error: heygenMessage(e) };
   }
 }
 
