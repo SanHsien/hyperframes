@@ -6,7 +6,7 @@ import { fetchMedia } from "../../../scripts/lib/media-fetch.mjs";
 // credentials (oauth → Bearer, else api_key → X-Api-Key; $HEYGEN_CONFIG_DIR
 // overrides the dir). Vendored so the skill ships standalone. Pure node.
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { normalizeCloudAudio } from "./audio-normalize.mjs";
