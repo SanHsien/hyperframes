@@ -77,18 +77,22 @@ test("Gemini preserves verbatim text, directs style separately, saves WAV and re
   assert.deepEqual(readFileSync(args.wavAbs), wav);
 });
 
-test("synthesizeOne routes Gemini audio through ffmpeg before it reaches disk", {
-  skip: spawnSync("ffmpeg", ["-version"], { stdio: "ignore" }).status !== 0,
-}, async (t) => {
-  const { payload, args } = fixture(t);
-  t.mock.method(globalThis, "fetch", async () => Response.json(payload));
-  const result = await synthesizeOne({ ...args, provider: "gemini" });
-  assert.deepEqual(result, { ok: true, words: null });
-  const saved = readFileSync(args.wavAbs);
-  assert.equal(saved.toString("ascii", 0, 4), "RIFF");
-  assert.equal(saved.toString("ascii", 8, 12), "WAVE");
-  assert.equal(saved.readUInt32LE(24), 44100); // re-encoded, not the 24 kHz response bytes
-});
+test(
+  "synthesizeOne routes Gemini audio through ffmpeg before it reaches disk",
+  {
+    skip: spawnSync("ffmpeg", ["-version"], { stdio: "ignore" }).status !== 0,
+  },
+  async (t) => {
+    const { payload, args } = fixture(t);
+    t.mock.method(globalThis, "fetch", async () => Response.json(payload));
+    const result = await synthesizeOne({ ...args, provider: "gemini" });
+    assert.deepEqual(result, { ok: true, words: null });
+    const saved = readFileSync(args.wavAbs);
+    assert.equal(saved.toString("ascii", 0, 4), "RIFF");
+    assert.equal(saved.toString("ascii", 8, 12), "WAVE");
+    assert.equal(saved.readUInt32LE(24), 44100); // re-encoded, not the 24 kHz response bytes
+  },
+);
 
 test("normalizer receives the decoded WAV bytes and the destination path", async (t) => {
   const { wav, payload, args } = fixture(t);
