@@ -68,20 +68,12 @@ export function isMediaVectorRow(value: unknown): value is MediaVectorRow {
   );
 }
 
-export interface FetchLocalVectorOptions {
-  directory?: string;
-  expectedRevision?: string;
-  artifactBasename?: "local-vectors" | "media-vectors";
-}
-
 export interface InstallLocalVectorOptions {
   directory?: string;
   expectedRevision?: string;
   sourceDirectory?: string;
   artifactBasename?: "local-vectors" | "media-vectors";
 }
-
-const CATALOG_ARTIFACT_TIMEOUT_MS = 30_000;
 
 const MODULE_DIRECTORY = dirname(fileURLToPath(import.meta.url));
 
@@ -199,50 +191,6 @@ export async function installLocalVectors(
     // 0o600: the cache is this user's, and the directory may be world-writable
     // when the caller overrides it.
     for (const [file, bytes] of bundled) {
-      writeFileSync(join(directory, file), bytes, { mode: 0o600 });
-    }
-    return artifactBasename === "media-vectors"
-      ? hasMediaVectors(directory)
-      : hasLocalVectors(directory);
-  } catch {
-    return false;
-  }
-}
-
-export async function fetchLocalVectors(
-  registryBaseUrl: string,
-  options: FetchLocalVectorOptions = {},
-): Promise<boolean> {
-  const directory = options.directory ?? localVectorDirectory();
-  const artifactBasename = options.artifactBasename ?? "local-vectors";
-  const base = registryBaseUrl.replace(/\/+$/, "");
-  try {
-    mkdirSync(directory, { recursive: true, mode: 0o700 });
-    // Downloaded in full before anything is written. The two files have to
-    // agree on how many rows there are, so a fetch that fails halfway through
-    // must leave the previous pair intact rather than pairing a new name list
-    // with an old matrix, which loads as an error instead of as stale data.
-    const fetched: Array<[string, Buffer]> = [];
-    for (const file of [`${artifactBasename}.json`, `${artifactBasename}.bin`] as const) {
-      const response = await fetch(`${base}/catalog-artifact/${file}`, {
-        signal: AbortSignal.timeout(CATALOG_ARTIFACT_TIMEOUT_MS),
-      });
-      if (!response.ok) return false;
-      fetched.push([file, Buffer.from(await response.arrayBuffer())]);
-    }
-    // Check the pair agrees BEFORE either file lands. Writing first and
-    // discovering the mismatch at load time leaves a cache that fails every
-    // subsequent search until someone deletes it by hand, and it is the only
-    // point where a truncated or wrong-model response can still be refused.
-    if (
-      !vectorPairAgrees(fetched, artifactBasename) ||
-      !vectorRevisionAgrees(fetched, options.expectedRevision, artifactBasename)
-    ) {
-      return false;
-    }
-    // 0o600: the cache is this user's, and the directory may be world-writable
-    // when the caller overrides it.
-    for (const [file, bytes] of fetched) {
       writeFileSync(join(directory, file), bytes, { mode: 0o600 });
     }
     return artifactBasename === "media-vectors"
