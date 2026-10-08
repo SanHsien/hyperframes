@@ -561,6 +561,24 @@ describe("assertPrivateCacheRoot", () => {
     chmodSync(root, 0o777);
     expect(() => assertPrivateCacheRoot(root)).toThrow(/permissions/);
   });
+
+  it.skipIf(process.platform === "win32")(
+    "tightens an own, non-writable-by-others root (0755 from an older umask) instead of refusing it",
+    () => {
+      const root = join(scratch, "legacy-cache");
+      mkdirSync(root);
+      chmodSync(root, 0o755);
+      expect(() => assertPrivateCacheRoot(root)).not.toThrow();
+      expect(lstatSync(root).mode & 0o777).toBe(0o700);
+    },
+  );
+
+  it.skipIf(process.platform === "win32")("still refuses a group-writable root", () => {
+    const root = join(scratch, "group-cache");
+    mkdirSync(root);
+    chmodSync(root, 0o775);
+    expect(() => assertPrivateCacheRoot(root)).toThrow(/permissions/);
+  });
 });
 
 describe("gcExtractionCache sweep marker", () => {

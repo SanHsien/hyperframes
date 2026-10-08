@@ -34,6 +34,7 @@
 
 import { createHash, randomUUID } from "node:crypto";
 import {
+  chmodSync,
   existsSync,
   lstatSync,
   mkdirSync,
@@ -469,6 +470,14 @@ export function assertPrivateCacheRoot(root: string, opts: { create?: boolean } 
   const uid = process.getuid?.();
   if (uid !== undefined && st.uid !== uid) {
     throw new Error("cache root is owned by another user");
+  }
+  // A root this user owns that nobody else can write to (e.g. 0o755 from an
+  // earlier version's default umask) cannot have been planted by another user,
+  // so tighten it in place instead of disabling the cache. Group/other-writable
+  // roots are still refused: their contents may already be someone else's.
+  if ((st.mode & 0o077) !== 0 && (st.mode & 0o022) === 0) {
+    chmodSync(root, 0o700);
+    return;
   }
   if ((st.mode & 0o077) !== 0) {
     throw new Error(
