@@ -1,5 +1,4 @@
-import { mkdirSync, writeFileSync } from "node:fs";
-import { dirname } from "node:path";
+import { normalizeCloudAudio as defaultNormalizeCloudAudio } from "./audio-normalize.mjs";
 import { geminiAuth } from "./gemini-auth.mjs";
 
 export const GEMINI_TTS_MODEL = "gemini-3.8-flash-tts";
@@ -13,10 +12,16 @@ export const GEMINI_TTS_MODELS = [
 ];
 
 // 3.8 returns WAV; older models return PCM that we wrap without resampling.
-// The shared engine transcribes the saved audio for word timings.
+// The shared engine transcribes the saved audio for word timings. Response bytes
+// are untrusted network input, so they are decoded and re-encoded through ffmpeg
+// (normalizeCloudAudio, as the HeyGen path does) rather than written verbatim.
 export async function synthesizeGemini(
   { text, voiceId = "Kore", model = GEMINI_TTS_MODEL, style, speed = 1, wavAbs },
-  { fetchImpl = fetch, authenticate = geminiAuth } = {},
+  {
+    fetchImpl = fetch,
+    authenticate = geminiAuth,
+    normalizeCloudAudio = defaultNormalizeCloudAudio,
+  } = {},
 ) {
   let secret;
   try {
@@ -81,8 +86,9 @@ export async function synthesizeGemini(
     ) {
       throw new Error("Gemini TTS returned invalid WAV audio");
     }
-    mkdirSync(dirname(wavAbs), { recursive: true });
-    writeFileSync(wavAbs, bytes);
+    if (!normalizeCloudAudio(bytes, wavAbs)) {
+      throw new Error("audio transcode failed (ffmpeg; output must be .wav or .mp3)");
+    }
     return { ok: true, words: null };
   } catch (error) {
     // Error responses must never echo the credential into logs or metadata.

@@ -1,10 +1,18 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync, rmSync, existsSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { synthesizeGemini, GEMINI_TTS_MODEL } from "./gemini-tts.mjs";
 import { pickProvider, resolveVoiceId, synthesizeOne } from "./tts.mjs";
+
+// Stands in for ffmpeg: publishes the decoded bytes so tests can compare them.
+const copyNormalizer = (bytes, dest) => {
+  mkdirSync(dirname(dest), { recursive: true });
+  writeFileSync(dest, bytes);
+  return true;
+};
 
 function fixture(t) {
   const dir = mkdtempSync(join(tmpdir(), "gemini-tts-"));
@@ -59,9 +67,70 @@ test("Gemini preserves verbatim text, directs style separately, saves WAV and re
     assert.equal(body.response_format.mime_type, "audio/wav");
     return Response.json(payload);
   });
-  const result = await synthesizeOne({ ...args, provider: "gemini", style: "Warm and calm" });
+  // synthesizeOne routes to synthesizeGemini with default dependencies, so the
+  // ffmpeg step is injected here and exercised for real in the next test.
+  const result = await synthesizeGemini(
+    { ...args, style: "Warm and calm" },
+    { normalizeCloudAudio: copyNormalizer },
+  );
   assert.deepEqual(result, { ok: true, words: null });
   assert.deepEqual(readFileSync(args.wavAbs), wav);
+});
+
+test("synthesizeOne routes Gemini audio through ffmpeg before it reaches disk", {
+  skip: spawnSync("ffmpeg", ["-version"], { stdio: "ignore" }).status !== 0,
+}, async (t) => {
+  const { payload, args } = fixture(t);
+  t.mock.method(globalThis, "fetch", async () => Response.json(payload));
+  const result = await synthesizeOne({ ...args, provider: "gemini" });
+  assert.deepEqual(result, { ok: true, words: null });
+  const saved = readFileSync(args.wavAbs);
+  assert.equal(saved.toString("ascii", 0, 4), "RIFF");
+  assert.equal(saved.toString("ascii", 8, 12), "WAVE");
+  assert.equal(saved.readUInt32LE(24), 44100); // re-encoded, not the 24 kHz response bytes
+});
+
+test("normalizer receives the decoded WAV bytes and the destination path", async (t) => {
+  const { wav, payload, args } = fixture(t);
+  const calls = [];
+  const result = await synthesizeGemini(args, {
+    fetchImpl: async () => Response.json(payload),
+    normalizeCloudAudio: (bytes, dest) => {
+      calls.push({ bytes, dest });
+      return true;
+    },
+  });
+  assert.equal(result.ok, true);
+  assert.equal(calls.length, 1);
+  assert.deepEqual(calls[0].bytes, wav);
+  assert.equal(calls[0].dest, args.wavAbs);
+});
+
+test("a failed transcode is reported and no raw response file is written", async (t) => {
+  const { payload, args } = fixture(t);
+  const result = await synthesizeGemini(args, {
+    fetchImpl: async () => Response.json(payload),
+    normalizeCloudAudio: () => false,
+  });
+  assert.deepEqual(result, {
+    ok: false,
+    words: null,
+    error: "audio transcode failed (ffmpeg; output must be .wav or .mp3)",
+  });
+  assert.equal(existsSync(args.wavAbs), false);
+});
+
+test("transcode errors that echo the credential are redacted", async (t) => {
+  const { payload, args } = fixture(t);
+  const result = await synthesizeGemini(args, {
+    fetchImpl: async () => Response.json(payload),
+    normalizeCloudAudio: () => {
+      throw new Error("ffmpeg crashed handling test-gemini-key");
+    },
+  });
+  assert.equal(result.ok, false);
+  assert.match(result.error, /ffmpeg crashed/);
+  assert.ok(!result.error.includes("test-gemini-key"));
 });
 
 test("Flash-Lite and GOOGLE_API_KEY work without a Gemini key", async (t) => {
@@ -73,6 +142,7 @@ test("Flash-Lite and GOOGLE_API_KEY work without a Gemini key", async (t) => {
   const result = await synthesizeGemini(
     { ...args, model: "gemini-3.8-flash-lite-tts" },
     {
+      normalizeCloudAudio: copyNormalizer,
       fetchImpl: async (_, options) => {
         assert.equal(options.headers["x-goog-api-key"], "test-google-key");
         const body = JSON.parse(options.body);
@@ -156,6 +226,7 @@ for (const model of [
     const result = await synthesizeGemini(
       { ...args, model, style: "Warm and clear" },
       {
+        normalizeCloudAudio: copyNormalizer,
         fetchImpl: async (_, options) => {
           const body = JSON.parse(options.body);
           assert.deepEqual(body.response_format, { type: "audio" });
@@ -193,6 +264,7 @@ test("service-account bearer and quota project reach synthesis, and token errors
   });
   const ok = await synthesizeGemini(args, {
     authenticate,
+    normalizeCloudAudio: copyNormalizer,
     fetchImpl: async (_, options) => {
       assert.equal(options.headers.Authorization, "Bearer secret-token");
       assert.equal(options.headers["x-goog-user-project"], "test-project");
