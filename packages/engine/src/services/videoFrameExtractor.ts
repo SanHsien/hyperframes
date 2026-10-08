@@ -60,6 +60,7 @@ import { DEFAULT_CONFIG, type EngineConfig } from "../config.js";
 import { unwrapTemplate } from "../utils/htmlTemplate.js";
 import {
   FRAME_FILENAME_PREFIX,
+  assertPrivateCacheRoot,
   gcExtractionCache,
   gcSweepDue,
   lookupCacheEntry,
@@ -1947,11 +1948,12 @@ export async function extractAllVideoFrames(
   let cacheRootDir: string | undefined;
   if (configuredCacheRootDir) {
     try {
-      mkdirSync(configuredCacheRootDir, { recursive: true });
+      assertPrivateCacheRoot(configuredCacheRootDir);
       cacheRootDir = configuredCacheRootDir;
-    } catch {
+    } catch (err) {
+      const reason = err instanceof Error ? err.message : String(err);
       process.stderr.write(
-        `[hyperframes:render] WARNING: extraction cache dir ${configuredCacheRootDir} is not writable; caching disabled for this render\n`,
+        `[hyperframes:render] WARNING: extraction cache dir ${configuredCacheRootDir} is not writable or not private (${reason}); caching disabled for this render\n`,
       );
     }
   }

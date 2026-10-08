@@ -1,6 +1,7 @@
 // fallow-ignore-file code-duplication
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import {
+  chmodSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -8,6 +9,7 @@ import {
   readdirSync,
   rmSync,
   statSync,
+  symlinkSync,
   utimesSync,
   writeFileSync,
 } from "node:fs";
@@ -2613,6 +2615,63 @@ describe.skipIf(!HAS_FFMPEG)("extractAllVideoFrames on a VFR source", () => {
       stderr.mockRestore();
     }
   }, 60_000);
+
+  // Another local user can pre-create a predictable cache root; it must never be trusted.
+  // POSIX only: Windows has no uid or mode bits, and symlink creation needs elevation there.
+  // The not-a-directory branch above covers Windows.
+  it.skipIf(process.platform === "win32")(
+    "disables caching and writes no sweep marker when the cache root is group/world accessible",
+    async () => {
+      const CACHE_DIR = mkdtempSync(join(tmpdir(), "hf-extract-cache-open-"));
+      chmodSync(CACHE_DIR, 0o777);
+      const SRC = await synthCfrClip("cache-open-src.mp4", 1);
+      const stderr = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+      try {
+        const result = await extractWithCache(
+          cfrClipElement("open-root", SRC, 1),
+          "out-cache-open-root",
+          CACHE_DIR,
+        );
+        expect(result.errors).toEqual([]);
+        expect(result.extracted).toHaveLength(1);
+        expect(result.phaseBreakdown.cacheMisses).toBe(0);
+        expect(String(stderr.mock.calls[0]?.[0])).toContain("caching disabled for this render");
+        expect(existsSync(join(CACHE_DIR, ".hf-last-gc"))).toBe(false);
+        expect(readdirSync(CACHE_DIR)).toEqual([]);
+      } finally {
+        stderr.mockRestore();
+        rmSync(CACHE_DIR, { recursive: true, force: true });
+      }
+    },
+    60_000,
+  );
+
+  it.skipIf(process.platform === "win32")(
+    "disables caching when the cache root is a symlink",
+    async () => {
+      const REAL = mkdtempSync(join(tmpdir(), "hf-extract-cache-real-"));
+      const LINK = join(REAL, "..", `hf-extract-cache-link-${process.pid}`);
+      symlinkSync(REAL, LINK);
+      const SRC = await synthCfrClip("cache-link-src.mp4", 1);
+      const stderr = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+      try {
+        const result = await extractWithCache(
+          cfrClipElement("link-root", SRC, 1),
+          "out-cache-link-root",
+          LINK,
+        );
+        expect(result.errors).toEqual([]);
+        expect(result.phaseBreakdown.cacheMisses).toBe(0);
+        expect(String(stderr.mock.calls[0]?.[0])).toContain("caching disabled for this render");
+        expect(readdirSync(REAL)).toEqual([]);
+      } finally {
+        stderr.mockRestore();
+        rmSync(LINK, { force: true });
+        rmSync(REAL, { recursive: true, force: true });
+      }
+    },
+    60_000,
+  );
 
   it("invalidates the cache when fps changes", async () => {
     const CACHE_DIR = mkdtempSync(join(tmpdir(), "hf-extract-cache-test-"));

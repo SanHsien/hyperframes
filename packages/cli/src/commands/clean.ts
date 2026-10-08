@@ -4,6 +4,7 @@ import { join, resolve } from "node:path";
 import { defineCommand } from "citty";
 import {
   EXTRACT_CACHE_MIN_AGE_MS,
+  assertPrivateCacheRoot,
   directorySizeBytes,
   gcExtractionCache,
   resolveExtractCacheDir,
@@ -157,7 +158,19 @@ async function sweepHistories(sweep: Sweep, historyRoot: string, tempDir: string
 
 function sweepExtractCache(sweep: Sweep): void {
   const extractCache = resolveExtractCacheDir().dir;
-  if (!extractCache) return;
+  if (!extractCache || !existsSync(extractCache)) return;
+  try {
+    // Never sweep (or stamp .hf-last-gc in) a root another user could have pre-created.
+    assertPrivateCacheRoot(extractCache, { create: false });
+  } catch (error) {
+    recordError(
+      sweep,
+      new Error(
+        `Skipped extraction cache ${extractCache}: ${error instanceof Error ? error.message : String(error)}`,
+      ),
+    );
+    return;
+  }
   const swept = gcExtractionCache(extractCache, {
     maxBytes: 0,
     minAgeMs: EXTRACT_CACHE_MIN_AGE_MS,

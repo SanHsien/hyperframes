@@ -116,6 +116,31 @@ describe("cleanLeftovers", () => {
     expect(existsSync(debugNotes)).toBe(true);
   });
 
+  it.skipIf(process.platform === "win32")(
+    "skips an extraction cache other users can write to and does not stamp it",
+    async () => {
+      const cache = join(scratch, "extract-cache");
+      mkdirSync(cache);
+      chmodSync(cache, 0o777);
+      const result = await run();
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0]).toContain("Skipped extraction cache");
+      expect(existsSync(join(cache, ".hf-last-gc"))).toBe(false);
+    },
+  );
+
+  it.skipIf(process.platform === "win32")(
+    "skips a symlinked extraction cache and does not write through it",
+    async () => {
+      const real = join(scratch, "real-cache");
+      mkdirSync(real, { mode: 0o700 });
+      symlinkSync(real, join(scratch, "extract-cache"));
+      const result = await run();
+      expect(result.errors).toHaveLength(1);
+      expect(existsSync(join(real, ".hf-last-gc"))).toBe(false);
+    },
+  );
+
   it.skipIf(process.platform === "win32" || process.getuid?.() === 0)(
     "reports a leftover it cannot remove and still removes the rest",
     async () => {

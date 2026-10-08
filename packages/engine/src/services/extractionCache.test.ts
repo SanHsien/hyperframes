@@ -1,11 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
+  chmodSync,
   existsSync,
+  lstatSync,
   mkdirSync,
   mkdtempSync,
   readdirSync,
+  readFileSync,
   rmSync,
   statSync,
+  symlinkSync,
   utimesSync,
   writeFileSync,
 } from "node:fs";
@@ -15,7 +19,9 @@ import { tmpdir } from "node:os";
 import {
   COMPLETE_SENTINEL,
   FRAME_FILENAME_PREFIX,
+  GC_MARKER,
   SCHEMA_PREFIX,
+  assertPrivateCacheRoot,
   cacheEntryDirName,
   computeCacheKey,
   ensureCacheEntryDir,
@@ -502,4 +508,90 @@ describe("gcExtractionCache", () => {
 
     expect(existsSync(dependedOnDir)).toBe(true);
   });
+});
+
+describe("assertPrivateCacheRoot", () => {
+  let scratch: string;
+
+  beforeEach(() => {
+    scratch = mkdtempSync(join(tmpdir(), "hf-private-root-test-"));
+  });
+
+  afterEach(() => {
+    rmSync(scratch, { recursive: true, force: true });
+  });
+
+  it("creates a missing root that only its owner can use", () => {
+    const root = join(scratch, "nested", "cache");
+    assertPrivateCacheRoot(root);
+    expect(lstatSync(root).isDirectory()).toBe(true);
+    if (process.platform !== "win32") expect(lstatSync(root).mode & 0o777).toBe(0o700);
+  });
+
+  it("accepts a root it already created", () => {
+    const root = join(scratch, "cache");
+    assertPrivateCacheRoot(root);
+    expect(() => assertPrivateCacheRoot(root)).not.toThrow();
+  });
+
+  it("rejects a root that is a regular file (works without symlink privilege)", () => {
+    const root = join(scratch, "cache-is-a-file");
+    writeFileSync(root, "not a directory", "utf-8");
+    expect(() => assertPrivateCacheRoot(root)).toThrow();
+  });
+
+  it("never creates the root when create is false", () => {
+    const root = join(scratch, "absent");
+    expect(() => assertPrivateCacheRoot(root, { create: false })).toThrow();
+    expect(existsSync(root)).toBe(false);
+  });
+
+  // Symlink creation needs elevation/Developer Mode on Windows, and Windows has no uid or mode bits to check.
+  it.skipIf(process.platform === "win32")("rejects a root that is a symlink", () => {
+    const target = join(scratch, "elsewhere");
+    mkdirSync(target, { mode: 0o700 });
+    const root = join(scratch, "cache-link");
+    symlinkSync(target, root);
+    expect(() => assertPrivateCacheRoot(root)).toThrow(/symbolic link/);
+  });
+
+  it.skipIf(process.platform === "win32")("rejects a root other users can access", () => {
+    const root = join(scratch, "open-cache");
+    mkdirSync(root);
+    chmodSync(root, 0o777);
+    expect(() => assertPrivateCacheRoot(root)).toThrow(/permissions/);
+  });
+});
+
+describe("gcExtractionCache sweep marker", () => {
+  let scratch: string;
+
+  beforeEach(() => {
+    scratch = mkdtempSync(join(tmpdir(), "hf-gc-marker-test-"));
+  });
+
+  afterEach(() => {
+    rmSync(scratch, { recursive: true, force: true });
+  });
+
+  it("stamps the marker and leaves no temp file behind", () => {
+    gcExtractionCache(scratch, { maxBytes: 1, minAgeMs: 60_000 });
+    expect(readdirSync(scratch)).toEqual([GC_MARKER]);
+  });
+
+  it.skipIf(process.platform === "win32")(
+    "replaces a symlinked marker instead of writing through it",
+    () => {
+      const victim = join(scratch, "..", `hf-gc-victim-${process.pid}`);
+      writeFileSync(victim, "do not touch", "utf-8");
+      try {
+        symlinkSync(victim, join(scratch, GC_MARKER));
+        gcExtractionCache(scratch, { maxBytes: 1, minAgeMs: 60_000 });
+        expect(readFileSync(victim, "utf-8")).toBe("do not touch");
+        expect(lstatSync(join(scratch, GC_MARKER)).isSymbolicLink()).toBe(false);
+      } finally {
+        rmSync(victim, { force: true });
+      }
+    },
+  );
 });
