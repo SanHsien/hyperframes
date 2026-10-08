@@ -382,6 +382,46 @@ describe("rewriteSvgIdReferencesInCss", () => {
   });
 });
 
+describe("url(#id) reference scanning is linear on hostile input", () => {
+  const HOSTILE = "url(#!".repeat(200_000);
+
+  it("namespaceCollidingSvgIds scans attribute and stylesheet text without quadratic backtracking", () => {
+    const started = performance.now();
+    const { idMaps } = namespace([
+      { namespace: "a", html: CLIPPED },
+      {
+        namespace: "b",
+        html: `<svg><clipPath id="clip"/><rect style="${HOSTILE}"/></svg>`,
+        cssTexts: [`rect { filter: ${HOSTILE} }`],
+      },
+    ]);
+    expect(performance.now() - started).toBeLessThan(2000);
+    expect(idMaps).toHaveLength(2);
+  });
+
+  it("rewriteSvgIdReferencesInCss rewrites declaration values without quadratic backtracking", () => {
+    const idMap = new Map([["clip", "b--clip"]]);
+    const css = `rect { filter: ${HOSTILE}; clip-path: url(#clip); }`;
+    const started = performance.now();
+    const result = rewriteSvgIdReferencesInCss(css, idMap);
+    expect(performance.now() - started).toBeLessThan(2000);
+    expect(typeof result).toBe("string");
+  });
+
+  it("still rewrites bare, single-quoted and padded double-quoted references", () => {
+    const idMap = new Map([["a", "s--a"]]);
+    const css = [
+      ".x { fill: url(#a); }",
+      ".y { fill: url('#a'); }",
+      '.z { fill: url( "#a" ); }',
+    ].join("\n");
+    const result = rewriteSvgIdReferencesInCss(css, idMap);
+    expect(result).toContain("fill: url(#s--a);");
+    expect(result).toContain("fill: url('#s--a');");
+    expect(result).toContain('fill: url( "#s--a" );');
+  });
+});
+
 it("rewrites case-insensitive CSS URL functions in attributes and styles", () => {
   const { roots, idMaps } = namespace([
     { namespace: "a", html: CLIPPED },

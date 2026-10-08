@@ -34,8 +34,14 @@ export const SVG_AUTHORED_ID_ATTR = "data-hf-authored-id";
  * CSS identifier, so it carries no CSS escapes; the replacement keeps the
  * original quoting and only swaps the id, which stays a valid fragment
  * because the namespace prefix is restricted to `[A-Za-z0-9_-]`.
+ *
+ * The id class excludes `(` as well as quotes, `)` and whitespace. Without it a
+ * long run of `url(#!` with no closing `)` made every start position scan to the
+ * end of the input and backtrack, which is quadratic and blocks the event loop
+ * on untrusted render input (CodeQL js/polynomial-redos). Excluding `(` bounds
+ * each attempt at the next `url(`; a real fragment id never contains one.
  */
-const URL_HASH_REF_RE = /(url\(\s*)(["']?)#([^"')\s]+)\2(\s*\))/gi;
+const URL_HASH_REF_RE = /(url\(\s*)(["']?)#([^"'()\s]+)\2(\s*\))/gi;
 
 /**
  * Attributes carrying a bare `#id` fragment reference rather than a
