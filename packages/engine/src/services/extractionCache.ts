@@ -34,6 +34,7 @@
 
 import { createHash, randomUUID } from "node:crypto";
 import {
+  chmodSync,
   existsSync,
   lstatSync,
   mkdirSync,
@@ -58,16 +59,10 @@ export const COMPLETE_SENTINEL = ".hf-complete";
 export const GC_MARKER = ".hf-last-gc";
 
 /**
- * Current schema version. Bump when the cache-contents invariant changes.
- * v2 -> v3: one-pass VFR extraction (-fps_mode cfr) replaces the two-pass
- * VFR-to-CFR re-encode, changing frame contents for VFR sources under
- * identical key tuples. Without the bump, warm v2 entries (two-pass frames)
- * would keep being served across the deploy boundary.
- * v3 -> v4: the target fps identity is the exact FFmpeg argument instead of
- * a JavaScript number. This invalidates entries created after rational NTSC
- * rates had already been rounded to a decimal.
+ * Current schema version. Bump it whenever extraction writes different frames for the same key,
+ * or warm entries keep serving the old frames across a deploy. Each bump's commit says why.
  */
-export const SCHEMA_PREFIX = "hfcache-v4-";
+export const SCHEMA_PREFIX = "hfcache-v6-";
 
 /** Truncated hex chars of SHA-256 used for the entry directory name. */
 const KEY_HEX_CHARS = 16;
@@ -281,16 +276,35 @@ export function publishCacheEntry(entry: CacheEntry, partialDir: string): CacheP
 }
 
 /**
- * Update the LRU clock for a complete cache entry. Misses and filesystem
- * races are harmless: the caller can still use the entry it already found.
+ * Update the LRU clock for the cache entry directory at `dir`. Misses and
+ * filesystem races are harmless: the caller can still use the entry it already
+ * found. Takes a directory rather than a `CacheEntry` so a reader holding only
+ * a frame path can renew the clock with `dirname(framePath)`.
+ *
+ * Touches both signals `gcExtractionCache` reads, since which one is
+ * authoritative depends on the entry's state: `collectGcEntry` ages out a
+ * `.partial-*` writer dir by the DIRECTORY's own mtime before the sentinel is
+ * even considered, while a published (complete) entry is read by its
+ * `COMPLETE_SENTINEL` mtime. Touching only the sentinel would silently fail
+ * to renew a still-open partial dir a render depends on.
  */
-export function touchCacheEntry(entry: CacheEntry): void {
+export function touchCacheDir(dir: string): void {
+  const now = new Date();
   try {
-    const now = new Date();
-    utimesSync(join(entry.dir, COMPLETE_SENTINEL), now, now);
+    utimesSync(dir, now, now);
   } catch {
     // Best effort LRU touch.
   }
+  try {
+    utimesSync(join(dir, COMPLETE_SENTINEL), now, now);
+  } catch {
+    // Best effort LRU touch.
+  }
+}
+
+/** Update the LRU clock for a complete cache entry. See `touchCacheDir`. */
+export function touchCacheEntry(entry: CacheEntry): void {
+  touchCacheDir(entry.dir);
 }
 
 /**
@@ -323,7 +337,7 @@ function isPartialChild(name: string): boolean {
   return name.includes(".partial-");
 }
 
-function directorySizeBytes(path: string): number {
+export function directorySizeBytes(path: string): number {
   try {
     const stat = lstatSync(path);
     if (!stat.isDirectory()) return stat.size;
@@ -381,11 +395,12 @@ function collectGcEntry(
   now: number,
   minAgeMs: number,
   stats: GcStats,
+  remove: (dir: string) => void,
 ): GcEntry | null {
   try {
     const dirStat = statSync(dir);
     if (isPartialChild(name) && now - dirStat.mtimeMs >= minAgeMs) {
-      removeDir(dir);
+      remove(dir);
       stats.agedPartialsRemoved += 1;
       return null;
     }
@@ -432,16 +447,73 @@ export function gcSweepDue(rootDir: string, maxAgeMs: number): boolean {
   }
 }
 
-export function gcExtractionCache(
-  rootDir: string,
-  opts: { maxBytes: number; minAgeMs: number },
-): GcStats {
-  const stats: GcStats = { evictedEntries: 0, evictedBytes: 0, agedPartialsRemoved: 0 };
+/**
+ * Create the cache root if needed and require that only this user can use it.
+ *
+ * The default root is `<tmpdir>/hyperframes-extract-cache-<uid>`, a predictable name in
+ * a shared directory on Linux. Another local user could pre-create it to plant frames
+ * we would later serve as cache hits, or plant `.hf-last-gc` as a symlink. So the root
+ * must be a real directory (not a symlink); on POSIX it must also be owned by the
+ * current user with no group/other access. Windows has no uid or mode bits, so there
+ * only the directory and symlink checks apply.
+ *
+ * Throws with a reason when the root is unsafe; callers turn that into "caching
+ * disabled" rather than failing a render. `create: false` never creates the root and
+ * throws if it is missing (for sweeps that have nothing to do on a missing root).
+ */
+export function assertPrivateCacheRoot(root: string, opts: { create?: boolean } = {}): void {
+  if (opts.create !== false) mkdirSync(root, { recursive: true, mode: 0o700 });
+  const st = lstatSync(root);
+  if (st.isSymbolicLink()) throw new Error("cache root is a symbolic link");
+  if (!st.isDirectory()) throw new Error("cache root is not a directory");
+  if (process.platform === "win32") return;
+  const uid = process.getuid?.();
+  if (uid !== undefined && st.uid !== uid) {
+    throw new Error("cache root is owned by another user");
+  }
+  // A root this user owns that nobody else can write to (e.g. 0o755 from an
+  // earlier version's default umask) cannot have been planted by another user,
+  // so tighten it in place instead of disabling the cache. Group/other-writable
+  // roots are still refused: their contents may already be someone else's.
+  if ((st.mode & 0o077) !== 0 && (st.mode & 0o022) === 0) {
+    chmodSync(root, 0o700);
+    return;
+  }
+  if ((st.mode & 0o077) !== 0) {
+    throw new Error(
+      `cache root permissions are ${(st.mode & 0o777).toString(8)}; expected owner-only (700)`,
+    );
+  }
+}
+
+/**
+ * Stamp the sweep marker without following a pre-existing symlink: write a fresh
+ * exclusive temp file and rename it over the marker (rename replaces a symlink
+ * itself instead of writing through it).
+ */
+function markGcSweep(rootDir: string): void {
+  const marker = join(rootDir, GC_MARKER);
+  const temp = `${marker}.tmp-${process.pid}-${randomUUID()}`;
   try {
-    writeFileSync(join(rootDir, GC_MARKER), "", "utf-8");
+    writeFileSync(temp, "", { encoding: "utf-8", flag: "wx", mode: 0o600 });
+    renameSync(temp, marker);
   } catch {
     // Unwritable root: the sweep below will no-op on the same root anyway.
+    try {
+      rmSync(temp, { force: true });
+    } catch {
+      // Nothing more to clean up.
+    }
   }
+}
+
+export function gcExtractionCache(
+  rootDir: string,
+  opts: { maxBytes: number; minAgeMs: number; dryRun?: boolean },
+): GcStats {
+  const stats: GcStats = { evictedEntries: 0, evictedBytes: 0, agedPartialsRemoved: 0 };
+  const remove = opts.dryRun ? () => {} : removeDir;
+  if (!opts.dryRun) markGcSweep(rootDir);
   try {
     const now = Date.now();
     const entries: GcEntry[] = [];
@@ -453,6 +525,7 @@ export function gcExtractionCache(
         now,
         opts.minAgeMs,
         stats,
+        remove,
       );
       if (entry) entries.push(entry);
     }
@@ -464,7 +537,7 @@ export function gcExtractionCache(
     for (const entry of entries) {
       // ponytail: age-based liveness guard, not a lock; a render longer than minAge with a full cache could lose entries mid-read - acceptable, next render re-extracts.
       if (entry.ageMs < opts.minAgeMs) continue;
-      removeDir(entry.dir);
+      remove(entry.dir);
       stats.evictedEntries += 1;
       stats.evictedBytes += entry.size;
       totalBytes -= entry.size;

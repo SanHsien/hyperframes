@@ -1,11 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
+  chmodSync,
   existsSync,
+  lstatSync,
   mkdirSync,
   mkdtempSync,
   readdirSync,
+  readFileSync,
   rmSync,
   statSync,
+  symlinkSync,
   utimesSync,
   writeFileSync,
 } from "node:fs";
@@ -15,7 +19,9 @@ import { tmpdir } from "node:os";
 import {
   COMPLETE_SENTINEL,
   FRAME_FILENAME_PREFIX,
+  GC_MARKER,
   SCHEMA_PREFIX,
+  assertPrivateCacheRoot,
   cacheEntryDirName,
   computeCacheKey,
   ensureCacheEntryDir,
@@ -26,6 +32,7 @@ import {
   publishCacheEntry,
   readKeyStat,
   rehydrateCacheEntry,
+  touchCacheDir,
   type CacheKeyInput,
 } from "./extractionCache.js";
 
@@ -64,8 +71,8 @@ function seedPartialDir(entry: { dir: string; keyHash: string }, frameContent: s
 }
 
 describe("extractionCache constants", () => {
-  it("exposes the v4 schema prefix", () => {
-    expect(SCHEMA_PREFIX).toBe("hfcache-v4-");
+  it("exposes the v6 schema prefix", () => {
+    expect(SCHEMA_PREFIX).toBe("hfcache-v6-");
   });
 
   it("exposes the frame filename prefix shared with the extractor", () => {
@@ -415,6 +422,19 @@ describe("gcExtractionCache", () => {
     expect(stats.evictedEntries).toBe(1);
   });
 
+  it("counts the same evictions in a dry run and removes nothing", () => {
+    const old = makeEntry("old", 60, 120_000);
+    const young = makeEntry("young", 60, 1_000);
+    const options = { maxBytes: 0, minAgeMs: 60_000 };
+
+    const planned = gcExtractionCache(tmpRoot, { ...options, dryRun: true });
+    expect(existsSync(old)).toBe(true);
+    expect(gcExtractionCache(tmpRoot, options)).toEqual(planned);
+    expect(planned.evictedEntries).toBe(1);
+    expect(existsSync(old)).toBe(false);
+    expect(existsSync(young)).toBe(true);
+  });
+
   it("evicts oldest complete entries first until under maxBytes while respecting minAge", () => {
     const oldest = makeEntry("oldest", 60, 120_000);
     const middle = makeEntry("middle", 60, 90_000);
@@ -441,6 +461,23 @@ describe("gcExtractionCache", () => {
     expect(existsSync(freshPartial)).toBe(true);
   });
 
+  // A render still writing into its own (unpublished) partial dir depends on
+  // it exactly like a symlinked complete entry does. The aged-partial check
+  // reads the DIRECTORY's own mtime, not any sentinel — touchCacheDir must
+  // renew that too, or a long-lived partial dir is just as vulnerable to a
+  // concurrent GC sweep as an untouched complete entry.
+  it("touchCacheDir renews a partial directory's own mtime so a live writer survives the aged-partial sweep", () => {
+    const dependedOnPartial = join(tmpRoot, `${SCHEMA_PREFIX}ghi.partial-1234-cafef00d`);
+    mkdirSync(dependedOnPartial, { recursive: true });
+    const old = new Date(Date.now() - 120_000);
+    utimesSync(dependedOnPartial, old, old);
+
+    touchCacheDir(dependedOnPartial);
+    gcExtractionCache(tmpRoot, { maxBytes: 1_000_000, minAgeMs: 60_000 });
+
+    expect(existsSync(dependedOnPartial)).toBe(true);
+  });
+
   it("ignores non-cache-prefix directories under the same root", () => {
     const animatedGif = join(tmpRoot, "animated-gif");
     mkdirSync(animatedGif, { recursive: true });
@@ -458,4 +495,121 @@ describe("gcExtractionCache", () => {
       gcExtractionCache(join(tmpRoot, "missing"), { maxBytes: 1, minAgeMs: 60_000 }),
     ).not.toThrow();
   });
+
+  // A render can keep reading an entry long after the one-time touch its
+  // cache-hit lookup performed. touchCacheDir is how a live reader proves the
+  // entry is still in use — without it, an in-use entry idle past minAge is
+  // indistinguishable from an abandoned one and gets swept like `oldest` above.
+  it("touchCacheDir renews an entry's LRU clock so a live dependent survives the sweep", () => {
+    const dependedOnDir = makeEntry("depended-on", 60, 120_000);
+
+    touchCacheDir(dependedOnDir);
+    gcExtractionCache(tmpRoot, { maxBytes: 1, minAgeMs: 60_000 });
+
+    expect(existsSync(dependedOnDir)).toBe(true);
+  });
+});
+
+describe("assertPrivateCacheRoot", () => {
+  let scratch: string;
+
+  beforeEach(() => {
+    scratch = mkdtempSync(join(tmpdir(), "hf-private-root-test-"));
+  });
+
+  afterEach(() => {
+    rmSync(scratch, { recursive: true, force: true });
+  });
+
+  it("creates a missing root that only its owner can use", () => {
+    const root = join(scratch, "nested", "cache");
+    assertPrivateCacheRoot(root);
+    expect(lstatSync(root).isDirectory()).toBe(true);
+    if (process.platform !== "win32") expect(lstatSync(root).mode & 0o777).toBe(0o700);
+  });
+
+  it("accepts a root it already created", () => {
+    const root = join(scratch, "cache");
+    assertPrivateCacheRoot(root);
+    expect(() => assertPrivateCacheRoot(root)).not.toThrow();
+  });
+
+  it("rejects a root that is a regular file (works without symlink privilege)", () => {
+    const root = join(scratch, "cache-is-a-file");
+    writeFileSync(root, "not a directory", "utf-8");
+    expect(() => assertPrivateCacheRoot(root)).toThrow();
+  });
+
+  it("never creates the root when create is false", () => {
+    const root = join(scratch, "absent");
+    expect(() => assertPrivateCacheRoot(root, { create: false })).toThrow();
+    expect(existsSync(root)).toBe(false);
+  });
+
+  // Symlink creation needs elevation/Developer Mode on Windows, and Windows has no uid or mode bits to check.
+  it.skipIf(process.platform === "win32")("rejects a root that is a symlink", () => {
+    const target = join(scratch, "elsewhere");
+    mkdirSync(target, { mode: 0o700 });
+    const root = join(scratch, "cache-link");
+    symlinkSync(target, root);
+    expect(() => assertPrivateCacheRoot(root)).toThrow(/symbolic link/);
+  });
+
+  it.skipIf(process.platform === "win32")("rejects a root other users can access", () => {
+    const root = join(scratch, "open-cache");
+    mkdirSync(root);
+    chmodSync(root, 0o777);
+    expect(() => assertPrivateCacheRoot(root)).toThrow(/permissions/);
+  });
+
+  it.skipIf(process.platform === "win32")(
+    "tightens an own, non-writable-by-others root (0755 from an older umask) instead of refusing it",
+    () => {
+      const root = join(scratch, "legacy-cache");
+      mkdirSync(root);
+      chmodSync(root, 0o755);
+      expect(() => assertPrivateCacheRoot(root)).not.toThrow();
+      expect(lstatSync(root).mode & 0o777).toBe(0o700);
+    },
+  );
+
+  it.skipIf(process.platform === "win32")("still refuses a group-writable root", () => {
+    const root = join(scratch, "group-cache");
+    mkdirSync(root);
+    chmodSync(root, 0o775);
+    expect(() => assertPrivateCacheRoot(root)).toThrow(/permissions/);
+  });
+});
+
+describe("gcExtractionCache sweep marker", () => {
+  let scratch: string;
+
+  beforeEach(() => {
+    scratch = mkdtempSync(join(tmpdir(), "hf-gc-marker-test-"));
+  });
+
+  afterEach(() => {
+    rmSync(scratch, { recursive: true, force: true });
+  });
+
+  it("stamps the marker and leaves no temp file behind", () => {
+    gcExtractionCache(scratch, { maxBytes: 1, minAgeMs: 60_000 });
+    expect(readdirSync(scratch)).toEqual([GC_MARKER]);
+  });
+
+  it.skipIf(process.platform === "win32")(
+    "replaces a symlinked marker instead of writing through it",
+    () => {
+      const victim = join(scratch, "..", `hf-gc-victim-${process.pid}`);
+      writeFileSync(victim, "do not touch", "utf-8");
+      try {
+        symlinkSync(victim, join(scratch, GC_MARKER));
+        gcExtractionCache(scratch, { maxBytes: 1, minAgeMs: 60_000 });
+        expect(readFileSync(victim, "utf-8")).toBe("do not touch");
+        expect(lstatSync(join(scratch, GC_MARKER)).isSymbolicLink()).toBe(false);
+      } finally {
+        rmSync(victim, { force: true });
+      }
+    },
+  );
 });

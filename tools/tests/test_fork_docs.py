@@ -88,7 +88,7 @@ def test_baseline_file_is_valid_and_complete() -> None:
     assert baseline["repo"] == "https://github.com/heygen-com/hyperframes.git"
     assert baseline["branch"] == "main"
     assert len(baseline["reviewed_through"]) == 40
-    assert baseline["reviewed_through"] == "d1a5a05609a1c53996cb96c1ae2c9a57d09313aa"
+    assert baseline["reviewed_through"] == "d94708e5312df021e1fdcac421f00ed3015f11bd"
     assert re.fullmatch(r"\d{4}-\d{2}-\d{2}", baseline["reviewed_date"])
     assert isinstance(baseline["reviewed_pr_through"], int)
     assert isinstance(baseline["reviewed_issue_through"], int)
@@ -132,3 +132,24 @@ def test_baseline_matches_decisions_record() -> None:
     assert baseline["reviewed_date"] in decisions
     assert "51a88b9" in upstream
     assert "heygen-com/hyperframes" in decisions
+
+
+UPSTREAM_ONLY_WORKFLOWS = (
+    "canary-sunset.yml",
+    "catalog-publish.yml",
+    "pr-captures.yml",
+    "publish.yml",
+    "sync-skills-to-clawhub.yml",
+)
+
+
+def test_upstream_only_workflows_stay_gated_and_documented() -> None:
+    fork = (ROOT / "FORK.md").read_text(encoding="utf-8")
+    for name in UPSTREAM_ONLY_WORKFLOWS:
+        workflow = (ROOT / ".github" / "workflows" / name).read_text(encoding="utf-8")
+        assert "github.repository == 'heygen-com/hyperframes'" in workflow, name
+        assert f"`.github/workflows/{name}`" in fork, name
+
+
+def test_codeowners_naming_upstream_maintainers_is_absent() -> None:
+    assert not (ROOT / ".github" / "CODEOWNERS").exists()

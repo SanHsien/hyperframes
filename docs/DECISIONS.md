@@ -94,3 +94,102 @@
 - 已被上述採用項涵蓋：#3979、#3983。
 - Windows 類 pending：#4028、#4058、#4060、#4702。
 - 其餘為上游產品缺陷回報（render、lint、Studio、runtime 計時等），多數已有對應 PR；由整批同步追蹤。#4247（垃圾訊息）、#4674（Examples 頁不顯示影片，屬上游站台）不適用。
+
+## 2026-10-07：整樹採用上游 `d94708e5`（取代 adoption pending）
+
+**決定**：維護者授權一次採用全部待處理的上游工作（約 837 個 commit，含 Windows 與安全修正）。本 fork 與上游無共同祖先，所以用橋接方式做三方合併，結果在本機分支 `sync/upstream-d94708e5`（父為 fork `main` 的 `82f7e6f2f`，單一 commit），尚未推送，交獨立審查者審查後才合併。`tools/upstream_baseline.json` 的 `reviewed_through` 推進到 `d94708e5312df021e1fdcac421f00ed3015f11bd`；PR／issue 水位維持 `#4784`／`#4763`，因為本輪沒有逐筆讀那些編號。
+
+**方法**：
+
+- **基底選擇**：fork 樹不是乾淨的上游 v0.8.35。`git log` 找不到任何單一上游 commit 與它相符。它是 v0.8.35 `63574a7c7` 加上 fork 自己的 CodeQL 修復系列（分支 `security/codeql-remediation-20260920`，45 個 commit，隨 `370725f24` 壓縮進來）、Windows 測試相容修正與文件層。所以以 `63574a7c7` 為合併基底：`git merge -s ours --allow-unrelated-histories 63574a7c7` 建立橋接 commit，再 `git merge upstream/main`。這樣 fork 相對 v0.8.35 的差異才會被三方合併保留，而不是被上游整個蓋掉。
+- **400 個 `docs/catalog/**` 與 `docs/snippets/catalog-detail.jsx` 衝突取上游**：這些是產生出來的頁面（376 個取上游版本，24 個上游已刪除而跟著刪除）。fork 沒有手改它們，內容由上游產生器決定，取上游才能與 `scripts/generate-catalog-pages.ts` 一致。
+- 不採用的 CodeQL 變更見下表；其餘衝突手動解，原則是「上游重寫的地方取上游，fork 的加固能與上游並存就疊上去」。
+
+**其餘 39 個衝突**：
+
+| 類型 | 檔案 | 處理 |
+| --- | --- | --- |
+| fork 覆蓋層（取 fork） | `.github/pull_request_template.md`、`.github/workflows/ci.yml`、`AGENTS.md`、`CONTRIBUTING.md`、`README.md`（繁中主檔） | 保留 fork；上游 `README.md` 的變更（Studio 連結、Claude plugin 安裝、21 個 skill、IBM Bob、Plugin packages）三方合併進 `README.en.md`，繁中 `README.md` 沒有對應章節所以沒有翻譯內容可補 |
+| fork 刪除 | `CLAUDE.md` | 維持刪除（fork 已併入 `AGENTS.md`） |
+| 聯集 | `.gitignore` | fork 維護條目加上上游新增條目 |
+| 取上游 | `capture/index.ts`、`media-use/lib/freeze.mjs`、`telemetry/client.test.ts`、`regression-harness.ts`、`routes/preview.ts`、`routes/preview.test.ts`、`routes/render.test.ts`、`scripts/generate-catalog-pages.ts` | 上游重寫或已含同等修正 |
+| 取上游並疊 fork 的差異 | `routes/files.ts`、`routes/render.ts`、`proxyTranscoder.test.ts` | 衝突處取上游（`createFileAtomically`、新 import），fork 的 `basename` 與測試相容修正保留 |
+| 組合 | `catalog.ts`、`catalog.test.ts`、`localSemantic.ts`、`localSemantic.test.ts`、`publication.test.ts`、`skillsMirror.test.ts`、`bridge.ts`、`component-variables.ts`、`registry/catalog-artifact/README.md`、`capture/mediaCapture.ts`、`commands/capture/video.ts` | 見下方「保留的 fork 差異」 |
+| 組合（media-use 音訊） | `tts.md`、`audio.mjs`、`heygen.mjs`、`heygen.test.mjs`、`tts.mjs`、`tts.test.mjs` | 上游新增（cloned voice、`loadEnvFromDir`、`heygenMessage`）加上 fork 的固定語音與 ffmpeg 重新編碼 |
+| 上游搬移 | `skills/media-use/scripts/lib/{freeze.test,logo-provider,logo-provider.test}.mjs` | 上游把這些搬到 `packages/cli/src/media-use/lib/`；舊路徑刪除，fork 對 favicon 的 `normalizeCloudImage` 移植到新路徑 |
+| 產生檔 | `skills-manifest.json` | 以 `packages/cli/scripts/gen-skills-manifest.ts` 重新產生 |
+
+**保留的 fork 差異**（相對上游 `d94708e5`）：
+
+- `routes/render.ts`：`/render/:jobId/view` 與 `/download` 用 `node:path` `basename`，修 Windows 反斜線路徑。上游仍是 `split("/")`。
+- `routes/files.ts`：移除上傳前的 `existsSync` 檢查再寫入（改為只靠 exclusive create 重試），並在碰撞上限處中止，屬 CodeQL 的 check-use race 修正。
+- `localSemantic.ts`：新增 `installLocalVectors`（從隨套件的 `registry/catalog-artifact` 複製向量，不從網路寫入快取），`catalog.ts` 改呼叫它；上游的 `media-vectors` 在正式流程中由 `packages/cli/src/media-use/lib/local-media-search.mjs` 的 `installMediaVectors` 從隨套件目錄安裝（`installLocalVectors` 的 `artifactBasename: "media-vectors"` 分支只有測試使用）；上游的 `fetchLocalVectors` 已刪除，原因見下方「CodeQL（PR #2）」。
+- `runtime/bridge.ts`：控制訊息以封閉的 `switch` 分派（不是 `Map` 查表），並補上上游新增的 `set-idle-heartbeat`、`set-play-range`。
+- `scripts/catalog/component-variables.ts`：不靠 regex 的註解剝除，保留；上游以 `PREFER_AUTHORED_DEMO` 取代 `SNIPPET_PREVIEW_RENDERS_STILL`。
+- `capture/mediaCapture.ts`、`commands/capture/video.ts`：擷取到的影片經 `videoNormalization` 以 ffmpeg 重封裝後才落地（上游沒有動這段）。
+- media-use 音訊：HeyGen 非英文必須明給 `--voice`、雲端音訊經 ffmpeg 重新編碼後才寫檔；favicon 經 `image-normalize` 後才凍結。
+- 測試：fork 的 `canCreateSymlinks` 探測與 `skipIf`（`publication.test.ts`、`skillsMirror.test.ts`；本輪另對上游新增的三個 Codex 符號連結測試加同樣的 `skipIf`）。
+- 工作流：`catalog-publish.yml` 加上 `if: github.repository == 'heygen-com/hyperframes'`（它用寫入權杖開常駐 PR）；其餘新工作流（`comments`、`pr-captures`、`studio-drag-frames`）無 secrets 且唯讀，未加閘門。
+
+**不再生效或孤立的 fork 加固**（維護者需決定要重做還是移除）：
+
+- `capture/frameworkMarkup.ts`（與其測試）已不被使用：上游把擷取流程搬到 `captureAttempt.ts`／`coreExtractionPhase.ts`，並改用自己的 DOM 解析版 `filterExtractedScripts`。fork 版多做的 `data-reactroot` 屬性與巢狀 `<template>` 處理沒有接上。
+- `skills/media-use/scripts/lib/freeze-publisher.mjs`（與其測試）已不被使用：上游的 `freeze.mjs` 接受經過 `sanitizeSvg` 的遠端 SVG，並有不驗證位元組內容的串流測試，和 fork 的「魔術位元組驗證加獨立發佈行程」互斥，所以取上游。結果：遠端下載的媒體不再做魔術位元組驗證。
+- 上傳檔案的 `0o600` 權限：上游 `createFileAtomically` 使用預設權限，fork 的 `openSync(..., "wx", 0o600)` 沒有保留。
+
+**驗證**（Windows 11、Bun 1.4.2、`--linker=hoisted`；同一批測試在純上游 worktree `C:/GitHub/hf-upstream` 對照）：
+
+| 範圍 | 合併後 | 純上游 |
+| --- | --- | --- |
+| studio-server `render`／`preview`／`files*`／`proxyTranscoder`（9 檔） | 5 失敗、359 通過（皆為 Windows 符號連結 `EPERM` 或備份失敗斷言，上游同樣失敗） | 10 失敗；多出的 5 個為 render 檔名（fork `basename` 修正使其通過）、proxyTranscoder、files.pathSafety |
+| cli：`catalog`、`localSemantic`、`publication`、`client`、`skillsMirror`、`capture/**` | 全數通過（43 檔通過、2 檔略過） | `publication`、`skillsMirror` 共 13 項符號連結失敗 |
+| core `runtime/bridge*` | 35 通過 | 未跑 |
+| `tsc --noEmit`：studio-server、core、studio | 通過 | 未跑 |
+| `tsc --noEmit`：cli | 17 個錯誤，與上游逐項相同（`typeof fetch` 的 `preconnect`、`compositionServer.ts`） | 17 個 |
+| media-use node 測試 | 3 失敗（`ffprobeDuration`、`heygenAuthMethod` 符號連結迴圈、`logo-provider.test.mjs` 整檔載入失敗），與上游相同 | 相同 3 個 |
+
+**lint 與 PR CI（2026-10-07 複審後）**：
+
+- 複審指出 PR CI 的 Preflight lint 失敗：`skills/media-use/audio/scripts/lib/heygen.mjs` 是 fork 帶入的版本，`downloadTo` 改走 `normalizeCloudAudio` 後 `existsSync`／`mkdirSync`／`writeFileSync` 已不使用但仍 import（上游無此問題）。已只留 `readFileSync`；本機 `bun run lint` 全套 0 warnings、0 errors。
+- 合併前就已紅、非本 fork 造成的兩項，不在本次處理：`Comments` workflow 的 comment-ratchet 以 fork `main` 為基準，整樹採用使 `packages/engine/src/services/captureFailure.ts` 的註解比例由 1.6% 升到 5.4%，`check-comment-citations.mjs` 另報 `EISDIR`（推測為 diff 中的目錄型 symlink，未證實）；`Studio drag frames` 只在 PR 改到該 workflow 檔時觸發，且固定 checkout `main` 來量測；fork 的 `main` 還沒有 `packages/studio/tests/e2e/edit-accuracy/`，所以找不到腳本。腳本在上游與本 PR 的樹裡都存在，合併後 `main` 就有，屬一次性紅燈（先前寫成「上游也不存在」有誤）。
+
+- PR CI 的 `Tests on windows-latest: core` 失敗於上游新增的 `htmlBundler.test.ts`「emits styles and scripts in render order…」：該測試以 `push("n")` 等字面文字找腳本位置，而 fork 的 `wrapScopedCompositionScript` 把作者腳本存成 JSON 字串（引號變成 `\"`），找不到時 `indexOf` 回 -1，兩種模式排出的順序才不同；純上游樹本機通過、合併樹失敗。測試改為先還原跳脫的引號再比對，並新增「三段腳本在兩種模式都必須找得到」的斷言，避免空比對也通過；本機該檔 151 passed。
+
+**未驗證**：producer、engine、player、完整 `bun run test`、`test:scripts`、`test:skills` 與 fallow 全庫、Docker／Lambda、瀏覽器端測試；`generate-catalog-pages` 與目錄產生器的實跑；移植到新路徑的 favicon `normalizeCloudImage` 沒有被通過的測試覆蓋（`logo-provider.test.mjs` 在上游同樣整檔失敗）；符號連結相關測試在本機無權限所以被略過而非通過；LFS「should have been pointers」警告（57 個 producer 輸出檔）是上游既有狀態，未更動。本機工作目錄另有未追蹤的 `pnpm-lock.yaml`、`pnpm-workspace.yaml`，不屬於任何一側，未提交。
+
+### 合併後審查與修正
+
+PR #2 合併前由獨立審查檢視整樹採用後被上游取代的 fork 加固。逐項結論與處置如下；上面「不再生效或孤立的 fork 加固」三項與「工作流」一項的描述以本節為準。
+
+| 項目 | 嚴重度 | 處置 |
+| --- | --- | --- |
+| F1 媒體向量改由可變網路來源下載，且 `row.file` 未限制範圍 | 中 | 已修。上游 `fetchMediaVectors` 從 `raw.githubusercontent.com/heygen-com/hyperframes/main/registry`（可被 `HYPERFRAMES_REGISTRY` 覆蓋）下載 `media-vectors.*`，無逾時、無大小上限、無成對驗證且兩檔非原子寫入；之後 `resolve(row.file)` 與 `join(..., row.file)` 直接信任 JSON，竄改成 `C:/Users/<u>/.ssh/id_rsa` 或 `../..` 就會成為 `searchResult.localPath`，再被 `freezeLocalFile` 複製進專案。改為：`build-copy.mjs` 把 `media-vectors.json`／`.bin` 一併放進 `dist/catalog-artifact`；新增 `installMediaVectors()`，只從隨套件目錄安裝，套用與 `vectorPairAgrees` 相同的成對與逐列驗證並拒絕絕對路徑或含 `..` 的 `file`，以 `0o600` 經暫存檔加 rename 寫入，不做任何網路請求；新增 `resolveBundledMediaFile()`，只接受解析後仍在隨套件 SFX 根目錄內的相對路徑，並移除以工作目錄為基準的候選。`resolve.mjs` 改走 `searchLocalSfxIndex`，`fetchMediaVectors` 與 `HYPERFRAMES_REGISTRY` 路徑移除。測試涵蓋絕對路徑被拒、`..` 被拒、`fetch` 被禁止時排序仍可運作 |
+| F2 遠端媒體不再驗證魔術位元組 | 中低 | 已修。把 fork 的 `assertRemoteMediaBytes` 移植進上游 `freeze.mjs`，在 `freezeUrl` 的 `readCappedBody` 之後、`writeFrozen` 之前依目的檔副檔名驗證（`.svg` 仍交給 `sanitizeSvg`、`.cube` 用 `cube-validate.mjs`、未知副檔名一律拒絕）；`freezeLocalFile` 不驗證。呼叫端的目的副檔名已逐一確認相容（HeyGen 影片 `video.mp4`、LUT `download.cube`、`resolve` 的保留檔名來自供應商 `ext`、URL 副檔名或預設值）。上游串流測試的假資料改為合法標頭，新增「HTML 位元組寫成 `.png` 被拒」與「`#EXTM3U` 寫成 `.mp4` 被拒」。獨立發佈行程 `freeze-publisher.mjs` 與其測試無呼叫者，已刪除 |
+| F4 `capture/frameworkMarkup.ts` 無呼叫者 | 低 | 已刪除該檔與其測試。上游以 linkedom 的 DOM 解析版 `filterExtractedScripts` 處理同一威脅 |
+| F5 上游 `.github/CODEOWNERS` 指名上游維護者 | 低 | 已刪除，避免對不維護本 fork 的人請求審查 |
+| 上傳檔案 `0o600`（b） | 判斷為上游已涵蓋 | 未恢復。fork 加 `0o600` 是為了擋「檢查後寫入」的競態與舊檔／符號連結被覆寫；上游 `createFileAtomically` 先寫同目錄暫存檔，再用 `linkSync`（目標存在或為懸空符號連結即 `EEXIST`，不會跟隨）建立最終名稱，不支援硬連結的檔案系統退回 `openSync(..., "wx")`，兩條路徑都是排他建立，同樣擋下該競態，且上傳前另有 `validateUploadedMediaBuffer` 檢查音訊／影片內容。檔案權限本身（`0o600`）確實沒有保留，但上傳目的地是專案資料夾，其餘檔案本來就是預設權限，保留與否不改變威脅模型 |
+| `frameworkMarkup`（c） | 判斷為上游已涵蓋 | 見 F4。fork 版額外處理的 `data-reactroot` 屬性與巢狀 `<template>` 沒有接上任何流程，且上游以 DOM 解析而非字串處理，不會被這兩類標記繞過；沒有呼叫者的程式碼不能算防線，所以刪除而不是重接 |
+
+其他修正：
+
+- `.github/workflows/pr-captures.yml` 要求 PR 內文附 Before/After 截圖，是上游貢獻流程，fork 自己的 PR 會必然失敗。job 條件加上 `github.repository == 'heygen-com/hyperframes'`（與原有的 `merge_group` 條件以 `&&` 合併），`FORK.md` 的工作流表補上 `pr-captures.yml`、`catalog-publish.yml` 與 `canary-sunset.yml`，並在 `tools/tests/test_fork_docs.py` 新增契約測試，確認這些上游專屬工作流都帶閘門且都記載在 `FORK.md`。上方「工作流」一項說 `pr-captures` 未加閘門，現已更正。
+- `packages/studio-server/src/routes/files.ts` 上傳路徑的註解原寫「collision suffix 會選另一個路徑」，但該處驗證的是尚未加後綴的目的地；改成與程式一致的描述（後綴只在後面的排他建立迴圈選用，且每個候選都再過 `isSafePath`）。
+
+驗證與已知限制：
+
+- 同一批 media-use node 測試在修正前後的失敗集合相同，皆為 Windows 符號連結 `EPERM` 與缺少 `src/audio/scripts` 符號連結實體的既有失敗；新增的 F1、F2 測試全數通過。
+- `scripts/merge-queue-workflows.test.mjs` 預期 `ci.yml` 監聽 `merge_group`，但 fork 的 `ci.yml` 是 Windows 專用版本而沒有該事件，此項在修正前就失敗，不在本次範圍內。
+- 目前 `BUNDLED_MEDIA_ROOT` 沿用上游的 `join(import.meta.dirname, "..", "..", "..")`：在發佈佈局（`dist/skills/media-use/scripts`）指向 `dist`，列內 `skills/media-use/audio/assets/sfx/*` 可解析；在原始碼檢出中指向 `packages/`，本機索引不會命中，會落到下一層（HeyGen）。原本靠工作目錄相對路徑「碰巧可用」的開發情境因此不再命中，這是刻意的收斂。
+
+### CodeQL（PR #2）
+
+PR #2 的 CodeQL 掃描共 28 筆（#156 至 #183）。其中 4 筆是真實問題，已各以一個提交修正；其餘 24 筆見下段。
+
+| 警示 | 規則 | 檔案 | 修正 |
+| --- | --- | --- | --- |
+| #156 | `js/polynomial-redos` | `packages/core/src/compiler/svgIdNamespacing.ts` | `URL_HASH_REF_RE` 的 id 字元類排除 `(`（`[^"'()\s]+`）。`POST /render` 接受最大 8 MB 的 `body.html`，經 `inlineSubCompositions` 進入此掃描；一長串沒有 `)` 結尾的 `url(#!` 會讓每個起點都掃到輸入尾端再回溯，時間為二次方並卡住 Node 事件迴圈。排除 `(` 後每次嘗試最多掃到下一個 `url(`，成為線性。新增測試以 `"url(#!".repeat(200_000)` 走 `namespaceCollidingSvgIds`（屬性與樣式表文字）與 `rewriteSvgIdReferencesInCss`，並確認 `url(#a)`、`url('#a')`、`url( "#a" )` 的改寫不變 |
+| #177 | `js/insecure-temporary-file` | `packages/engine/src/services/extractionCache.ts` | 預設快取根目錄是共用 `/tmp` 下可預測的 `hyperframes-extract-cache-<uid>`，其他本機使用者可預先建立它來放入毒化的快取影格，或把 `.hf-last-gc` 放成符號連結。新增 `assertPrivateCacheRoot()`：以 `0o700` 建立，再用 `lstat` 要求是真正的目錄、不是符號連結；POSIX 另要求屬於目前使用者且 `(mode & 0o077) === 0`。`videoFrameExtractor.ts` 失敗時沿用既有的「caching disabled for this render」警告並停用快取（不讓渲染失敗），`clean.ts` 在 `gcExtractionCache` 前檢查並略過不安全的根目錄；`.hf-last-gc` 改為在已驗證的根目錄內以排他建立的暫存檔加 `rename` 寫入，不會跟隨符號連結。屬於目前使用者、且其他人沒有寫入權的既有根目錄（例如舊版以預設 umask 建立的 `0o755`）會就地收緊為 `0o700` 繼續使用；群組或其他人可寫（如 `0o775`、`0o777`）的根目錄內容可能已被他人放入，仍拒絕並停用快取。動畫 GIF 快取（`compileStage.ts` 的 `animatedGifCacheDir`）也在同一根目錄下、且比影格擷取更早執行，複審發現漏檢，已改為先經 `privateAnimatedGifCacheDir`（同一個 `assertPrivateCacheRoot`），不通過只停用 GIF 快取。`hyperframes clean --dry-run` 在檢查時也會把符合條件的根目錄收緊為 `0o700`，這是 dry-run 唯一的副作用 |
+| #180 | `js/http-to-file-access` | `skills/media-use/audio/scripts/lib/gemini-tts.mjs` | Gemini 回應位元組只通過 RIFF/WAVE 標頭檢查就直接寫檔。依本 fork 對雲端音訊的政策（與 #133、#134 及 `heygen.mjs` 相同），改為經 `normalizeCloudAudio(bytes, wavAbs)` 由 ffmpeg 解碼再編碼後才寫入；該函式可由第二個參數注入供測試使用，回傳 false 時回 `{ ok: false, error: "audio transcode failed (ffmpeg; output must be .wav or .mp3)" }` 且不留下原始檔，標頭檢查與金鑰遮蔽維持不變 |
+| #183 | `js/http-to-file-access` | `packages/cli/src/registry/localSemantic.ts` | 刪除已無呼叫者的 `fetchLocalVectors`（與僅供它使用的 `FetchLocalVectorOptions`、`CATALOG_ARTIFACT_TIMEOUT_MS`）。`git grep` 確認只有 `localSemantic.test.ts` 使用它；`catalog.ts` 早已改呼叫 `installLocalVectors`，向量只從隨套件目錄複製。原本只能透過它驗證的 `media-vectors` 成對與逐列檢查改在 `installLocalVectors` 上測試，並新增「`globalThis.fetch` 換成會丟例外的替身時 `installLocalVectors` 仍成功且不被呼叫」的測試 |
+
+#182（`js/http-to-file-access`，`local-media-search.mjs`）已由 F1 改為隨套件安裝而在 PR merge ref 上轉為 fixed。其餘 23 筆（#157 至 #176、#178、#179、#181）位於上游的建置、測試或資產程式，或已有防護，經檢視不需修改，由維護者授權後逐筆以理由關閉（dismiss）。

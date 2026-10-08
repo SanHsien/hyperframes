@@ -1,8 +1,9 @@
 import { setCommandExitCode } from "../../utils/commandResult.js";
-import { existsSync, mkdirSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve, join, basename } from "node:path";
 import { c } from "../../ui/colors.js";
 import { safeFetch } from "../../capture/assetDownloader.js";
+import { ensureCaptureDirSync } from "../../capture/captureFile.js";
 import { CAPTURE_USER_AGENT } from "../../capture/userAgent.js";
 import { normalizeVideoStream } from "../../capture/videoNormalization.js";
 import { findFFmpeg } from "../../browser/ffmpeg.js";
@@ -213,7 +214,13 @@ export async function runVideoMode(args: VideoModeArgs): Promise<void> {
   const outDir = isW2hLayout
     ? join(projectDir, "capture", "assets", "videos")
     : join(projectDir, "assets", "videos");
-  mkdirSync(outDir, { recursive: true });
+  try {
+    ensureCaptureDirSync(projectDir, outDir);
+  } catch (e) {
+    console.error(`${c.error("✗")} ${(e as Error).message}`);
+    setCommandExitCode(1);
+    return;
+  }
   const fname = safeFilename(entry.filename || basename(entry.url));
   const outPath = join(outDir, fname);
   const relPath = isW2hLayout ? `capture/assets/videos/${fname}` : `assets/videos/${fname}`;
