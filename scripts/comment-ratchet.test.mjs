@@ -203,6 +203,14 @@ function runCli(t, base, head) {
   run("add", "-A");
   run(...identity, "commit", "-qm", "head", "--no-gpg-sign");
   const env = { ...process.env, COMMENT_CHECK_BASE: baseSha };
+  for (const key of [
+    "GITHUB_ACTIONS",
+    "GITHUB_EVENT_NAME",
+    "GITHUB_EVENT_PATH",
+    "GITHUB_REPOSITORY",
+  ]) {
+    delete env[key];
+  }
   const cli = spawnSync(process.execPath, [RATCHET], { cwd: root, encoding: "utf8", env });
   return { status: cli.status, output: `${cli.stdout}${cli.stderr}` };
 }

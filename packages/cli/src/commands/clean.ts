@@ -160,7 +160,6 @@ function sweepExtractCache(sweep: Sweep): void {
   const extractCache = resolveExtractCacheDir().dir;
   if (!extractCache || !existsSync(extractCache)) return;
   try {
-    // Never sweep (or stamp .hf-last-gc in) a root another user could have pre-created.
     assertPrivateCacheRoot(extractCache, { create: false });
   } catch (error) {
     recordError(

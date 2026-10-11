@@ -23,23 +23,10 @@ const ID_ATTR = "id";
 export const SVG_AUTHORED_ID_ATTR = "data-hf-authored-id";
 
 /**
- * Matches a `url(#id)` funcref value — quoted or bare — as used by
- * `clip-path`, `filter`, `mask`, `fill`, `stroke`, `marker-start/mid/end`,
- * `cursor`, `mask-image`, and equally by any of those written into an inline
- * `style` attribute or a `<style>` declaration value. One pattern covers all
- * of them because CSS only ever spells an id reference this way in a
- * property VALUE — a bare `#id` (no `url()`) is exclusively a *selector*.
- *
- * The captured id is the literal fragment text. A fragment is a URL, not a
- * CSS identifier, so it carries no CSS escapes; the replacement keeps the
- * original quoting and only swaps the id, which stays a valid fragment
- * because the namespace prefix is restricted to `[A-Za-z0-9_-]`.
- *
- * The id class excludes `(` as well as quotes, `)` and whitespace. Without it a
- * long run of `url(#!` with no closing `)` made every start position scan to the
- * end of the input and backtrack, which is quadratic and blocks the event loop
- * on untrusted render input (CodeQL js/polynomial-redos). Excluding `(` bounds
- * each attempt at the next `url(`; a real fragment id never contains one.
+ * Matches quoted or bare CSS `url(#id)` values, preserving their quoting.
+ * Fragment ids carry no CSS escapes; namespace prefixes use `[A-Za-z0-9_-]`.
+ * Excluding `(` bounds each failed attempt at the next `url(`, preventing
+ * quadratic backtracking on repeated unterminated refs in untrusted render input.
  */
 const URL_HASH_REF_RE = /(url\(\s*)(["']?)#([^"'()\s]+)\2(\s*\))/gi;
 

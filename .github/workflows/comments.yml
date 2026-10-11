@@ -24,6 +24,7 @@ jobs:
       COMMENT_SCRIPTS: >-
         scripts/check-comment-citations.mjs scripts/check-comment-citations.test.mjs
         scripts/comment-ratchet.mjs scripts/comment-ratchet.test.mjs
+        scripts/comment-check-base.mjs scripts/comment-check-base.test.mjs
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -53,7 +54,7 @@ jobs:
         run: bash scripts/ci/install-workspace-dependencies.sh --ignore-scripts
       - name: Test the checker
         working-directory: ${{ env.CHECKS_DIR }}
-        run: node --test scripts/check-comment-citations.test.mjs scripts/comment-ratchet.test.mjs
+        run: node --test scripts/check-comment-citations.test.mjs scripts/comment-ratchet.test.mjs scripts/comment-check-base.test.mjs
       - name: Check the comments this diff touched
         working-directory: pr
         env:

@@ -3,7 +3,7 @@
 // the resolver is git: a stub for "does this path exist" would pass while the git calls were wrong.
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { test } from "node:test";
@@ -624,7 +624,7 @@ test("a react-dom export names the platform, not a broken citation", (t) => {
 // Drives the entry point against a real two-commit repo, so `mergeBase`, `changedFiles` and
 // `diffScope` are tested too. A path in `base` and absent from `head` is a file the diff deletes;
 // an `overrides` entry set to undefined drops that variable.
-function runCli(t, base, head, args = [], overrides = {}) {
+function runCli(t, base, head, args = [], overrides = {}, working = {}) {
   const root = mkdtempSync(path.join(tmpdir(), "comment-citations-cli-"));
   t.after(() => rmSync(root, { recursive: true, force: true }));
   const write = (entries) => {
@@ -644,14 +644,37 @@ function runCli(t, base, head, args = [], overrides = {}) {
   write(head);
   run("add", "-A");
   run(...identity, "commit", "-qm", "head", "--no-gpg-sign");
+  write(working);
 
   const env = { ...process.env, COMMENT_CHECK_BASE: baseSha, ...overrides };
+  for (const key of [
+    "GITHUB_ACTIONS",
+    "GITHUB_EVENT_NAME",
+    "GITHUB_EVENT_PATH",
+    "GITHUB_REPOSITORY",
+  ]) {
+    delete env[key];
+  }
   for (const [key, value] of Object.entries(env)) if (value === undefined) delete env[key];
   const cli = spawnSync(process.execPath, [CHECKER, ...args], { cwd: root, encoding: "utf8", env });
   return { status: cli.status, output: `${cli.stdout}${cli.stderr}` };
 }
 
 const KIT = { "src/kit.ts": ["export const needsReview = 1;", ""].join("\n") };
+
+test("the CLI grades an uncommitted candidate, not only HEAD", (t) => {
+  const source = "src/subject.ts";
+  const { status, output } = runCli(
+    t,
+    { [source]: "export const value = 1;\n" },
+    { [source]: "export const value = 2;\n" },
+    [],
+    {},
+    { [source]: "// TODO: cache this\nexport const value = 2;\n" },
+  );
+  assert.equal(status, 1, output);
+  assert.match(output, /TODO/);
+});
 const explains = (symbol) =>
   oneLiner(
     `// The kit stops carrying \`${symbol}\`: the verdict map owns what a review row means.`,
@@ -970,4 +993,27 @@ test("a TypeScript private field is code, not a standalone comment", (t) => {
     "src/subject.ts": ["  #countLabel = 0; // count label", "  countLabel = 1;", ""].join("\n"),
   });
   assert.deepEqual(warnings, []);
+});
+
+test("a tracked directory link is not opened as a source file", (t) => {
+  const root = mkdtempSync(path.join(tmpdir(), "comment-directory-link-"));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  execFileSync("git", ["init", "-q"], { cwd: root });
+  mkdirSync(path.join(root, "target"));
+  symlinkSync(path.join(root, "target"), path.join(root, "scripts"), "junction");
+  execFileSync(
+    "git",
+    [
+      "update-index",
+      "--add",
+      "--cacheinfo",
+      `120000,${execFileSync("git", ["hash-object", "-w", "--stdin"], {
+        cwd: root,
+        input: "target",
+        encoding: "utf8",
+      }).trim()},scripts`,
+    ],
+    { cwd: root },
+  );
+  assert.deepEqual(checkComments(root, ["scripts"], { kind: "all" }).failures, []);
 });

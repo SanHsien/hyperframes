@@ -7,7 +7,9 @@
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import ts from "typescript";
+import { commentCheckBase } from "./comment-check-base.mjs";
 
 const SCANNABLE = new Set([".ts", ".tsx", ".mjs", ".js", ".css", ".py", ".md"]);
 // The lookahead keeps `ts` from matching inside ".tsx" and `js` inside ".json".
@@ -664,6 +666,7 @@ export function openRepo(root) {
     byBasename.get(base).push(file);
   }
   const contents = new Map();
+  const gitPath = (value) => path.normalize(value).replaceAll("\\", "/");
 
   const read = (file) => {
     if (!contents.has(file)) contents.set(file, readFileSync(path.join(root, file), "utf8"));
@@ -676,18 +679,15 @@ export function openRepo(root) {
     // Tried from the repo root, the citing file, its package, then as a path suffix, because
     // people abbreviate a long path to the part that identifies it.
     resolve(cited, from) {
-      const candidates = [
-        path.normalize(cited),
-        path.normalize(path.join(path.dirname(from), cited)),
-      ];
+      const candidates = [gitPath(cited), gitPath(path.join(path.dirname(from), cited))];
       for (let dir = path.dirname(from); dir !== "." && dir !== "/"; dir = path.dirname(dir)) {
-        if (files.has(path.join(dir, "package.json"))) {
-          candidates.push(path.normalize(path.join(dir, cited)));
+        if (files.has(gitPath(path.join(dir, "package.json")))) {
+          candidates.push(gitPath(path.join(dir, cited)));
           break;
         }
       }
       for (const candidate of candidates) if (files.has(candidate)) return candidate;
-      const suffix = `/${path.normalize(cited)}`;
+      const suffix = `/${gitPath(cited)}`;
       const loose = cited.includes("/")
         ? tracked.filter((file) => file.endsWith(suffix))
         : (byBasename.get(cited) ?? []);
@@ -696,7 +696,7 @@ export function openRepo(root) {
     },
     // A `packages/<name>/...` path whose package this checkout does not contain.
     namesAbsentPackage(cited) {
-      const parts = path.normalize(cited).split("/");
+      const parts = gitPath(cited).split("/");
       if (parts[0] !== "packages" || parts.length < 3) return false;
       return !tracked.some((file) => file.startsWith(`packages/${parts[1]}/`));
     },
@@ -714,7 +714,7 @@ export function openRepo(root) {
         const batch = tokens.slice(i, i + 400);
         let output = "";
         try {
-          output = execFileSync("git", ["grep", "-nwF", ...batch.flatMap((t) => ["-e", t])], {
+          output = execFileSync("git", ["grep", "-InwF", ...batch.flatMap((t) => ["-e", t])], {
             cwd: root,
             encoding: "utf8",
             maxBuffer: 512e6,
@@ -789,7 +789,7 @@ export function checkComments(root, files, scope = { kind: "all" }) {
   const warnings = [];
   const blockFailures = checkBlockRules(files, repo, touches);
   // Line rules grade the lines the diff added; the restating rule grades the block it rests on.
-  for (const file of files.filter((name) => repo.has(name))) {
+  for (const file of files.filter((name) => SCANNABLE.has(path.extname(name)) && repo.has(name))) {
     for (const finding of practiceFindings(repo.source(file), path.extname(file))) {
       const graded =
         finding.rule === "restates"
@@ -877,7 +877,7 @@ function mergeBase(root, ref) {
 }
 
 function changedFiles(root, base) {
-  return execFileSync("git", ["diff", "--name-only", `${base}...HEAD`], {
+  return execFileSync("git", ["diff", "--name-only", base], {
     cwd: root,
     encoding: "utf8",
     maxBuffer: 64e6,
@@ -906,7 +906,7 @@ function diffScope(root, base) {
   const added = new Map();
   const edited = new Map();
   const removed = new Set();
-  const diff = execFileSync("git", ["diff", "--unified=0", "-M", `${base}...HEAD`], {
+  const diff = execFileSync("git", ["diff", "--unified=0", "-M", base], {
     cwd: root,
     encoding: "utf8",
     maxBuffer: 256e6,
@@ -975,14 +975,13 @@ function proveGateCanFail() {
   process.exit(2);
 }
 
-if (process.argv[1] && import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
   const root = process.cwd();
   proveGateCanFail();
   const explicit = process.argv.slice(2);
   // Named files are a sweep of every line and need no git ref; no arguments grades the diff
   // against the fork point with the base branch.
-  const base =
-    explicit.length > 0 ? null : mergeBase(root, process.env.COMMENT_CHECK_BASE ?? "origin/main");
+  const base = explicit.length > 0 ? null : mergeBase(root, commentCheckBase(root));
   // The probe is graded by the self-check only, or every PR that edits it would go red.
   const files =
     base === null ? explicit : changedFiles(root, base).filter((file) => file !== PROBE);

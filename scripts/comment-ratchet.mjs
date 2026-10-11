@@ -5,8 +5,10 @@
 // Rules and reasons: CONTRIBUTING.md, "Comments". Line counting is owned by the citation checker.
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
-import { extname } from "node:path";
+import { extname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { commentBlocks } from "./check-comment-citations.mjs";
+import { commentCheckBase } from "./comment-check-base.mjs";
 
 const MAX_BLOCK_LINES = 12;
 
@@ -118,8 +120,8 @@ function packageShare(pkg, isNew) {
   return share(own.lines > 0 ? own : packageTotal("packages", isNew));
 }
 
-if (process.argv[1] && import.meta.url === `file://${process.argv[1]}`) {
-  const ref = git(["merge-base", process.env.COMMENT_CHECK_BASE ?? "origin/main", "HEAD"]).trim();
+if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
+  const ref = git(["merge-base", commentCheckBase(process.cwd()), "HEAD"]).trim();
   // Against the working tree, where contents are read from; in CI that is HEAD.
   const changed = changedPaths(git(["diff", "--name-status", "-M", ref, "--", "packages"]))
     .filter(({ status, to }) => status !== "D" && isSource(to))

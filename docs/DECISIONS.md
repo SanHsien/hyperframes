@@ -155,7 +155,7 @@
 
 - PR CI 的 `Tests on windows-latest: core` 失敗於上游新增的 `htmlBundler.test.ts`「emits styles and scripts in render order…」：該測試以 `push("n")` 等字面文字找腳本位置，而 fork 的 `wrapScopedCompositionScript` 把作者腳本存成 JSON 字串（引號變成 `\"`），找不到時 `indexOf` 回 -1，兩種模式排出的順序才不同；純上游樹本機通過、合併樹失敗。測試改為先還原跳脫的引號再比對，並新增「三段腳本在兩種模式都必須找得到」的斷言，避免空比對也通過；本機該檔 151 passed。
 
-**未驗證**：producer、engine、player、完整 `bun run test`、`test:scripts`、`test:skills` 與 fallow 全庫、Docker／Lambda、瀏覽器端測試；`generate-catalog-pages` 與目錄產生器的實跑；移植到新路徑的 favicon `normalizeCloudImage` 沒有被通過的測試覆蓋（`logo-provider.test.mjs` 在上游同樣整檔失敗）；符號連結相關測試在本機無權限所以被略過而非通過；LFS「should have been pointers」警告（57 個 producer 輸出檔）是上游既有狀態，未更動。本機工作目錄另有未追蹤的 `pnpm-lock.yaml`、`pnpm-workspace.yaml`，不屬於任何一側，未提交。
+**未驗證**：producer、engine、player、完整 `bun run test`、`test:scripts`、`test:skills` 與 fallow 全庫、Docker／Lambda、瀏覽器端測試；`generate-catalog-pages` 與目錄產生器的實跑；移植到新路徑的 favicon `normalizeCloudImage` 沒有被通過的測試覆蓋（`logo-provider.test.mjs` 在上游同樣整檔失敗）；符號連結相關測試在本機無權限所以被略過而非通過；LFS「should have been pointers」警告（57 個 producer 輸出檔）是上游既有狀態，未更動。本機工作目錄另有未追蹤的檔案（not tracked: `pnpm-lock.yaml`、not tracked: `pnpm-workspace.yaml`），不屬於任何一側，未提交。
 
 ### 合併後審查與修正
 
@@ -164,8 +164,8 @@ PR #2 合併前由獨立審查檢視整樹採用後被上游取代的 fork 加�
 | 項目 | 嚴重度 | 處置 |
 | --- | --- | --- |
 | F1 媒體向量改由可變網路來源下載，且 `row.file` 未限制範圍 | 中 | 已修。上游 `fetchMediaVectors` 從 `raw.githubusercontent.com/heygen-com/hyperframes/main/registry`（可被 `HYPERFRAMES_REGISTRY` 覆蓋）下載 `media-vectors.*`，無逾時、無大小上限、無成對驗證且兩檔非原子寫入；之後 `resolve(row.file)` 與 `join(..., row.file)` 直接信任 JSON，竄改成 `C:/Users/<u>/.ssh/id_rsa` 或 `../..` 就會成為 `searchResult.localPath`，再被 `freezeLocalFile` 複製進專案。改為：`build-copy.mjs` 把 `media-vectors.json`／`.bin` 一併放進 `dist/catalog-artifact`；新增 `installMediaVectors()`，只從隨套件目錄安裝，套用與 `vectorPairAgrees` 相同的成對與逐列驗證並拒絕絕對路徑或含 `..` 的 `file`，以 `0o600` 經暫存檔加 rename 寫入，不做任何網路請求；新增 `resolveBundledMediaFile()`，只接受解析後仍在隨套件 SFX 根目錄內的相對路徑，並移除以工作目錄為基準的候選。`resolve.mjs` 改走 `searchLocalSfxIndex`，`fetchMediaVectors` 與 `HYPERFRAMES_REGISTRY` 路徑移除。測試涵蓋絕對路徑被拒、`..` 被拒、`fetch` 被禁止時排序仍可運作 |
-| F2 遠端媒體不再驗證魔術位元組 | 中低 | 已修。把 fork 的 `assertRemoteMediaBytes` 移植進上游 `freeze.mjs`，在 `freezeUrl` 的 `readCappedBody` 之後、`writeFrozen` 之前依目的檔副檔名驗證（`.svg` 仍交給 `sanitizeSvg`、`.cube` 用 `cube-validate.mjs`、未知副檔名一律拒絕）；`freezeLocalFile` 不驗證。呼叫端的目的副檔名已逐一確認相容（HeyGen 影片 `video.mp4`、LUT `download.cube`、`resolve` 的保留檔名來自供應商 `ext`、URL 副檔名或預設值）。上游串流測試的假資料改為合法標頭，新增「HTML 位元組寫成 `.png` 被拒」與「`#EXTM3U` 寫成 `.mp4` 被拒」。獨立發佈行程 `freeze-publisher.mjs` 與其測試無呼叫者，已刪除 |
-| F4 `capture/frameworkMarkup.ts` 無呼叫者 | 低 | 已刪除該檔與其測試。上游以 linkedom 的 DOM 解析版 `filterExtractedScripts` 處理同一威脅 |
+| F2 遠端媒體不再驗證魔術位元組 | 中低 | 已修。把 fork 的 `assertRemoteMediaBytes` 移植進上游 `freeze.mjs`，在 `freezeUrl` 的 `readCappedBody` 之後、`writeFrozen` 之前依目的檔副檔名驗證（`.svg` 仍交給 `sanitizeSvg`、`.cube` 用 `cube-validate.mjs`、未知副檔名一律拒絕）；`freezeLocalFile` 不驗證。呼叫端的目的副檔名已逐一確認相容（HeyGen 影片 `video.mp4`、LUT `download.cube`、`resolve` 的保留檔名來自供應商 `ext`、URL 副檔名或預設值）。上游串流測試的假資料改為合法標頭，新增「HTML 位元組寫成 `.png` 被拒」與「`#EXTM3U` 寫成 `.mp4` 被拒」。已刪除的獨立發佈行程（absent: `freeze-publisher.mjs`）與其測試無呼叫者 |
+| F4 已刪除的檔案（absent: `capture/frameworkMarkup.ts`）無呼叫者 | 低 | 已刪除該檔與其測試。上游以 linkedom 的 DOM 解析版 `filterExtractedScripts` 處理同一威脅 |
 | F5 上游 `.github/CODEOWNERS` 指名上游維護者 | 低 | 已刪除，避免對不維護本 fork 的人請求審查 |
 | 上傳檔案 `0o600`（b） | 判斷為上游已涵蓋 | 未恢復。fork 加 `0o600` 是為了擋「檢查後寫入」的競態與舊檔／符號連結被覆寫；上游 `createFileAtomically` 先寫同目錄暫存檔，再用 `linkSync`（目標存在或為懸空符號連結即 `EEXIST`，不會跟隨）建立最終名稱，不支援硬連結的檔案系統退回 `openSync(..., "wx")`，兩條路徑都是排他建立，同樣擋下該競態，且上傳前另有 `validateUploadedMediaBuffer` 檢查音訊／影片內容。檔案權限本身（`0o600`）確實沒有保留，但上傳目的地是專案資料夾，其餘檔案本來就是預設權限，保留與否不改變威脅模型 |
 | `frameworkMarkup`（c） | 判斷為上游已涵蓋 | 見 F4。fork 版額外處理的 `data-reactroot` 屬性與巢狀 `<template>` 沒有接上任何流程，且上游以 DOM 解析而非字串處理，不會被這兩類標記繞過；沒有呼叫者的程式碼不能算防線，所以刪除而不是重接 |
@@ -187,9 +187,18 @@ PR #2 的 CodeQL 掃描共 28 筆（#156 至 #183）。其中 4 筆是真實問�
 
 | 警示 | 規則 | 檔案 | 修正 |
 | --- | --- | --- | --- |
-| #156 | `js/polynomial-redos` | `packages/core/src/compiler/svgIdNamespacing.ts` | `URL_HASH_REF_RE` 的 id 字元類排除 `(`（`[^"'()\s]+`）。`POST /render` 接受最大 8 MB 的 `body.html`，經 `inlineSubCompositions` 進入此掃描；一長串沒有 `)` 結尾的 `url(#!` 會讓每個起點都掃到輸入尾端再回溯，時間為二次方並卡住 Node 事件迴圈。排除 `(` 後每次嘗試最多掃到下一個 `url(`，成為線性。新增測試以 `"url(#!".repeat(200_000)` 走 `namespaceCollidingSvgIds`（屬性與樣式表文字）與 `rewriteSvgIdReferencesInCss`，並確認 `url(#a)`、`url('#a')`、`url( "#a" )` 的改寫不變 |
+| #156 | `js/polynomial-redos` | `packages/core/src/compiler/svgIdNamespacing.ts` | `URL_HASH_REF_RE` 的 id 字元類排除 `(`（`[^"'()\s]+`）。`POST /render` 接受最大 8 MB 的 HTTP request body 的 html 欄位（not a repository file: `body.html`），經 `inlineSubCompositions` 進入此掃描；一長串沒有 `)` 結尾的 `url(#!` 會讓每個起點都掃到輸入尾端再回溯，時間為二次方並卡住 Node 事件迴圈。排除 `(` 後每次嘗試最多掃到下一個 `url(`，成為線性。新增測試以 `"url(#!".repeat(200_000)` 走 `namespaceCollidingSvgIds`（屬性與樣式表文字）與 `rewriteSvgIdReferencesInCss`，並確認 `url(#a)`、`url('#a')`、`url( "#a" )` 的改寫不變 |
 | #177 | `js/insecure-temporary-file` | `packages/engine/src/services/extractionCache.ts` | 預設快取根目錄是共用 `/tmp` 下可預測的 `hyperframes-extract-cache-<uid>`，其他本機使用者可預先建立它來放入毒化的快取影格，或把 `.hf-last-gc` 放成符號連結。新增 `assertPrivateCacheRoot()`：以 `0o700` 建立，再用 `lstat` 要求是真正的目錄、不是符號連結；POSIX 另要求屬於目前使用者且 `(mode & 0o077) === 0`。`videoFrameExtractor.ts` 失敗時沿用既有的「caching disabled for this render」警告並停用快取（不讓渲染失敗），`clean.ts` 在 `gcExtractionCache` 前檢查並略過不安全的根目錄；`.hf-last-gc` 改為在已驗證的根目錄內以排他建立的暫存檔加 `rename` 寫入，不會跟隨符號連結。屬於目前使用者、且其他人沒有寫入權的既有根目錄（例如舊版以預設 umask 建立的 `0o755`）會就地收緊為 `0o700` 繼續使用；群組或其他人可寫（如 `0o775`、`0o777`）的根目錄內容可能已被他人放入，仍拒絕並停用快取。動畫 GIF 快取（`compileStage.ts` 的 `animatedGifCacheDir`）也在同一根目錄下、且比影格擷取更早執行，複審發現漏檢，已改為先經 `privateAnimatedGifCacheDir`（同一個 `assertPrivateCacheRoot`），不通過只停用 GIF 快取。`hyperframes clean --dry-run` 在檢查時也會把符合條件的根目錄收緊為 `0o700`，這是 dry-run 唯一的副作用 |
 | #180 | `js/http-to-file-access` | `skills/media-use/audio/scripts/lib/gemini-tts.mjs` | Gemini 回應位元組只通過 RIFF/WAVE 標頭檢查就直接寫檔。依本 fork 對雲端音訊的政策（與 #133、#134 及 `heygen.mjs` 相同），改為經 `normalizeCloudAudio(bytes, wavAbs)` 由 ffmpeg 解碼再編碼後才寫入；該函式可由第二個參數注入供測試使用，回傳 false 時回 `{ ok: false, error: "audio transcode failed (ffmpeg; output must be .wav or .mp3)" }` 且不留下原始檔，標頭檢查與金鑰遮蔽維持不變 |
 | #183 | `js/http-to-file-access` | `packages/cli/src/registry/localSemantic.ts` | 刪除已無呼叫者的 `fetchLocalVectors`（與僅供它使用的 `FetchLocalVectorOptions`、`CATALOG_ARTIFACT_TIMEOUT_MS`）。`git grep` 確認只有 `localSemantic.test.ts` 使用它；`catalog.ts` 早已改呼叫 `installLocalVectors`，向量只從隨套件目錄複製。原本只能透過它驗證的 `media-vectors` 成對與逐列檢查改在 `installLocalVectors` 上測試，並新增「`globalThis.fetch` 換成會丟例外的替身時 `installLocalVectors` 仍成功且不被呼叫」的測試 |
 
 #182（`js/http-to-file-access`，`local-media-search.mjs`）已由 F1 改為隨套件安裝而在 PR merge ref 上轉為 fixed。其餘 23 筆（#157 至 #176、#178、#179、#181）位於上游的建置、測試或資產程式，或已有防護，經檢視不需修改，由維護者授權後逐筆以理由關閉（dismiss）。
+
+### 2026-10-12：PR #2 產品與 Comments 驗收修復
+
+- Windows core lane 的 core 測試本身通過（4,226 tests）；真正的非零來源是 shader preview unit fixture 啟動 html2canvas，DOM 關閉後背景計時器丟出 14 個未處理錯誤。fixture 改在 capture 邊界明確拒絕，仍驗證相同 DOM fallback／playhead 行為；capture 與依賴 patch 測試保留。
+- Studio drag 的 PR checkout 原本固定為 `main`，該樹沒有 bench，五個 runs 都因找不到入口失敗。PR 改 checkout 事件的精確 head SHA；dispatch 保留指定 ref，五次矩陣及 quiet-box gate 不變。實際 drag 與 Windows lane 驗收以發布後對該 SHA 的 hosted jobs 為準。
+- Comments citation checker 的 practice rules 原本嘗試讀取目錄 symlink，造成 `EISDIR`；改為只讀既定支援副檔名。修正 Windows CLI 入口與 Git 路徑分隔符，symbol 搜尋排除不能解析為文字行號的 binary。檢查範圍包含工作樹，避免本機候選被漏檢。
+- 原 `main` ratchet 對整樹採用報出 200 findings，其中 192 項的 source blob 與上游 `d94708e5312df021e1fdcac421f00ed3015f11bd` 完全相同。本 fork 對此次採用使用一次性基準 `7609091171650913d3afd6050b9bc643d9432c56`，代表既有採用內容，不代表跳過後續 fork 修補。
+- 例外只適用於 `SanHsien/hyperframes` 的 PR #2、head branch `sync/upstream-d94708e5`、base `82f7e6f2f32283b2074736f2b7deea6b810450a2`，要求 checkout HEAD 等於事件 head 且包含已審查 HEAD `9aa1b4a8cb51baa253a2f890d9df0414160ccb4a`，並驗證採用基準為其祖先。基準固定在 `scripts/comment-check-base.mjs`；CI 不接受 `COMMENT_CHECK_BASE` 改寫。一般 PR 仍對自己的 base 執行原規則，guard 不符的已指定採用歷史會失敗。
+- 後續 fork 修改仍受完整 citation／ratchet 規則；四個安全修補檔只精簡重複註解，程式碼、regex、安全旗標與斷言不變，詳細威脅理由保留於前述 CodeQL 決策。測試涵蓋一般 PR 拒絕新增註解、env 不能繞過、錯誤 owner／PR／branch／base、stale checkout 與改寫歷史。

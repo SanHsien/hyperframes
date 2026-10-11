@@ -447,20 +447,7 @@ export function gcSweepDue(rootDir: string, maxAgeMs: number): boolean {
   }
 }
 
-/**
- * Create the cache root if needed and require that only this user can use it.
- *
- * The default root is `<tmpdir>/hyperframes-extract-cache-<uid>`, a predictable name in
- * a shared directory on Linux. Another local user could pre-create it to plant frames
- * we would later serve as cache hits, or plant `.hf-last-gc` as a symlink. So the root
- * must be a real directory (not a symlink); on POSIX it must also be owned by the
- * current user with no group/other access. Windows has no uid or mode bits, so there
- * only the directory and symlink checks apply.
- *
- * Throws with a reason when the root is unsafe; callers turn that into "caching
- * disabled" rather than failing a render. `create: false` never creates the root and
- * throws if it is missing (for sweeps that have nothing to do on a missing root).
- */
+// Reject planted cache roots and symlinks; POSIX also requires owner-only access.
 export function assertPrivateCacheRoot(root: string, opts: { create?: boolean } = {}): void {
   if (opts.create !== false) mkdirSync(root, { recursive: true, mode: 0o700 });
   const st = lstatSync(root);
@@ -471,10 +458,7 @@ export function assertPrivateCacheRoot(root: string, opts: { create?: boolean } 
   if (uid !== undefined && st.uid !== uid) {
     throw new Error("cache root is owned by another user");
   }
-  // A root this user owns that nobody else can write to (e.g. 0o755 from an
-  // earlier version's default umask) cannot have been planted by another user,
-  // so tighten it in place instead of disabling the cache. Group/other-writable
-  // roots are still refused: their contents may already be someone else's.
+  // Owned, non-writable roots can be tightened; writable roots may contain planted frames.
   if ((st.mode & 0o077) !== 0 && (st.mode & 0o022) === 0) {
     chmodSync(root, 0o700);
     return;
@@ -486,11 +470,7 @@ export function assertPrivateCacheRoot(root: string, opts: { create?: boolean } 
   }
 }
 
-/**
- * Stamp the sweep marker without following a pre-existing symlink: write a fresh
- * exclusive temp file and rename it over the marker (rename replaces a symlink
- * itself instead of writing through it).
- */
+// Exclusive temp creation and rename replace the marker without following a symlink.
 function markGcSweep(rootDir: string): void {
   const marker = join(rootDir, GC_MARKER);
   const temp = `${marker}.tmp-${process.pid}-${randomUUID()}`;
@@ -501,9 +481,7 @@ function markGcSweep(rootDir: string): void {
     // Unwritable root: the sweep below will no-op on the same root anyway.
     try {
       rmSync(temp, { force: true });
-    } catch {
-      // Nothing more to clean up.
-    }
+    } catch {}
   }
 }
 

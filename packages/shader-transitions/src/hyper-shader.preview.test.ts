@@ -2,6 +2,13 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { init } from "./hyper-shader.js";
 
+// jsdom has no scene renderer. Reject at the capture boundary to exercise the DOM fallback
+// without starting html2canvas timers that outlive the fixture.
+vi.mock("./capture.js", () => ({
+  initCapture: vi.fn(),
+  captureScene: vi.fn().mockRejectedValue(new Error("scene capture unavailable in jsdom")),
+}));
+
 // The slice of a paused GSAP timeline that init() drives: time() fires the callbacks it
 // crosses unless events are suppressed, then onUpdate.
 function stubGsap() {

@@ -34,7 +34,7 @@ jobs:
       matrix:
         run: [1, 2, 3, 4, 5]
     env:
-      BENCH_REF: ${{ inputs.ref || 'main' }}
+      BENCH_REF: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || inputs.ref || github.sha }}
       BENCH_FILTER: ${{ inputs.filter || '^(move|resize|rotate|crop)-(none|tween)-px-r0-root-z100$' }}
       BENCH_GRID: ${{ inputs.grid || 'pr' }}
     steps:
