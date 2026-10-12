@@ -20,7 +20,9 @@ type BridgeDeps = {
   onSetNativeMediaSyncDisabled: (disabled: boolean) => void;
   onSetWebAudioMediaDisabled: (disabled: boolean) => void;
   onSetPlaybackRate: (rate: number) => void;
+  onSetIdleHeartbeat: (slow: boolean) => void;
   onSetRootDuration: (durationSeconds: number) => void;
+  onSetPlayRange: (startSeconds: number, endSeconds: number | null) => void;
   onSetColorGrading: (target: HfColorGradingTarget | string | null, grading: unknown) => void;
   onSetColorGradingCompare: (
     target: HfColorGradingTarget | string | null,
@@ -89,8 +91,17 @@ function dispatchControl(action: string, data: BridgeControlData, deps: BridgeDe
     case "set-playback-rate":
       deps.onSetPlaybackRate(Number(data.playbackRate ?? 1));
       return;
+    case "set-idle-heartbeat":
+      deps.onSetIdleHeartbeat(Boolean(data.slow));
+      return;
     case "set-root-duration":
       deps.onSetRootDuration(Number(data.durationSeconds ?? 0));
+      return;
+    case "set-play-range":
+      deps.onSetPlayRange(
+        Number(data.startSeconds ?? 0),
+        data.endSeconds == null ? null : Number(data.endSeconds),
+      );
       return;
     case "set-color-grading":
       deps.onSetColorGrading(data.target ?? null, data.grading ?? null);

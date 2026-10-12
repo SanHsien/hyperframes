@@ -36,7 +36,7 @@
  */
 
 import { join } from "node:path";
-import type { EngineConfig } from "@hyperframes/engine";
+import { assertPrivateCacheRoot, type EngineConfig } from "@hyperframes/engine";
 import { suggestMatchingPreset, type CanvasResolution } from "@hyperframes/core";
 import type { CompiledComposition } from "../../htmlCompiler.js";
 import { compileForRender } from "../../htmlCompiler.js";
@@ -171,9 +171,7 @@ export async function runCompileStage(input: CompileStageInput): Promise<Compile
     allowSystemFontCapture,
     abortSignal,
     variables: input.variables,
-    animatedGifCacheDir: cfg.extractCacheDir
-      ? join(cfg.extractCacheDir, "animated-gif")
-      : undefined,
+    animatedGifCacheDir: privateAnimatedGifCacheDir(cfg.extractCacheDir, log),
     ffmpegProcessTimeout: cfg.ffmpegProcessTimeout,
   });
   assertNotAborted();
@@ -192,13 +190,7 @@ export async function runCompileStage(input: CompileStageInput): Promise<Compile
   // fast capture is on. Render-mode hints (e.g. raw requestAnimationFrame)
   // still force screenshot below — those are correctness routings that
   // drawElement must honor.
-  // The fast-capture video gate was REMOVED here once Chrome 151 fixed crbug
-  // 521861819. It keyed on compiled.videos.length > 0 as a proxy for the
-  // word-by-word caption opacity pattern (drawElementImage dropped the promoted
-  // opacity layers mid-fade, ~12 dB). On the 151 pinned floor, video + nested-fade
-  // comps render correctly on the drawElement path (verified PSNR=inf vs baseline);
-  // see docs/fast-capture-limitations.md Lim 2.
-  // Fast-capture 3D-transform gate, same shape as the video gate above.
+  // Fast-capture 3D-transform gate.
   // drawElementImage paints CSS 3D rendering contexts incorrectly:
   // backface-visibility:hidden is ignored (mid-flip elements capture their
   // mirrored backface), siblings of the 3D context can drop out, and the
@@ -358,4 +350,26 @@ export async function runCompileStage(input: CompileStageInput): Promise<Compile
     forceScreenshot,
     deCompileGate,
   };
+}
+
+/**
+ * The animated-GIF cache lives under the extract cache root, so it gets the
+ * same check the frame cache gets before use (CodeQL #177): a root another
+ * local user could have created or linked disables only this cache, never the
+ * render.
+ */
+export function privateAnimatedGifCacheDir(
+  extractCacheDir: string | undefined,
+  log: Pick<ProducerLogger, "warn">,
+): string | undefined {
+  if (!extractCacheDir) return undefined;
+  try {
+    assertPrivateCacheRoot(extractCacheDir);
+  } catch (error) {
+    log.warn("Animated GIF cache disabled for this render: cache root is not private", {
+      reason: error instanceof Error ? error.message : String(error),
+    });
+    return undefined;
+  }
+  return join(extractCacheDir, "animated-gif");
 }

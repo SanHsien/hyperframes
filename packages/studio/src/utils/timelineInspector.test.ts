@@ -4,6 +4,7 @@ import {
   canHideSelections,
   isAudioDomElement,
   isAudioTimelineElement,
+  isMusicSourceElement,
   isMusicTrack,
   resolveBeatSourceTrack,
 } from "./timelineInspector";
@@ -12,9 +13,15 @@ import type { TimelineElement } from "../player";
 // Minimal element factory for tests
 function el(
   overrides: Partial<
-    Pick<TimelineElement, "tag" | "src" | "id" | "domId" | "timelineRole" | "duration">
+    Pick<
+      TimelineElement,
+      "tag" | "src" | "id" | "domId" | "timelineRole" | "duration" | "hasAudio" | "muted"
+    >
   >,
-): Pick<TimelineElement, "tag" | "src" | "id" | "domId" | "timelineRole" | "duration"> {
+): Pick<
+  TimelineElement,
+  "tag" | "src" | "id" | "domId" | "timelineRole" | "duration" | "hasAudio" | "muted"
+> {
   return {
     tag: "audio",
     src: "assets/track.mp3",
@@ -151,5 +158,56 @@ describe("isAudioDomElement / canHideSelections", () => {
     expect(canHideSelections([{ element: el("div") }, { element: el("span") }])).toBe(true);
     expect(canHideSelections([{ element: el("div") }, { element: el("audio") }])).toBe(false);
     expect(canHideSelections([{ element: el("hf-audio-group") }])).toBe(false);
+  });
+});
+
+describe("beat source from a video with sound", () => {
+  const talk = { tag: "video", src: "assets/clip.mp4", hasAudio: true };
+
+  it("counts an audible video as a music source but never a muted or silent one", () => {
+    expect(isMusicSourceElement(el(talk))).toBe(true);
+    expect(isMusicSourceElement(el({ ...talk, muted: true }))).toBe(false);
+    expect(isMusicSourceElement(el({ ...talk, hasAudio: false }))).toBe(false);
+    expect(isAudioTimelineElement(el(talk))).toBe(false);
+  });
+
+  it("takes a video tagged as music as the beat source", () => {
+    const video = el({ ...talk, timelineRole: "music" });
+    expect(isMusicTrack(video)).toBe(true);
+    expect(resolveBeatSourceTrack([video])).toEqual({ element: video, isFallback: false });
+  });
+
+  it("falls back to the longest audible video when there is no audio", () => {
+    const short = el({ ...talk, id: "a", duration: 3 });
+    const long = el({ ...talk, id: "b", duration: 9 });
+    const muted = el({ ...talk, id: "c", duration: 20, muted: true });
+    expect(resolveBeatSourceTrack([short, long, muted])?.element).toBe(long);
+  });
+});
+
+describe("bounded audio source classification", () => {
+  it("rejects repeated query candidates ending in a non-terminal line break", () => {
+    expect(isAudioTimelineElement({ tag: "div", src: ".aac#".repeat(250_000) + "\nX" })).toBe(
+      false,
+    );
+    expect(isAudioTimelineElement({ tag: "div", src: ".aac#".repeat(250_000) })).toBe(true);
+  });
+  it("preserves the previous matcher on ordinary sources and line endings", () => {
+    const previous = /\.(aac|flac|m4a|mp3|ogg|opus|wav)(?:[?#].*)?$/i;
+    const sources = [
+      "track.MP3",
+      "track.wav?download=1#x",
+      "x#track.mp3",
+      "a.aac#b.wav",
+      "clip.mp4",
+      "a.aac#x\nX",
+      "a.aac\n",
+      "a.aac\r\n",
+      "a.aac\u2028",
+      "x\ntrack.mp3",
+      "a.aac\n\n",
+    ];
+    for (const src of sources)
+      expect(isAudioTimelineElement({ tag: "div", src }), src).toBe(previous.test(src));
   });
 });

@@ -1,13 +1,27 @@
 import { formatTimelineAttributeNumber } from "../player/components/timelineEditing";
 
-/**
- * Matches the opening tag of the ROOT composition element — the first tag that
- * carries a `data-composition-id` attribute, regardless of where the attribute
- * sits in the tag or how its value is quoted. `[^>]*` keeps the match inside a
- * single tag, so the first hit is the first composition in document order (the
- * same element `doc.querySelector("[data-composition-id]")` resolves to).
- */
-const ROOT_COMPOSITION_OPEN_TAG_RE = /<[^>]*\bdata-composition-id(?=[\s=/>])[^>]*>/i;
+// The first completed opening tag carrying a composition attribute.
+const ROOT_COMPOSITION_ATTRIBUTE_RE = /\bdata-composition-id(?=[\s=/>])/i;
+
+function findRootOpeningTag(source: string): { index: number; tag: string } | null {
+  let start = -1;
+  let quote = "";
+  // Disjoint tag spans prevent malformed input from rescanning the document.
+  for (let index = 0; index < source.length; index++) {
+    const char = source[index];
+    if (char === "<" && !quote) start = index;
+    else if (source[index] === ">" && start !== -1) {
+      const tag = source.slice(start, index + 1);
+      if (ROOT_COMPOSITION_ATTRIBUTE_RE.test(tag)) return { index: start, tag };
+      start = -1;
+      quote = "";
+    } else if (start !== -1 && (char === '"' || char === "'")) {
+      if (!quote) quote = char;
+      else if (quote === char) quote = "";
+    }
+  }
+  return null;
+}
 
 /**
  * Matches a `data-duration="..."` attribute inside a single opening tag. Quote
@@ -56,15 +70,15 @@ export function readRootCompositionDuration(source: string): number | null {
  * root tag has no `data-duration` attribute to replace.
  */
 export function patchRootCompositionDuration(source: string, newValue: string): string {
-  const rootTag = ROOT_COMPOSITION_OPEN_TAG_RE.exec(source);
+  const rootTag = findRootOpeningTag(source);
   if (!rootTag) return source;
-  const patchedTag = rootTag[0].replace(
+  const patchedTag = rootTag.tag.replace(
     DATA_DURATION_ATTR_RE,
     (_full, prefix: string, quote: string) => `${prefix}${quote}${newValue}${quote}`,
   );
-  if (patchedTag === rootTag[0]) return source;
+  if (patchedTag === rootTag.tag) return source;
   return (
-    source.slice(0, rootTag.index) + patchedTag + source.slice(rootTag.index + rootTag[0].length)
+    source.slice(0, rootTag.index) + patchedTag + source.slice(rootTag.index + rootTag.tag.length)
   );
 }
 

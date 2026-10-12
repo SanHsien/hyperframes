@@ -539,11 +539,17 @@ function copyFixtureSupportFiles(suite: TestSuite, tempRoot: string): void {
 
 // ── FFmpeg Utilities ─────────────────────────────────────────────────────────
 
-function runFfmpeg(args: string[], label: string): { stdout: Buffer; stderr: string } {
+function runFfmpeg(
+  args: string[],
+  label: string,
+  cwd?: string,
+): { stdout: Buffer; stderr: string } {
   const result = spawnSync("ffmpeg", args, {
+    cwd,
     stdio: ["ignore", "pipe", "pipe"],
     maxBuffer: 256 * 1024 * 1024,
     encoding: "buffer",
+    windowsHide: true,
   });
   const stderr = result.stderr.toString("utf-8");
   if (result.status !== 0) {
@@ -581,6 +587,8 @@ function extractFrameAsImage(
 export function frameIndexForCheckpoint(checkpointSec: number, fps: number): number {
   return Math.max(0, Math.round(checkpointSec * fps));
 }
+
+const STATS_FILE_NAME = "psnr.log";
 
 /**
  * PSNR for a set of frame indices, in a single ffmpeg pass.
@@ -627,64 +635,72 @@ export function psnrAtFrames(
   const wanted = [...new Set(frameIndices)].sort((left, right) => left - right);
   if (wanted.length === 0) return new Map();
 
-  const selectExpr = wanted.map((frame) => `eq(n\\,${frame})`).join("+");
-  const stream = (index: number, label: string) =>
-    `[${index}:v]select='${selectExpr}',settb=1/1,setpts=N[${label}]`;
-  const { stdout } = runFfmpeg(
-    [
-      "-hide_banner",
-      "-loglevel",
-      "error",
-      "-i",
-      renderedVideo,
-      "-i",
-      snapshotVideo,
-      "-filter_complex",
-      // shortest=1:repeatlast=0 makes framesync stop at the first stream to
-      // end instead of holding its last frame. Without them, an input that
-      // runs out of selected frames has its final frame repeated to pad the
-      // pairing, so ffmpeg still writes one row per requested frame and the
-      // count check below cannot tell that the tail rows compare a stale
-      // frame. Verified: 60-frame vs 30-frame inputs asking for frames
-      // [0,15,45] emit 3 rows under the defaults (row 3 comparing frame 45
-      // against a repeated frame 15, 16.65 dB) and 2 rows with these set.
-      `${stream(0, "rv")};${stream(1, "gv")};` +
-        "[rv][gv]psnr=shortest=1:repeatlast=0:stats_file=-",
-      "-f",
-      "null",
-      "-",
-    ],
-    "Checkpoint PSNR",
-  );
-
-  const values: number[] = [];
-  for (const line of stdout.toString("utf-8").split("\n")) {
-    const psnrMatch = line.match(/(?:^|\s)psnr_avg:(\S+)/);
-    if (!psnrMatch) continue;
-    const raw = (psnrMatch[1] ?? "").trim().toLowerCase();
-    if (raw === "inf" || raw === "infinite") {
-      values.push(Number.POSITIVE_INFINITY);
-      continue;
-    }
-    const parsed = Number(raw);
-    if (!Number.isFinite(parsed)) {
-      throw new Error(`Invalid PSNR value in ffmpeg stats output: ${psnrMatch[1]}`);
-    }
-    values.push(parsed);
-  }
-
-  // A short count means an input ran out of frames, so every later pairing
-  // would be silently offset. The per-checkpoint implementation also failed
-  // loudly here; keep it that way rather than reporting PSNR for frames that
-  // were never compared.
-  if (values.length !== wanted.length) {
-    throw new Error(
-      `Expected PSNR for ${wanted.length} frames but ffmpeg reported ${values.length}. ` +
-        "The rendered output and baseline likely differ in frame count.",
+  const statsDir = mkdtempSync(join(tmpdir(), "hf-psnr-"));
+  const statsFile = join(statsDir, STATS_FILE_NAME);
+  try {
+    const selectExpr = wanted.map((frame) => `eq(n\\,${frame})`).join("+");
+    const stream = (index: number, label: string) =>
+      `[${index}:v]select='${selectExpr}',settb=1/1,setpts=N[${label}]`;
+    runFfmpeg(
+      [
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-i",
+        resolve(renderedVideo),
+        "-i",
+        resolve(snapshotVideo),
+        "-filter_complex",
+        // shortest=1:repeatlast=0 makes framesync stop at the first stream to
+        // end instead of holding its last frame. Without them, an input that
+        // runs out of selected frames has its final frame repeated to pad the
+        // pairing, so ffmpeg still writes one row per requested frame and the
+        // count check below cannot tell that the tail rows compare a stale
+        // frame. Verified: 60-frame vs 30-frame inputs asking for frames
+        // [0,15,45] emit 3 rows under the defaults (row 3 comparing frame 45
+        // against a repeated frame 15, 16.65 dB) and 2 rows with these set.
+        `${stream(0, "rv")};${stream(1, "gv")};` +
+          `[rv][gv]psnr=shortest=1:repeatlast=0:stats_file=${STATS_FILE_NAME}`,
+        "-f",
+        "null",
+        "-",
+      ],
+      "Checkpoint PSNR",
+      // A bare name in cwd keeps every path out of the filtergraph and its escaping rules.
+      statsDir,
     );
-  }
 
-  return new Map(wanted.map((frame, position) => [frame, values[position] as number]));
+    const values: number[] = [];
+    for (const line of readFileSync(statsFile, "utf-8").split("\n")) {
+      const psnrMatch = line.match(/(?:^|\s)psnr_avg:(\S+)/);
+      if (!psnrMatch) continue;
+      const raw = (psnrMatch[1] ?? "").trim().toLowerCase();
+      if (raw === "inf" || raw === "infinite") {
+        values.push(Number.POSITIVE_INFINITY);
+        continue;
+      }
+      const parsed = Number(raw);
+      if (!Number.isFinite(parsed)) {
+        throw new Error(`Invalid PSNR value in ffmpeg stats output: ${psnrMatch[1]}`);
+      }
+      values.push(parsed);
+    }
+
+    // A short count means an input ran out of frames, so every later pairing
+    // would be silently offset. The per-checkpoint implementation also failed
+    // loudly here; keep it that way rather than reporting PSNR for frames that
+    // were never compared.
+    if (values.length !== wanted.length) {
+      throw new Error(
+        `Expected PSNR for ${wanted.length} frames but ffmpeg reported ${values.length}. ` +
+          "The rendered output and baseline likely differ in frame count.",
+      );
+    }
+
+    return new Map(wanted.map((frame, position) => [frame, values[position] as number]));
+  } finally {
+    rmSync(statsDir, { recursive: true, force: true });
+  }
 }
 
 export function psnrAtCheckpoint(

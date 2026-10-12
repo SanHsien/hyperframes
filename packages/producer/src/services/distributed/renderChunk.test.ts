@@ -22,10 +22,13 @@ import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import type { CaptureOptions } from "@hyperframes/engine";
 import { HOST_CHROME_FAILURE_PATTERNS } from "./__test_utils__/hostChromeFailures.js";
+import { RenderQualityError } from "../renderOrchestrator.js";
 import { plan } from "./plan.js";
 import {
   CHUNK_INDEX_OUT_OF_RANGE,
+  distributedCaptureSessionDependencies,
   MISSING_PLAN_ARTIFACT,
   MISSING_RUNTIME_ENV_SNAPSHOT,
   PLAN_HASH_MISMATCH,
@@ -416,6 +419,113 @@ describe("renderChunk() — variables threading", () => {
     },
     TIMEOUT_MS,
   );
+});
+
+describe("renderChunk() — requiresWebGpu wiring", () => {
+  const TIMEOUT_MS = 60_000;
+
+  it(
+    "passes requiresWebGpu into the real CaptureOptions renderChunk() builds",
+    async () => {
+      if (!hasChrome) {
+        console.warn(
+          "[renderChunk.test] skipping requiresWebGpu wiring test — chrome-headless-shell not available on this host",
+        );
+        return;
+      }
+
+      const declaringDir = join(runRoot, "project-webgpu-declaring");
+      mkdirSync(declaringDir, { recursive: true });
+      writeFileSync(
+        join(declaringDir, "index.html"),
+        FIXTURE_HTML.replace(
+          'data-composition-id="root"',
+          'data-composition-id="root" data-requires-webgpu',
+        ),
+        "utf-8",
+      );
+      const declaringPlanDir = join(runRoot, "plan-webgpu-declaring");
+      mkdirSync(declaringPlanDir, { recursive: true });
+      await plan(
+        declaringDir,
+        { fps: 30, width: 160, height: 120, format: "png-sequence" },
+        declaringPlanDir,
+      );
+
+      // Spy on the real dependency seam renderChunk() calls through — this
+      // observes the actual CaptureOptions object it builds, not a proxy
+      // for it, so a regression to the wiring line fails this directly.
+      const original = distributedCaptureSessionDependencies.createCaptureSession;
+      let capturedOptions: CaptureOptions | undefined;
+      distributedCaptureSessionDependencies.createCaptureSession = ((...args) => {
+        capturedOptions = args[2];
+        return original(...args);
+      }) as typeof original;
+
+      const out = join(runRoot, "chunk-webgpu-declaring");
+      try {
+        try {
+          await renderChunk(declaringPlanDir, 0, out);
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          if (!HOST_CHROME_FAILURE_PATTERNS.test(message)) throw err;
+          console.warn(
+            "[renderChunk.test] skipping requiresWebGpu wiring test — host Chrome stack can't render. Diagnostic:",
+            message.slice(0, 240),
+          );
+          return;
+        }
+      } finally {
+        distributedCaptureSessionDependencies.createCaptureSession = original;
+      }
+
+      expect(capturedOptions?.requiresWebGpu).toBe(true);
+    },
+    TIMEOUT_MS,
+  );
+});
+
+describe("renderChunk() — script failure", () => {
+  it("fails the chunk, as a local render fails, when the timeline script never loads", async () => {
+    if (!hasChrome) {
+      console.warn(
+        "[renderChunk.test] skipping script-failure test — chrome-headless-shell not available on this host",
+      );
+      return;
+    }
+
+    const failingDir = join(runRoot, "project-missing-script");
+    mkdirSync(failingDir, { recursive: true });
+    writeFileSync(
+      join(failingDir, "index.html"),
+      FIXTURE_HTML.replace(" data-no-timeline", "").replace(
+        "</body>",
+        '<script src="missing-timeline.js"></script>\n</body>',
+      ),
+      "utf-8",
+    );
+    const failingPlanDir = join(runRoot, "plan-missing-script");
+    mkdirSync(failingPlanDir, { recursive: true });
+    await plan(
+      failingDir,
+      { fps: 30, width: 160, height: 120, format: "png-sequence" },
+      failingPlanDir,
+    );
+
+    const error = await renderChunk(failingPlanDir, 0, join(runRoot, "chunk-missing-script")).then(
+      () => null,
+      (err: unknown) => err,
+    );
+    if (error instanceof Error && HOST_CHROME_FAILURE_PATTERNS.test(error.message)) {
+      console.warn(
+        "[renderChunk.test] skipping script-failure test — host Chrome stack can't render. Diagnostic:",
+        error.message.slice(0, 240),
+      );
+      return;
+    }
+    expect(error).toBeInstanceOf(RenderQualityError);
+    expect((error as Error).message).toContain("sub_timeline_script_failure");
+  }, 60_000);
 });
 
 describe("resolvePresetForLockedEncoder", () => {
