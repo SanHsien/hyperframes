@@ -190,13 +190,7 @@ export async function runCompileStage(input: CompileStageInput): Promise<Compile
   // fast capture is on. Render-mode hints (e.g. raw requestAnimationFrame)
   // still force screenshot below — those are correctness routings that
   // drawElement must honor.
-  // The fast-capture video gate was REMOVED here once Chrome 151 fixed crbug
-  // 521861819. It keyed on compiled.videos.length > 0 as a proxy for the
-  // word-by-word caption opacity pattern (drawElementImage dropped the promoted
-  // opacity layers mid-fade, ~12 dB). On the 151 pinned floor, video + nested-fade
-  // comps render correctly on the drawElement path (verified PSNR=inf vs baseline);
-  // see docs/fast-capture-limitations.md Lim 2.
-  // Fast-capture 3D-transform gate, same shape as the video gate above.
+  // Fast-capture 3D-transform gate.
   // drawElementImage paints CSS 3D rendering contexts incorrectly:
   // backface-visibility:hidden is ignored (mid-flip elements capture their
   // mirrored backface), siblings of the 3D context can drop out, and the

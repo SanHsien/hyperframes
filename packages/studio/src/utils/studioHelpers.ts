@@ -68,7 +68,10 @@ export function toProjectAbsolutePath(
   const normalizedSource = trimmedSource.replace(/\\/g, "/");
   if (isAbsoluteFilePath(normalizedSource)) return normalizedSource;
 
-  const normalizedRoot = projectDir?.trim().replace(/\\/g, "/").replace(/\/+$/, "");
+  const root = projectDir?.trim().replace(/\\/g, "/") ?? "";
+  let end = root.length;
+  while (end > 0 && root[end - 1] === "/") end--;
+  const normalizedRoot = root.slice(0, end);
   if (!normalizedRoot) return undefined;
 
   return `${normalizedRoot}/${normalizedSource.replace(/^\.?\//, "")}`;

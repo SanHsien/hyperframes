@@ -1,6 +1,14 @@
 import { strict as assert } from "node:assert";
 import { test } from "node:test";
-import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  writeFileSync,
+  symlinkSync,
+  rmSync,
+  linkSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { assertRemoteMediaBytes, isDirectMediaUrl, freezeUrl, freezeLocalFile } from "./freeze.mjs";
@@ -177,4 +185,72 @@ test("freezeLocalFile still byte-copies a non-SVG file untouched", () => {
   const dest = join(mkdtempSync(join(tmpdir(), "media-use-freeze-dest-")), "logo.png");
   freezeLocalFile(src, dest);
   assert.deepEqual(readFileSync(dest), Buffer.from([0x89, 0x50, 0x4e, 0x47]));
+});
+
+test("freezeLocalFile refuses a planted destination link without changing its target", (t) => {
+  const root = mkdtempSync(join(tmpdir(), "media-use-link-"));
+  const src = join(root, "src.bin");
+  const victim = join(root, "victim.bin");
+  const dest = join(root, "dest.bin");
+  writeFileSync(src, "new");
+  writeFileSync(victim, "keep");
+  try {
+    symlinkSync(victim, dest);
+  } catch (error) {
+    if (error.code !== "EPERM") throw error;
+    rmSync(root, { recursive: true, force: true });
+    t.skip("Windows file symlink privilege unavailable");
+    return;
+  }
+  try {
+    assert.throws(() => freezeLocalFile(src, dest), /regular file/);
+    assert.equal(readFileSync(victim, "utf8"), "keep");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("local replacement never modifies another name for the old inode", () => {
+  const root = mkdtempSync(join(tmpdir(), "media-use-hardlink-"));
+  const src = join(root, "src.bin");
+  const victim = join(root, "victim.bin");
+  const dest = join(root, "dest.bin");
+  writeFileSync(src, "new");
+  writeFileSync(victim, "keep");
+  linkSync(victim, dest);
+  try {
+    freezeLocalFile(src, dest);
+    assert.equal(readFileSync(dest, "utf8"), "new");
+    assert.equal(readFileSync(victim, "utf8"), "keep");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("zero-byte local copy supports both new and existing destinations", () => {
+  const root = mkdtempSync(join(tmpdir(), "media-use-empty-local-"));
+  const src = join(root, "empty.bin");
+  const dest = join(root, "asset.bin");
+  writeFileSync(src, "");
+  try {
+    freezeLocalFile(src, dest);
+    assert.equal(readFileSync(dest).length, 0);
+    writeFileSync(dest, "old");
+    freezeLocalFile(src, dest);
+    assert.equal(readFileSync(dest).length, 0);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("remote empty response remains rejected before publication", async (t) => {
+  const root = mkdtempSync(join(tmpdir(), "media-use-empty-remote-"));
+  const dest = join(root, "asset.png");
+  t.mock.method(globalThis, "fetch", async () => new Response("", { status: 200 }));
+  try {
+    await assert.rejects(freezeUrl("https://cdn.example.com/asset.png", dest), /empty response/);
+    assert.equal(existsSync(dest), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 });

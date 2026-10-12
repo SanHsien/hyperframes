@@ -3,6 +3,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   historyTooltipLabel,
+  toProjectAbsolutePath,
   findMatchingTimelineElementId,
   findTimelineIdByAncestor,
   resolveAssetHasAudio,
@@ -263,5 +264,15 @@ describe("resolveAssetHasAudio", () => {
     expect(await resolveAssetHasAudio("p1", "assets/talk.mp4")).toBeNull();
     stubMetadata(new Response(JSON.stringify({ metadata: {} })));
     expect(await resolveAssetHasAudio("p1", "assets/talk.mp4")).toBeNull();
+  });
+});
+
+describe("bounded project root trimming", () => {
+  it("handles long slash runs with and without a non-slash tail", () => {
+    const root = "C:/" + "/".repeat(250_000);
+    expect(toProjectAbsolutePath(root, "./scene.html")).toBe("C:/scene.html");
+    expect(toProjectAbsolutePath(root + "x", "scene.html")).toBe(root + "x/scene.html");
+    expect(toProjectAbsolutePath("/".repeat(250_000), "scene.html")).toBeUndefined();
+    expect(toProjectAbsolutePath(" C:\\work\\ ", "./scene.html")).toBe("C:/work/scene.html");
   });
 });

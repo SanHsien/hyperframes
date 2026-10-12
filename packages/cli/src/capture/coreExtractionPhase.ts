@@ -329,13 +329,6 @@ export async function runCoreExtraction(input: CoreExtractionInput): Promise<Cor
     extracted = await extractHtml(page1, { settleTime: 1000 });
     state.extracted = extracted;
 
-    // Strip framework scripts from the extracted body — keep visual library scripts
-    // IMPORTANT: Use non-greedy matching within individual script tags only
-    extracted.bodyHtml = extracted.bodyHtml
-      // Remove React hydration markers
-      .replace(/\s*data-reactroot="[^"]*"/g, "")
-      .replace(/\s*data-reactroot/g, "");
-
     const filteredScripts = filterExtractedScripts(extracted.bodyHtml, extracted.headHtml);
     extracted.bodyHtml = filteredScripts.bodyHtml;
     extracted.headHtml = filteredScripts.headHtml;

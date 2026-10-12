@@ -1,7 +1,8 @@
 import { fetchMedia, isPublicMediaUrl, readCappedBody } from "./media-fetch.mjs";
 import { sanitizeSvg } from "./svg-sanitize.mjs";
-import { writeFileSync, copyFileSync, mkdirSync, readFileSync } from "node:fs";
-import { dirname, extname } from "node:path";
+import { readFileSync } from "node:fs";
+import { extname } from "node:path";
+import { publishFreezeBytes, publishFreezeFile } from "./freeze-publisher.mjs";
 import { validateCube } from "./cube-validate.mjs";
 
 // ponytail: bound the download so a hostile/runaway URL can't fill the disk.
@@ -92,9 +93,8 @@ export function assertRemoteMediaBytes(bytes, destPath) {
 // Every logo/icon SVG comes from a third-party host (theSVG, a --from URL, a local file), so it
 // passes the Figma import's sanitizeSvg allowlist before it touches disk.
 function writeFrozen(destPath, buffer) {
-  mkdirSync(dirname(destPath), { recursive: true });
   const bytes = isSvgPath(destPath) ? Buffer.from(sanitizeSvg(buffer.toString("utf8"))) : buffer;
-  writeFileSync(destPath, bytes);
+  publishFreezeBytes(bytes, destPath);
   return bytes.byteLength;
 }
 
@@ -121,12 +121,8 @@ export async function freezeUrl(url, destPath) {
 }
 
 export function freezeLocalFile(srcPath, destPath) {
-  if (isSvgPath(destPath)) {
-    writeFrozen(destPath, readFileSync(srcPath));
-    return;
-  }
-  mkdirSync(dirname(destPath), { recursive: true });
-  copyFileSync(srcPath, destPath);
+  if (isSvgPath(destPath)) writeFrozen(destPath, readFileSync(srcPath));
+  else publishFreezeFile(srcPath, destPath);
 }
 
 // Ingest accepts a DIRECT public media URL only — not a platform page. yt-dlp is

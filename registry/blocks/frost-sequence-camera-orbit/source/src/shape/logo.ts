@@ -83,8 +83,10 @@ function roundPolygon(pts: THREE.Vector2[], r: number): THREE.Path {
 }
 
 /** A relative or root-relative path, or an inline SVG data URI: never a scheme or protocol-relative host. */
-const isProjectAssetUrl = (url: string) =>
-  /^data:image\/svg\+xml[,;]/i.test(url) || !/^(?:[a-z][a-z0-9+.-]*:|[\\/]{2})/i.test(url.trim());
+const isProjectAssetUrl = (url: string) => {
+  if (/[\u0000-\u001f\u007f]/.test(url) || url !== url.trim()) return false;
+  return /^data:image\/svg\+xml[,;]/i.test(url) || !/^(?:[a-z][a-z0-9+.-]*:|[\\/]{2})/i.test(url);
+};
 
 /** The SVG's shapes fitted to `P.width`, centred, y-up (world units). */
 export async function loadLogoShapes(
@@ -93,7 +95,7 @@ export async function loadLogoShapes(
 ): Promise<THREE.Shape[]> {
   const P = { ...DEFAULT_LOGO_PARAMS, ...params };
   if (!isProjectAssetUrl(url)) throw new Error("The logo must be a project asset path, not " + url);
-  const text = await fetch(url).then((r) =>
+  const text = await fetch(url, { credentials: "omit", redirect: "error" }).then((r) =>
     r.ok ? r.text() : Promise.reject(new Error("no logo")),
   );
   const data = new SVGLoader().parse(text);

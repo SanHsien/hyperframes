@@ -2,7 +2,14 @@ import { HF_AUDIO_GROUP_TAG } from "@hyperframes/core/audio-groups";
 import type { TimelineElement } from "../player";
 
 const AUDIO_TIMELINE_TAGS = new Set(["audio", "music", "sfx", "sound", "narration"]);
-const AUDIO_SOURCE_EXT_RE = /\.(aac|flac|m4a|mp3|ogg|opus|wav)(?:[?#].*)?$/i;
+const AUDIO_SOURCE_EXT_RE = /\.(aac|flac|m4a|mp3|ogg|opus|wav)(?=[?#]|$)/i;
+
+function hasAudioSourceExtension(source: string): boolean {
+  const end = source.length;
+  let start = end;
+  while (start > 0 && !/[\r\n\u2028\u2029]/.test(source[start - 1]!)) start--;
+  return AUDIO_SOURCE_EXT_RE.test(source.slice(start, end));
+}
 const MUSIC_ID_RE = /\b(music|bgm|soundtrack|background[-_]?music)\b/i;
 
 /**
@@ -31,7 +38,7 @@ export function isAudioTimelineElement(
   if (!element) return false;
   const tag = element.tag.trim().toLowerCase();
   if (AUDIO_TIMELINE_TAGS.has(tag)) return true;
-  return Boolean(element.src && AUDIO_SOURCE_EXT_RE.test(element.src));
+  return Boolean(element.src && hasAudioSourceExtension(element.src));
 }
 
 /** A track whose hide toggle reads as mute: the header button and its undo entry. */

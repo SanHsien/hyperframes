@@ -121,3 +121,25 @@ describe("patchRootCompositionDuration", () => {
     expect(patchRootCompositionDuration(source, "8")).toBe(source);
   });
 });
+
+describe("bounded root tag scan", () => {
+  it("preserves less-than characters inside quoted attributes", () => {
+    const source = '<div data-duration="4" title="<" data-composition-id="root">';
+    expect(patchRootCompositionDuration(source, "8")).toBe(
+      source.replace('data-duration="4"', 'data-duration="8"'),
+    );
+  });
+  it("leaves long malformed starts and unterminated attribute lists unchanged", () => {
+    for (const source of ["<".repeat(250_000), "<div " + "data-composition-id ".repeat(30_000)]) {
+      expect(patchRootCompositionDuration(source, "8")).toBe(source);
+    }
+  });
+  it("keeps the first completed composition and leaves nested durations alone", () => {
+    const source =
+      "<".repeat(250_000) +
+      '<div data-duration="4" data-composition-id="root"><div data-composition-id="child" data-duration="2">';
+    expect(patchRootCompositionDuration(source, "8")).toBe(
+      source.replace('data-duration="4"', 'data-duration="8"'),
+    );
+  });
+});

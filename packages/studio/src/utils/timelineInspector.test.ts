@@ -184,3 +184,30 @@ describe("beat source from a video with sound", () => {
     expect(resolveBeatSourceTrack([short, long, muted])?.element).toBe(long);
   });
 });
+
+describe("bounded audio source classification", () => {
+  it("rejects repeated query candidates ending in a non-terminal line break", () => {
+    expect(isAudioTimelineElement({ tag: "div", src: ".aac#".repeat(250_000) + "\nX" })).toBe(
+      false,
+    );
+    expect(isAudioTimelineElement({ tag: "div", src: ".aac#".repeat(250_000) })).toBe(true);
+  });
+  it("preserves the previous matcher on ordinary sources and line endings", () => {
+    const previous = /\.(aac|flac|m4a|mp3|ogg|opus|wav)(?:[?#].*)?$/i;
+    const sources = [
+      "track.MP3",
+      "track.wav?download=1#x",
+      "x#track.mp3",
+      "a.aac#b.wav",
+      "clip.mp4",
+      "a.aac#x\nX",
+      "a.aac\n",
+      "a.aac\r\n",
+      "a.aac\u2028",
+      "x\ntrack.mp3",
+      "a.aac\n\n",
+    ];
+    for (const src of sources)
+      expect(isAudioTimelineElement({ tag: "div", src }), src).toBe(previous.test(src));
+  });
+});
