@@ -192,7 +192,7 @@ PR #2 的歷史 CodeQL 掃描共 28 筆（#156 至 #183）。下表保留先前�
 | #180 | `js/http-to-file-access` | `skills/media-use/audio/scripts/lib/gemini-tts.mjs` | Gemini 回應位元組只通過 RIFF/WAVE 標頭檢查就直接寫檔。依本 fork 對雲端音訊的政策（與 #133、#134 及 `heygen.mjs` 相同），改為經 `normalizeCloudAudio(bytes, wavAbs)` 由 ffmpeg 解碼再編碼後才寫入；該函式可由第二個參數注入供測試使用，回傳 false 時回 `{ ok: false, error: "audio transcode failed (ffmpeg; output must be .wav or .mp3)" }` 且不留下原始檔，標頭檢查與金鑰遮蔽維持不變 |
 | #183 | `js/http-to-file-access` | `packages/cli/src/registry/localSemantic.ts` | 刪除已無呼叫者的 `fetchLocalVectors`（與僅供它使用的 `FetchLocalVectorOptions`、`CATALOG_ARTIFACT_TIMEOUT_MS`）。`git grep` 確認只有 `localSemantic.test.ts` 使用它；`catalog.ts` 早已改呼叫 `installLocalVectors`，向量只從隨套件目錄複製。原本只能透過它驗證的 `media-vectors` 成對與逐列檢查改在 `installLocalVectors` 上測試，並新增「`globalThis.fetch` 換成會丟例外的替身時 `installLocalVectors` 仍成功且不被呼叫」的測試 |
 
-#182（`js/http-to-file-access`，`local-media-search.mjs`）當時由 F1 改為隨套件安裝而在 PR merge ref 上轉為 fixed。先前把其餘 23 筆（#157 至 #176、#178、#179、#181）概括為「上游／測試／已有防護、無需修改」的裁決證據不足，已 superseded。以本日逐項產品 flow 與實際修補決策為準；剩餘 13 項已補作逐項 source flow triage：其中 12 項依下節理由裁決，#171 為真實 Frost URL guard／bundle 缺口並另有修補候選；不能因歷史 dismissal 或舊 CI 綠燈而宣稱已安全完成。
+#182（`js/http-to-file-access`，`packages/cli/src/media-use/lib/local-media-search.mjs`）的修正是上方「合併後審查與修正」表的 F1 項：`installMediaVectors` 在 `packages/cli/src/media-use/lib/local-media-search.mjs:90`、`resolveBundledMediaFile` 在 `:129`，隨 `cfda43f51`（PR #2 合併，`chore(upstream): adopt d94708e5 as a whole tree (#2)`）進入 `main`。此警示只存在於 `refs/pull/2/merge`：`/instances` 僅列一筆（commit `0e11683ed`，state fixed），`main` 沒有這筆警示。先前把其餘 23 筆（#157 至 #176、#178、#179、#181）概括為「上游／測試／已有防護、無需修改」的裁決證據不足，已 superseded，以逐項 source flow 與實際修補決策為準。#171（Frost URL guard）原為候選，現已同樣隨 `cfda43f51` 進入 `main`：`registry/blocks/frost-sequence-camera-orbit/source/src/shape/logo.ts:86` 的 `isProjectAssetUrl`（拒絕控制字元與前後空白）、`:97` 的 guard，以及 `:98` 的 `fetch(url, { credentials: "omit", redirect: "error" })`；上游 `d94708e5` 的同檔只有 `isProjectAssetUrl` 與無選項的 `fetch(url)`。#171 也只存在於 `refs/pull/2/merge`（commit `ab282dd3a`，state fixed），`main` 的 open、dismissed、fixed 清單都不含它。2026-10-24 以 `gh api` 實測，`main` 的 code-scanning open 為 0、dismissed 為 25；歷史 dismissal 與舊 CI 綠燈仍不是「已安全完成」的證據，兩者之外以逐項 flow 為準。
 
 ### 2026-10-12：PR #2 產品與 Comments 驗收修復
 
@@ -237,3 +237,12 @@ PR #2 的歷史 CodeQL 掃描共 28 筆（#156 至 #183）。下表保留先前�
 本決策更新時，#160–169、#172–176、#178、#179 共 17 項已由 root 依逐項 source flow 理由完成 false-positive dismissal，並驗證權威狀態。裁決是有意功能或限定 fixture 的證據，不是無 flow 或全渲染 sandbox。6 項真實漏洞仍保持 open 等候候選掃描；不宣稱零 alerts。
 
 最終各 owner 的 source／tests／此文件穩定後，由 root 統一跑 canonical gate，再發布候選取得實際 hosted 產品與安全結果。先前 `77b9b204bd17185db232a948526a10f16527f73a` 的 Windows／Comments／drag／regression 成功僅覆蓋先前產品候選；CodeQL security check 的警示促成本節修補，不能把 Analyze job 的成功等同零安全問題。
+
+
+### 2026-10-24：Linux 上執行 POSIX 權限測試
+
+四個測試檔的權限案例以 `it.skipIf(process.platform === "win32")` 排除 Windows（`packages/engine/src/services/extractionCache.test.ts`、`packages/engine/src/services/videoFrameExtractor.test.ts`、`packages/cli/src/commands/clean.test.ts`、`packages/producer/src/services/render/stages/compileStage.gifCache.test.ts`），而本 fork 唯一跑 TS 單元測試的 `.github/workflows/windows-render.yml` 只在 Windows 執行，`.github/workflows/ci.yml` 原本只有 Windows Python。這些案例因此從未在任何 CI 執行過，CodeQL #177 的快取根目錄防護沒有自動化回歸保護。
+
+新增 `.github/workflows/posix-security-tests.yml`（不放進 `ci.yml`，因為 `tools/tests/test_fork_docs.py` 的 `test_ci_covers_python_314` 把它釘為純 Windows）的 job `test-posix-security`（ubuntu-latest、一般 runner 使用者、`contents: read`，push 到 `main` 與 PR 都跑）：以 `--ignore-scripts` 安裝依賴、安裝 ffmpeg（`videoFrameExtractor.test.ts` 的兩個權限案例在 `describe.skipIf(!HAS_FFMPEG)` 內，缺 ffmpeg 會被靜默略過），用各套件自己的 vitest 跑上述四個檔，並由最後一步讀取 JSON report，要求 13 個具名案例的狀態是 `passed`；被略過、缺席或失敗都讓 job 失敗，因為只有 run 紀錄不代表測試有跑。
+
+上方 #171 列與文末「6 項真實漏洞仍保持 open」「新版候選的 hosted 驗收仍 pending」是 2026-10-12 的狀態，現況以上方 CodeQL 段落 2026-10-24 的實測為準。是否把此 job 設為 required check 不在本次變更內。
