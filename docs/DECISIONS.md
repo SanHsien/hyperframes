@@ -243,6 +243,6 @@ PR #2 的歷史 CodeQL 掃描共 28 筆（#156 至 #183）。下表保留先前�
 
 四個測試檔的權限案例以 `it.skipIf(process.platform === "win32")` 排除 Windows（`packages/engine/src/services/extractionCache.test.ts`、`packages/engine/src/services/videoFrameExtractor.test.ts`、`packages/cli/src/commands/clean.test.ts`、`packages/producer/src/services/render/stages/compileStage.gifCache.test.ts`），而本 fork 唯一跑 TS 單元測試的 `.github/workflows/windows-render.yml` 只在 Windows 執行，`.github/workflows/ci.yml` 原本只有 Windows Python。這些案例因此從未在任何 CI 執行過，CodeQL #177 的快取根目錄防護沒有自動化回歸保護。
 
-`.github/workflows/ci.yml` 新增 job `test-posix-security`（ubuntu-latest、一般 runner 使用者、`contents: read`，push 到 `main` 與 PR 都跑）：以 `--ignore-scripts` 安裝依賴、安裝 ffmpeg（`videoFrameExtractor.test.ts` 的兩個權限案例在 `describe.skipIf(!HAS_FFMPEG)` 內，缺 ffmpeg 會被靜默略過），用各套件自己的 vitest 跑上述四個檔，並由最後一步讀取 JSON report，要求 13 個具名案例的狀態是 `passed`；被略過、缺席或失敗都讓 job 失敗，因為只有 run 紀錄不代表測試有跑。
+新增 `.github/workflows/posix-security-tests.yml`（不放進 `ci.yml`，因為 `tools/tests/test_fork_docs.py` 的 `test_ci_covers_python_314` 把它釘為純 Windows）的 job `test-posix-security`（ubuntu-latest、一般 runner 使用者、`contents: read`，push 到 `main` 與 PR 都跑）：以 `--ignore-scripts` 安裝依賴、安裝 ffmpeg（`videoFrameExtractor.test.ts` 的兩個權限案例在 `describe.skipIf(!HAS_FFMPEG)` 內，缺 ffmpeg 會被靜默略過），用各套件自己的 vitest 跑上述四個檔，並由最後一步讀取 JSON report，要求 13 個具名案例的狀態是 `passed`；被略過、缺席或失敗都讓 job 失敗，因為只有 run 紀錄不代表測試有跑。
 
 上方 #171 列與文末「6 項真實漏洞仍保持 open」「新版候選的 hosted 驗收仍 pending」是 2026-10-12 的狀態，現況以上方 CodeQL 段落 2026-10-24 的實測為準。是否把此 job 設為 required check 不在本次變更內。
