@@ -32,6 +32,7 @@
   - `packages/studio-server`：本地編輯器後端服務。
   - `packages/shader-transitions`：GLSL 轉場效果。
 - Agent Skills：位於 `skills/`，提供影片製作專用 Agent 提示詞與工作流。
+- 產品程式（`packages/`）與 Agent Skills（`skills/`）以上游為準。
 - 維護工具：`tools/`（Windows gate、上游檢查、相對連結檢查、依賴新鮮度）。
 - 維護測試：`tools/tests/`（維護契約測試，獨立於產品測試目錄）。
 
@@ -41,8 +42,9 @@
 - 動畫核心原則：frames read as states, not slides；堅持以 reconstructed motion 實作，嚴禁降級為靜態投影片。
 - 修 bug 先補可重現失敗測試，再做最小修正。
 - 不為了套格式而大改上游程式；Ruff 只閘維護工具的 E9（語法）與 F（pyflakes）。
-- 使用繁體中文回覆；使用者文件以繁中為主，公開入口同步維護 `README.en.md`。
+- 使用繁體中文回覆；使用者文件以繁中為主，公開入口同步維護 `README.en.md`。直接交付可驗證結果，避免冗長背景鋪陳。
 - 上游更新英文 `README.md` 時：把新內容併進 `README.en.md`，再翻進繁中 `README.md`。
+- 一般變更提交前跑 `pwsh -NoProfile -File tools\dev_check.ps1` 作為驗證 gate。
 - 提交訊息用 Conventional Commit。Dependabot 或外部 fork 的變更走 PR，讀 diff 並通過 CI 後再合併。
 - `REVIEW.md` 是風險快照，不是每個一般 bug 的流水帳。
 - 不 force-push `main`，不刪 `upstream` remote。
