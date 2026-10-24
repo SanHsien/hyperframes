@@ -10,12 +10,24 @@ updates:
       - "maintenance"
   - package-ecosystem: "npm"
     directory: "/"
+    exclude-paths:
+      - "skills/remotion-to-hyperframes/assets/test-corpus/**"
     schedule:
       interval: "monthly"
     open-pull-requests-limit: 5
     labels:
       - "dependencies"
       - "product"
+  # Remotion 測試語料：無 lockfile 的轉譯對照 fixture，不是產品依賴；
+  # 版本與安全更新都不跑。見 docs/DECISIONS.md 2026-10-24。
+  - package-ecosystem: "npm"
+    directories:
+      - "/skills/remotion-to-hyperframes/assets/test-corpus/**"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 0
+    ignore:
+      - dependency-name: "*"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:

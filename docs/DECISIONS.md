@@ -246,3 +246,12 @@ PR #2 的歷史 CodeQL 掃描共 28 筆（#156 至 #183）。下表保留先前�
 新增 `.github/workflows/posix-security-tests.yml`（不放進 `ci.yml`，因為 `tools/tests/test_fork_docs.py` 的 `test_ci_covers_python_314` 把它釘為純 Windows）的 job `test-posix-security`（ubuntu-latest、一般 runner 使用者、`contents: read`，push 到 `main` 與 PR 都跑）：以 `--ignore-scripts` 安裝依賴、安裝 ffmpeg（`videoFrameExtractor.test.ts` 的兩個權限案例在 `describe.skipIf(!HAS_FFMPEG)` 內，缺 ffmpeg 會被靜默略過），用各套件自己的 vitest 跑上述四個檔，並由最後一步讀取 JSON report，要求 13 個具名案例的狀態是 `passed`；被略過、缺席或失敗都讓 job 失敗，因為只有 run 紀錄不代表測試有跑。
 
 上方 #171 列與文末「6 項真實漏洞仍保持 open」「新版候選的 hosted 驗收仍 pending」是 2026-10-12 的狀態，現況以上方 CodeQL 段落 2026-10-24 的實測為準。是否把此 job 設為 required check 不在本次變更內。
+
+### 2026-10-24：Dependabot 不掃 Remotion 測試語料
+
+Dependabot run `40021722362`（main `c1c221f6`，security update job `1648768405`）在 `skills/remotion-to-hyperframes/assets/test-corpus/tier-3-data-driven/remotion-src` 對 `zod` 失敗，log 原文：`Dependabot can't update vulnerable dependencies for projects without a lockfile or pinned version requirement as the currently installed version of zod isn't known.`，錯誤類型 `dependency_file_not_supported`。這是安全更新 job，不受原本只設 `directory: "/"` 的版本更新設定約束，會掃到所有 manifest。
+
+**決定**：在 `.github/dependabot.yml` 排除 `skills/remotion-to-hyperframes/assets/test-corpus/**`：根目錄 npm 項加 `exclude-paths`，另加一個以 `directories` 指向語料目錄的 npm 項，`ignore: dependency-name "*"` 且 `open-pull-requests-limit: 0`。
+
+**理由**：這三個 `remotion-src/package.json` 是 `run.sh` 用來渲染 Remotion 基準影片、與 HyperFrames 轉譯結果比 SSIM 的 fixture，不隨產品發佈，只在手動跑語料時 `npm install`。它們以 caret 範圍宣告、沒有 lockfile，Dependabot 本來就無法判定版本而只會反覆失敗；要讓更新成功就得在上游擁有的 `skills/` 內新增 lockfile 或改宣告，偏離「`skills/` 以上游為準」且把 fixture 綁成本 fork 的版本。`zod` 從 3 升到最新 4.x 是 major 變更，也可能改變基準渲染。之前沒有關於 test-corpus 的既有決定（`docs/DECISIONS.md`、`FORK.md`、git log 均無）。`tools/tests/test_fork_docs.py::test_dependabot_skips_remotion_test_corpus` 釘住這項排除。
+
