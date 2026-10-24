@@ -259,3 +259,15 @@ Dependabot run `40021722362`（main `c1c221f6`，security update job `1648768405
 ### 2026-10-24：ruff 下限升到 0.17
 
 依賴新鮮度報告把 `ruff>=0.16` 標為 REVIEW UPDATE（PyPI 最新 0.17.2）。依報告的審查步驟，在乾淨 venv 裝 `ruff==0.17.2` 後跑 `tools/dev_check.ps1` 的同組指令：`ruff check --select E9,F --target-version py310 tools` 全過、`pytest -c tools/pytest.ini tools/tests` 全過。本 fork 只啟用 `E9,F` 兩組規則，新版新增規則不影響，所以把 `requirements-dev.txt` 的下限升到 `ruff>=0.17`，不是只為了讓報告變綠。
+
+## 2026-10-25：升 fallow 3，happy-dom 留在 20.x
+
+**決定**：`fallow` 升到 `^3.34.0`（lock 解到 3.35.0，修掉兩個 low 警示）；`happy-dom` 留在 `^20.9.0`，Dependabot 忽略其主版本升級。
+
+**理由**：
+
+- fallow 3.0.0 官方標明 CLI 旗標、設定、JSON 輸出皆無破壞性變更，只在 lefthook 的 `fallow audit` 使用；本機 `fallow audit --base origin/main --fail-on-issues` 通過。
+- happy-dom 21 預設關閉 iframe 與 CSS 檔載入。設 `enableIframePageLoading`／`enableCSSFileLoading` 並改 `manualOffsetDrag` 測試後，仍有三項實作缺口：style 宣告不保留 `-webkit-text-fill-color`（`inlineTextStyleRange` 3 個測試）、`Menu` 的 capture 階段外部點擊關閉測試失敗、`motion-signature.browser` 兩個 `display:none` 誘餌測試失敗。修它們要改產品程式或砍測試覆蓋。
+- happy-dom 只在 `devDependencies` 的測試環境使用，沒有任何非測試程式 import；GHSA-834v-8h66-3h79（ESM compiler 程式碼注入，修補版 21.0.4）影響的是載入不受信任模組腳本的情境，測試只載入本 repo 的 fixture。兩筆警示以 `tolerable_risk` 駁回。
+
+**重評條件**：happy-dom 修好上述三項，或 20.x 出現無法繞開的相容問題。
