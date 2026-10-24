@@ -255,3 +255,7 @@ Dependabot run `40021722362`（main `c1c221f6`，security update job `1648768405
 
 **理由**：這三個 `remotion-src/package.json` 是 `run.sh` 用來渲染 Remotion 基準影片、與 HyperFrames 轉譯結果比 SSIM 的 fixture，不隨產品發佈，只在手動跑語料時 `npm install`。它們以 caret 範圍宣告、沒有 lockfile，Dependabot 本來就無法判定版本而只會反覆失敗；要讓更新成功就得在上游擁有的 `skills/` 內新增 lockfile 或改宣告，偏離「`skills/` 以上游為準」且把 fixture 綁成本 fork 的版本。`zod` 從 3 升到最新 4.x 是 major 變更，也可能改變基準渲染。之前沒有關於 test-corpus 的既有決定（`docs/DECISIONS.md`、`FORK.md`、git log 均無）。`tools/tests/test_fork_docs.py::test_dependabot_skips_remotion_test_corpus` 釘住這項排除。
 
+
+### 2026-10-24：ruff 下限升到 0.17
+
+依賴新鮮度報告把 `ruff>=0.16` 標為 REVIEW UPDATE（PyPI 最新 0.17.2）。依報告的審查步驟，在乾淨 venv 裝 `ruff==0.17.2` 後跑 `tools/dev_check.ps1` 的同組指令：`ruff check --select E9,F --target-version py310 tools` 全過、`pytest -c tools/pytest.ini tools/tests` 全過。本 fork 只啟用 `E9,F` 兩組規則，新版新增規則不影響，所以把 `requirements-dev.txt` 的下限升到 `ruff>=0.17`，不是只為了讓報告變綠。
