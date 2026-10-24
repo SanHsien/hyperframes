@@ -152,3 +152,16 @@ def test_upstream_only_workflows_stay_gated_and_documented() -> None:
 
 def test_codeowners_naming_upstream_maintainers_is_absent() -> None:
     assert not (ROOT / ".github" / "CODEOWNERS").exists()
+
+
+TEST_CORPUS_GLOB = "/skills/remotion-to-hyperframes/assets/test-corpus/**"
+
+
+def test_dependabot_skips_remotion_test_corpus() -> None:
+    config = (ROOT / ".github" / "dependabot.yml").read_text(encoding="utf-8")
+    fork = (ROOT / "FORK.md").read_text(encoding="utf-8")
+    assert f'- "{TEST_CORPUS_GLOB}"' in config
+    assert 'dependency-name: "*"' in config
+    assert "open-pull-requests-limit: 0" in config
+    assert '- "skills/remotion-to-hyperframes/assets/test-corpus/**"' in config
+    assert "`.github/dependabot.yml`" in fork
