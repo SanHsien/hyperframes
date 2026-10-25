@@ -48,9 +48,32 @@ function keyFor(element: Element): string {
   return element.id || element.tagName.toLowerCase();
 }
 
+// happy-dom 21 implements Element.checkVisibility against its own window.getComputedStyle, which the
+// fixture below does not replace, so the script would take its platform path and never see the faked
+// display:none. Hide the method so the computed-style fallback runs, as it did before happy-dom had one.
+// The platform path itself is pinned in motion-signature.browser.chromium.test.ts.
+const nativeCheckVisibility = Object.getOwnPropertyDescriptor(Element.prototype, "checkVisibility");
+
+function hidePlatformVisibility(): void {
+  Object.defineProperty(Element.prototype, "checkVisibility", {
+    value: undefined,
+    configurable: true,
+    writable: true,
+  });
+}
+
+function restorePlatformVisibility(): void {
+  if (nativeCheckVisibility) {
+    Object.defineProperty(Element.prototype, "checkVisibility", nativeCheckVisibility);
+  } else {
+    Reflect.deleteProperty(Element.prototype, "checkVisibility");
+  }
+}
+
 // A per-element fake getComputedStyle: each element reports only its own declared style, like the platform,
 // so ancestor awareness (hidden subtrees, counter owners above the root) must come from the classifier.
 function installFixture({ rects, styles = {}, pseudo = {} }: Fixture): void {
+  hidePlatformVisibility();
   vi.spyOn(window, "getComputedStyle").mockImplementation((element, pseudoElement) => {
     const key = keyFor(element as Element);
     if (pseudoElement === "::before" || pseudoElement === "::after") {
@@ -117,6 +140,7 @@ const COUNTER_CONSUMER = { after: { content: "counter(countdown)" } };
 
 afterEach(() => {
   vi.restoreAllMocks();
+  restorePlatformVisibility();
   document.body.innerHTML = "";
   Reflect.deleteProperty(window, "__hyperframesLayoutGeometry");
   Reflect.deleteProperty(window, "__hyperframesMotionSignature");

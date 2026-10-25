@@ -48,6 +48,17 @@ function pressAndClick(target: HTMLElement): void {
   target.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, button: 0 }));
 }
 
+/**
+ * Base UI keeps a closed popup mounted until the element's animations have finished. happy-dom 21
+ * implements `Element.getAnimations` (20 had none), so Base UI waits on it and the popup leaves the
+ * document a task after the close, not inside it.
+ */
+async function settle(): Promise<void> {
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+}
+
 function openPanel(trigger: HTMLButtonElement): void {
   act(() => pressAndClick(trigger));
   expect(trigger.getAttribute("aria-expanded")).toBe("true");
@@ -61,7 +72,7 @@ function panelOf(trigger: HTMLButtonElement): HTMLElement {
 describe("ShortcutsPanel", () => {
   it.each(["page", "button", "panel"] as const)(
     "closes with Escape from the %s-focused position",
-    (focusPosition) => {
+    async (focusPosition) => {
       const { trigger } = renderPanel();
       openPanel(trigger);
 
@@ -88,12 +99,14 @@ describe("ShortcutsPanel", () => {
         eventTarget.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
       });
 
+      await settle();
+
       expect(trigger.getAttribute("aria-expanded")).toBe("false");
       expect(document.querySelector('[aria-label="Jump to frame"]')).toBeNull();
     },
   );
 
-  it("closes on an outside press whose pointerdown a canvas gesture prevented", () => {
+  it("closes on an outside press whose pointerdown a canvas gesture prevented", async () => {
     const preventDefault = (event: Event) => event.preventDefault();
     document.addEventListener("pointerdown", preventDefault, true);
     // The canvas exists before the panel opens, as in the editor.
@@ -116,6 +129,7 @@ describe("ShortcutsPanel", () => {
     });
 
     document.removeEventListener("pointerdown", preventDefault, true);
+    await settle();
     expect(pointerDown.defaultPrevented).toBe(true);
     expect(trigger.getAttribute("aria-expanded")).toBe("false");
     expect(document.querySelector('[aria-label="Jump to frame"]')).toBeNull();

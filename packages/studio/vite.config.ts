@@ -360,5 +360,10 @@ export default defineConfig({
   test: {
     exclude: ["data/**", "node_modules/**"],
     setupFiles: ["src/test-setup.ts"],
+    // happy-dom 21 turns iframe page loading off by default; many Studio tests build a same-origin
+    // iframe and read its contentDocument.
+    environmentOptions: {
+      happyDOM: { settings: { enableIframePageLoading: true } },
+    },
   },
 });

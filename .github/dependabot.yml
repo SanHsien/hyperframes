@@ -15,11 +15,6 @@ updates:
     schedule:
       interval: "monthly"
     open-pull-requests-limit: 5
-    # happy-dom 21 讓 Menu、inlineTextStyleRange、motion-signature 測試失敗，
-    # 且只用於測試環境，見 docs/DECISIONS.md 2026-10-25。
-    ignore:
-      - dependency-name: "happy-dom"
-        update-types: ["version-update:semver-major"]
     labels:
       - "dependencies"
       - "product"

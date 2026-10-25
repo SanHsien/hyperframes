@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 
-import { afterEach, describe, expect, it, vi } from "vitest";
+import propertyList from "happy-dom/lib/css/declaration/CSSPropertyList.js";
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { applyInlineStyle } from "./inlineTextStyleRange";
 import {
   readFirstPaintedElement,
@@ -631,6 +632,19 @@ describe("applyInlineStyle survives a control that fires repeatedly", () => {
  * which reads as the colour picker being broken.
  */
 describe("applyInlineStyle when something else is painting the glyphs", () => {
+  // happy-dom 21 keeps only the CSS properties on its built-in list and silently drops the rest from
+  // element.style; `-webkit-text-fill-color` is not on it. A browser keeps the declaration and the module
+  // under test writes it, so register it for these tests the way a browser would.
+  const FILL_PROPERTY = "-webkit-text-fill-color";
+  const knownProperties = propertyList as { kebabCase: Record<string, string> };
+  const hadFillProperty = FILL_PROPERTY in knownProperties.kebabCase;
+  beforeAll(() => {
+    knownProperties.kebabCase[FILL_PROPERTY] = "webkitTextFillColor";
+  });
+  afterAll(() => {
+    if (!hadFillProperty) delete knownProperties.kebabCase[FILL_PROPERTY];
+  });
+
   function stubFill(fill: string | null | ((element: HTMLElement) => string | null)) {
     const real = window.getComputedStyle.bind(window);
     vi.spyOn(window, "getComputedStyle").mockImplementation(((element: Element) => {

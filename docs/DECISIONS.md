@@ -272,6 +272,15 @@ Dependabot run `40021722362`（main `c1c221f6`，security update job `1648768405
 
 **重評條件**：happy-dom 修好上述三項，或 20.x 出現無法繞開的相容問題。
 
+**後續（同日）：已升 happy-dom 21.0.4，上面維持 20.x 的理由失效。**
+
+- 當時說「修它們要改產品程式或砍測試覆蓋」不成立：三項缺口都是 happy-dom 21 與測試寫法的差異，全部在測試端處理，沒有動產品程式，也沒有刪測試。
+  - `-webkit-text-fill-color`：21 的 `element.style` 只保留內建屬性表裡的屬性，不在表內的宣告被丟掉（20 會保留）。`inlineTextStyleRange.test.ts` 在該 describe 內把這個屬性登錄進 happy-dom 的 `CSSPropertyList`，測完還原；瀏覽器本來就保留它，產品程式的寫入沒問題。
+  - `Menu` 外部點擊：不是 capture 階段失效。21 新增 `Element.getAnimations`，Base UI 會等它完成才卸載，popup 在關閉後晚一個 task 才離開 document（20 沒有這個方法，同步卸載）。`Menu.test.tsx` 與同樣情形的 `ShortcutsPanel.test.tsx`（4 個測試）在斷言前加一次 `settle()`；斷言本身（bubble 階段 witness 沒被觸發、popup 已關）不變。
+  - `motion-signature.browser` 兩個 `display:none` 誘餌測試：21 新增 `Element.checkVisibility`，腳本因此走「平台決定」那條路，而該路徑讀 happy-dom 自己的 `getComputedStyle`，看不到 fixture 偽造的 `display:none`。fixture 在安裝時把 `checkVisibility` 遮掉，讓腳本回到 computed-style fallback（與 20 相同的路徑），`afterEach` 還原。平台路徑仍由 `motion-signature.browser.chromium.test.ts` 的真 Chromium 釘住。
+- 預設變更：21 預設關閉 iframe 頁面載入，需要 `enableIframePageLoading: true`（`packages/player/vitest.config.ts`、`packages/sdk/vitest.config.ts`、`packages/studio/vite.config.ts` 的 `environmentOptions.happyDOM.settings`；`manualOffsetDrag.test.ts` 直接 `new Window` 的測試同樣傳這個設定）。`NLEPreview.slowBoot.test.ts` 原有的 `@vitest-environment-options` 註解多包了一層 `happyDOM`，vitest 會自己再包一次，所以從來沒生效；21 下它反而讓 iframe 沒有 `contentWindow`，已移除該行改用設定檔。CSS 檔載入（`enableCSSFileLoading`）沒有測試需要，沒有開。
+- 刪掉 `.github/dependabot.yml` 對 happy-dom 的 `semver-major` ignore。`package.json` 與 `packages/sdk/package.json` 的宣告下限改為 `^21.0.4`，是因為程式真的跑在新版上（`bun.lock` 解析為 21.0.4），不是為了消新鮮度報告；`.github/dependency-deferrals.json` 沒有 happy-dom 條目。兩筆 GHSA-834v-8h66-3h79 警示現在由修補版本本身解掉，不再靠 `tolerable_risk` 駁回。
+
 ## 2026-10-25：上游採用 `f5ab7711f`
 
 **決定**：一次採用上游 `heygen-com/hyperframes` `main` 的 `f5ab7711fb8d0a3a0dea8bebc8e959448dac02d4`。`tools/upstream_baseline.json` 的 `reviewed_through` 由 `d94708e5` 推進到該 SHA，`reviewed_date` 為 2026-10-25；PR 水位 `#4784`、issue 水位 `#4763` **不動**，因為本輪沒有逐筆讀 PR 與 issue。
@@ -344,3 +353,17 @@ Dependabot run `40021722362`（main `c1c221f6`，security update job `1648768405
 - `registry/blocks/frost-sequence-camera-orbit/source/package-lock.json` 已改鎖 `esbuild` 0.28.2 以對齊 `package.json`，但 `assets/frost.js` 沒有重建（需要網路安裝 three 並重跑 `build.mjs`），所以 fork 的 Frost 壓縮檔仍是舊 esbuild 的輸出。
 - 未跑：producer 的 Docker 回歸、瀏覽器端 e2e、Lambda／GCP 實機、`generate:catalog` 全流程。LFS 指標檔（`compiled.html` 等）未取得 fork 側物件。
 - 審查後修正：`openBrowser.ts` 不再傳 `windowsHide`（`SW_HIDE` 會把使用者指定瀏覽器的視窗藏起來，上游 `051584c22` 刻意不藏），故刪除 fork 專有的 `openBrowser.windowsHide.test.ts`，上方 PR #3851 對 `openBrowser.ts` 的部分以此為準（superseded）；`publish.yml` 新增的 `lambda-arm64-ffmpeg` job 補上 `github.repository == 'heygen-com/hyperframes'` 防護，避免 fork 的 release 分支或預發佈 tag 白跑 ARM ffmpeg 建置。
+
+### CodeQL 新警示 #186–#193
+
+**決定**：這 8 筆都來自本次採用的上游新程式碼，逐筆讀過資料流後，全部以 false positive 駁回，不改程式。
+
+| 警示 | 檔案 | 判斷 |
+| --- | --- | --- |
+| #186、#187、#188 | `packages/sdk/src/examples.test.ts` | 測試內對「自己序列化出來的 HTML」跑的正規表示式，輸入是同一個測試剛產生的字串，不是外部輸入，也不做安全過濾 |
+| #189、#190 | `packages/cli/src/utils/stoppableExecFile.ts` | `spawn` 傳 argv 陣列且沒有設 `shell`，引數不會被 shell 解讀，沒有命令注入面 |
+| #191 | `skills/media-use/audio/scripts/lib/heygen.mjs` | 把使用者自己的 HeyGen 憑證送往使用者自己設定的 HeyGen API，是該功能本身的用途，沒有第三方接收端 |
+| #192 | `packages/cli/src/capture/publicNetwork.ts` | 這是 SSRF 防護抓取本身：先解析主機名稱、確認是公開位址，再釘住該位址連線，警示指向的請求已經過這層檢查 |
+| #193 | `skills/media-use/audio/scripts/lib/openverse.mjs` | 只寫入呼叫端指定的 credits 檔，內容經 `oneLine`／`httpsUrl` 清理，不含外部可控的路徑或未清理的文字 |
+
+**重看條件**：上游改動這些檔案的資料流（輸入來源、清理函式、連線目標或寫入路徑）時重看；僅格式或註解變動不需要。

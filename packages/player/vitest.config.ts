@@ -26,7 +26,10 @@ export default defineConfig({
   test: {
     environment: "happy-dom",
     environmentOptions: {
-      happyDOM: { settings: { handleDisabledFileLoadingAsSuccess: true } },
+      // happy-dom 21 turns iframe page loading off by default; the player tests mount real iframes.
+      happyDOM: {
+        settings: { enableIframePageLoading: true, handleDisabledFileLoadingAsSuccess: true },
+      },
     },
     setupFiles: ["./src/slideshow/test-setup.ts"],
   },

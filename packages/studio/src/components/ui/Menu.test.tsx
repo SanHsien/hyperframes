@@ -189,6 +189,10 @@ describe("Menu behaviour", () => {
     press(one('[data-testid="overlay"]', "overlay"));
     document.removeEventListener("pointerdown", witness);
 
+    // Dismissal runs in the capture phase. The popup unmounts a task after the press, once Base UI has
+    // waited on `Element.getAnimations`, which happy-dom 21 implements and 20 did not.
+    await settle();
+
     expect(sawBubblePress).toBe(false);
     expect(popup()).toBeNull();
   });
