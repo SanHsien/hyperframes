@@ -17,6 +17,7 @@ ROOT = Path(__file__).resolve().parent.parent
 LINK_PATTERN = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
 IMAGE_PATTERN = re.compile(r"!\[[^\]]*\]\(([^)]+)\)")
 HTML_SRC_PATTERN = re.compile(r"""(?is)<img[^>]+src=["']([^"']+)["']""")
+_TITLE_RE = re.compile(r"""\s+(?:"[^"]*"|'[^']*')\s*$""")
 SKIP_PREFIXES = ("http://", "https://", "mailto:", "tel:", "#")
 SKIP_NAMES = {
     "upstream-review-report.md",
@@ -59,16 +60,41 @@ def iter_documents() -> list[Path]:
     return required
 
 
+def _exists_exact_case(base: Path, relative: str) -> Path | None:
+    """Resolve `relative` from `base`, matching every name's case exactly.
+
+    `Path.exists()` and `resolve()` ignore case on Windows, but GitHub's renderer
+    does not, so `real.md` would pass here and 404 there. Returns None when a
+    component is missing or differs only in case.
+    """
+    current = base
+    for part in relative.replace("\\", "/").split("/"):
+        if part in ("", "."):
+            continue
+        if part == "..":
+            current = current.parent
+            continue
+        try:
+            names = {entry.name for entry in current.iterdir()}
+        except OSError:
+            return None
+        if part not in names:
+            return None
+        current = current / part
+    return current
+
+
 def _missing_relative(path: Path, target: str) -> str | None:
     target = target.strip().strip("<>")
     if not target or target.startswith(SKIP_PREFIXES):
         return None
+    target = _TITLE_RE.sub("", target)
     file_part = unquote(target.split("#", 1)[0])
     if not file_part:
         return None
-    resolved = (path.parent / file_part).resolve()
-    if resolved.exists():
+    if _exists_exact_case(path.parent, file_part) is not None:
         return None
+    resolved = (path.parent / file_part).resolve()
     try:
         shown = resolved.relative_to(ROOT)
     except ValueError:
