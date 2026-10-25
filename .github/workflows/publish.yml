@@ -26,9 +26,10 @@ jobs:
             && github.event.pull_request.merge_commit_sha
             || github.sha }}
     if: >-
-      github.event_name == 'push' ||
-      (github.event.pull_request.merged == true &&
-       startsWith(github.event.pull_request.head.ref, 'release/v'))
+      github.repository == 'heygen-com/hyperframes' &&
+      (github.event_name == 'push' ||
+       (github.event.pull_request.merged == true &&
+        startsWith(github.event.pull_request.head.ref, 'release/v')))
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:

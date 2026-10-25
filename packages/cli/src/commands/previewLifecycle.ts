@@ -65,7 +65,6 @@ type SpawnPreview = (
     windowsHide: boolean;
     stdio: ["ignore", number, number];
     env: NodeJS.ProcessEnv;
-    windowsHide: boolean;
   },
 ) => SpawnResult;
 

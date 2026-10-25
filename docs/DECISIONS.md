@@ -290,7 +290,7 @@ Dependabot run `40021722362`（main `c1c221f6`，security update job `1648768405
 | `CONTRIBUTING.md`、`README.md` | 取 fork 繁中版；上游 `README.md` 的變更（Studio 連結列、Claude plugin 安裝、7 個技能、核心集與按需表）用 patch 併進 `README.en.md`；`CONTRIBUTING.md` 加上上游「在檢出目錄內不要跑專案內 `skills add`」的說明，簽署 commit 與 fork PR 核准兩條屬上游流程，本 fork 不適用 |
 | `bun.lock` | 取上游後以 `bun install --linker=hoisted` 重新產生；`bun install --frozen-lockfile` 通過 |
 | `package.json` | 取上游的 `esbuild ^0.28.2`、`fallow ^3.34.1`、`yaml`／`picomatch` 位置與 scripts，`concurrently` 隨上游移除；保留 fork 的 `patchedDependencies`（`html2canvas@1.4.1`）並加上上游的 `engines.bun`，`happy-dom ^20.9.0` 兩邊一致 |
-| `registry/blocks/frost-sequence-camera-orbit/source/package.json` | 取上游 `esbuild ^0.28.2`。fork 另有的 `package-lock.json` 仍鎖 `0.28.1`，不在本次處理（見下方未解決） |
+| `registry/blocks/frost-sequence-camera-orbit/source/package.json` | 取上游 `esbuild ^0.28.2`。fork 另有的 `package-lock.json` 已改鎖 `0.28.2`（`frost.js` 打包檔未重建，見下方未解決） |
 | `skills-manifest.json`、`packages/producer/tests/style-10-prod/output/compiled.html` | 前者用 `gen:skills-manifest` 重新產生（fork 對 `media-use`、`remotion-to-hyperframes` 有差異，雜湊因此不同於上游）；後者是 LFS 指標，取上游指標 |
 | `packages/cli/src/media-use/resolve.mjs` | 取上游新結構（Openverse 先、內建 SFX 次、本機索引末，`result()` 寫 `CREDITS.md`）；本機索引仍走 fork 的 `searchLocalSfxIndex`（只讀隨套件的向量，不連網），移除上游的 `fetchMediaVectors` 與 `HYPERFRAMES_REGISTRY` 路徑 |
 | `packages/cli/src/commands/catalog.ts` | 取上游的 `--on-device` 流程（`installRuntime`、`ON_DEVICE_SETUP_COMMAND`）；`registry` 參數與 `fetchLocalVectors` 維持移除，向量走 `installLocalVectors` |
@@ -304,7 +304,7 @@ Dependabot run `40021722362`（main `c1c221f6`，security update job `1648768405
 | `packages/cli/src/commands/init.test.ts`、`previewLifecycle.test.ts`、`packages/lint/src/utils.test.ts`、`packages/producer/src/utils/ffprobeArgvContract.test.ts`、`packages/cli/src/utils/skillsMirror.test.ts`、`packages/engine/src/utils/processTracker.test.ts`、`skills/media-use/audio/scripts/lib/heygen.test.mjs` | 測試檔：取上游的新斷言與新型別，保留 fork 的 Windows 相容（`canCreateSymlinks` 與 `skipIf`、`process.execPath` 子行程、`toPosix`） |
 | `skills/pr-to-video/scripts/fetch-people-avatars.mjs`、`frame-contract.test.mjs` | 接受上游刪除，見下 |
 
-**非衝突處的後續修正**（自動合併成功但語意重複或在 Windows 失效）：`packages/cli/src/commands/previewLifecycle.ts` 同時帶 fork 與上游的 `windowsHide: true`，`no-dupe-keys` 擋下，刪掉重複的一個；`scripts/check-studio-copy-dashes.mjs`（上游新增）的豁免表用 POSIX 路徑，Windows 的 `relative()` 回傳反斜線而全部誤報，改為先轉成正斜線。`tools/tests/test_fork_docs.py` 的基準常數同步為新 SHA。
+**非衝突處的後續修正**（自動合併成功但語意重複或在 Windows 失效）：`packages/cli/src/commands/previewLifecycle.ts` 的 spawn 呼叫與 `SpawnPreview` 型別都同時帶 fork 與上游的 `windowsHide`；呼叫處由 `no-dupe-keys` 擋下，型別處由 `tsc`（TS2300）擋下（審查發現），兩處各刪掉重複的一個。本次未跑 cli 套件的完整 typecheck（該套件另有與合併無關的既有型別錯誤）；`scripts/check-studio-copy-dashes.mjs`（上游新增）的豁免表用 POSIX 路徑，Windows 的 `relative()` 回傳反斜線而全部誤報，改為先轉成正斜線。`tools/tests/test_fork_docs.py` 的基準常數同步為新 SHA。
 
 **`skills/pr-to-video` 的 fork 修補**：上游以 #5651 退役整個 `pr-to-video` 技能（含 `skills/pr-to-video/`），沒有新位置。fork 在那兩個檔案的差異是：頭像下載改經 `normalizeCloudImage` 再落地、以 fd 檢查既有輸出（CodeQL `js/http-to-file-access`／check-use race 類）、`people.json` 以 `0o600` 寫入，以及測試的 `fileURLToPath`（Windows）。功能隨技能整個消失，沒有可移植的位置，所以接受刪除。
 
@@ -343,3 +343,4 @@ Dependabot run `40021722362`（main `c1c221f6`，security update job `1648768405
 - `scripts/comment-check-base.mjs` 的一次性基準仍綁定 PR #2（`sync/upstream-d94708e5`）；本次採用若走 PR，`Comments` 工作流會把整樹新增註解當成新增，需要新的例外，本次未處理。
 - `registry/blocks/frost-sequence-camera-orbit/source/package-lock.json` 已改鎖 `esbuild` 0.28.2 以對齊 `package.json`，但 `assets/frost.js` 沒有重建（需要網路安裝 three 並重跑 `build.mjs`），所以 fork 的 Frost 壓縮檔仍是舊 esbuild 的輸出。
 - 未跑：producer 的 Docker 回歸、瀏覽器端 e2e、Lambda／GCP 實機、`generate:catalog` 全流程。LFS 指標檔（`compiled.html` 等）未取得 fork 側物件。
+- 審查後修正：`openBrowser.ts` 不再傳 `windowsHide`（`SW_HIDE` 會把使用者指定瀏覽器的視窗藏起來，上游 `051584c22` 刻意不藏），故刪除 fork 專有的 `openBrowser.windowsHide.test.ts`，上方 PR #3851 對 `openBrowser.ts` 的部分以此為準（superseded）；`publish.yml` 新增的 `lambda-arm64-ffmpeg` job 補上 `github.repository == 'heygen-com/hyperframes'` 防護，避免 fork 的 release 分支或預發佈 tag 白跑 ARM ffmpeg 建置。
