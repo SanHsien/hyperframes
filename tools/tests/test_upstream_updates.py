@@ -117,3 +117,33 @@ def test_upstream_slug(url, expected):
 def test_shipped_baseline_matches_the_documented_upstream():
     baseline = checker.load_baseline()
     assert checker.upstream_slug(baseline["repo"]) is not None
+
+
+def test_tickets_beyond_one_gh_page_are_not_silently_dropped(monkeypatch):
+    """`gh ... --limit N` returns only the newest N; the older unreviewed ones vanish."""
+    universe = list(range(2500, 0, -1))
+
+    def runner(args, **kwargs):
+        limit = int(args[args.index("--limit") + 1])
+        items = [{"number": n, "title": f"t{n}"} for n in universe[:limit]]
+        return subprocess.CompletedProcess(
+            args, 0, stdout=json.dumps(items), stderr=""
+        )
+
+    monkeypatch.setattr(checker.subprocess, "run", runner)
+    tickets = checker.collect_new_tickets({**BASELINE, "reviewed_pr_through": 10}, "pr")
+    assert [t["number"] for t in tickets] == list(range(11, 2501))
+
+
+def test_unbounded_gap_reports_unchecked_instead_of_a_partial_list(monkeypatch):
+    """If even the largest query cannot reach the watermark, say "not checked"."""
+
+    def runner(args, **kwargs):
+        limit = int(args[args.index("--limit") + 1])
+        items = [{"number": 10**9 - i, "title": "x"} for i in range(limit)]
+        return subprocess.CompletedProcess(
+            args, 0, stdout=json.dumps(items), stderr=""
+        )
+
+    monkeypatch.setattr(checker.subprocess, "run", runner)
+    assert checker.collect_new_tickets(BASELINE, "pr") is None

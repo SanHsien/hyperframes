@@ -22,6 +22,8 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 BASELINE_PATH = REPO_ROOT / "tools" / "upstream_baseline.json"
 UPSTREAM_REF_PREFIX = "refs/upstream-check"
 DEFAULT_DECISION_LOG = "docs/DECISIONS.md"
+TICKET_PAGE = 1000
+TICKET_LIMIT_CAP = 16000
 
 
 class UpstreamCheckError(RuntimeError):
@@ -132,11 +134,30 @@ def collect_new_tickets(baseline: dict, kind: str) -> list[dict] | None:
     if not slug:
         return None
     watermark = int(baseline.get(f"reviewed_{kind}_through", 0) or 0)
+    limit = TICKET_PAGE
+    while True:
+        items = _list_tickets(slug, kind, limit)
+        if items is None:
+            return None
+        # `gh ... --limit N` returns only the newest N. A full page whose oldest
+        # entry is still above the watermark may have cut off unreviewed items.
+        if len(items) < limit or min(item["number"] for item in items) <= watermark:
+            break
+        if limit >= TICKET_LIMIT_CAP:
+            return None
+        limit *= 2
+    return sorted(
+        (item for item in items if item["number"] > watermark),
+        key=lambda item: item["number"],
+    )
+
+
+def _list_tickets(slug: str, kind: str, limit: int) -> list[dict] | None:
     try:
         result = subprocess.run(
             [
                 "gh", kind, "list", "--repo", slug, "--state", "all",
-                "--limit", "1000", "--json", "number,title",
+                "--limit", str(limit), "--json", "number,title",
             ],
             capture_output=True,
             text=True,
@@ -152,10 +173,7 @@ def collect_new_tickets(baseline: dict, kind: str) -> list[dict] | None:
         items = json.loads(result.stdout)
     except ValueError:
         return None
-    return sorted(
-        (item for item in items if item["number"] > watermark),
-        key=lambda item: item["number"],
-    )
+    return items if isinstance(items, list) else None
 
 
 def render_ticket_section(
