@@ -218,6 +218,26 @@ describe("patchIframeDomTiming", () => {
 
     expect([...cards!].map((card) => card.dataset.start)).toEqual(["1", "9"]);
   });
+
+  it("makes a runtime-stamped element authored on any timing edit, a lane move included", () => {
+    const iframe = makeIframeWith(`
+      <div data-composition-id="root">
+        <div id="title" data-start="0" data-duration="10" data-hf-autostamped="1"></div>
+        <div id="badge" data-start="0" data-duration="10" data-hf-autostamped="1"></div>
+      </div>
+    `);
+    const doc = iframe.contentDocument!;
+    const at = (id: string) => el({ id, tag: "div", domId: id, sourceFile: "index.html" });
+
+    patchIframeDomTiming(iframe, at("title"), [
+      ["data-start", "4"],
+      ["data-duration", "2"],
+    ]);
+    patchIframeDomTiming(iframe, at("badge"), [["data-track-index", "3"]]);
+
+    expect(doc.getElementById("title")?.hasAttribute("data-hf-autostamped")).toBe(false);
+    expect(doc.getElementById("badge")?.hasAttribute("data-hf-autostamped")).toBe(false);
+  });
 });
 
 describe("extendRootDurationIfNeeded", () => {
@@ -231,6 +251,28 @@ describe("extendRootDurationIfNeeded", () => {
     expect(extendRootDurationIfNeeded(3)).toBe(false);
     expect(usePlayerStore.getState().duration).toBe(5);
   });
+});
+
+describe("buildTimelineMoveTimingPatch", () => {
+  it.each([
+    { root: ' data-duration="20"', length: 'data-composition-id="c" data-duration="8"' },
+    { root: "", length: 'data-composition-id="c">' },
+  ])(
+    "parses the saved file once to move a clip and sync the length (root$root)",
+    ({ root, length }) => {
+      const source = `<div data-composition-id="c"${root}><div id="a" class="clip" data-start="1" data-duration="3"></div></div>`;
+      const parse = vi.spyOn(DOMParser.prototype, "parseFromString");
+      try {
+        const patched = buildTimelineMoveTimingPatch(source, { id: "a" }, 5, 3);
+
+        expect(patched).toContain('data-start="5"');
+        expect(patched).toContain(length);
+        expect(parse).toHaveBeenCalledTimes(1);
+      } finally {
+        parse.mockRestore();
+      }
+    },
+  );
 });
 
 describe("buildTimelineResizeTimingPatch", () => {

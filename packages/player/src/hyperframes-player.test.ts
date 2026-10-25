@@ -2348,6 +2348,25 @@ describe("HyperframesPlayer runtime ready handshake", () => {
     expect(findControlCalls("set-idle-heartbeat")[0]?.[0]).toMatchObject({ slow: false });
   });
 
+  it("tells the runtime how large the frame shows, on fit and again on play", () => {
+    Object.defineProperty(player, "offsetWidth", { configurable: true, value: 540 });
+    Object.defineProperty(player, "offsetHeight", { configurable: true, value: 960 });
+    // The frame's on-screen box, after the fit and any zoom the page puts around the player,
+    // over its layout width, which a default size can hold before the stage size arrives.
+    let shownWidth = 540;
+    player.iframe.getBoundingClientRect = () => ({ width: shownWidth }) as DOMRect;
+    Object.defineProperty(player.iframe, "offsetWidth", { configurable: true, value: 1080 });
+    postSpy.mockClear();
+
+    player._onMessage(stageSizeMessage(1080, 1920));
+    expect(findControlCalls("set-display-scale").at(-1)?.[0]).toMatchObject({ scale: 0.5 });
+
+    shownWidth = 1080;
+    postSpy.mockClear();
+    player.play();
+    expect(findControlCalls("set-display-scale")[0]?.[0]).toMatchObject({ scale: 1 });
+  });
+
   it("keeps runtime WebAudio media enabled outside slideshow embeds", () => {
     postSpy.mockClear();
 
@@ -4166,19 +4185,26 @@ describe("HyperframesPlayer asset-ready gate", () => {
     const player = await createConnectedPlayer();
     const doc = player.iframe.contentDocument!;
     const showSpy = vi.spyOn(player.shaderLoader, "showAssetsLoading");
+    // The overlay delay runs on fake time; the iframe's own frames stay real, however slow.
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    try {
+      player._waitForAssetsReady(doc);
+      expect(player.assetsReady).toBe(false);
 
-    player._waitForAssetsReady(doc);
-    expect(player.assetsReady).toBe(false);
+      // Only paint-and-idle is pending on this blank iframe doc (no runtime, no media).
+      const win = doc.defaultView!;
+      for (let frame = 0; frame < 600 && !player.assetsReady; frame++) {
+        await new Promise<void>((resolve) => win.requestAnimationFrame(() => resolve()));
+      }
+      expect(player.assetsReady).toBe(true);
 
-    // Only paint-and-idle is pending on this blank iframe doc (no runtime,
-    // no media) — it settles well under ASSETS_LOADING_SHOW_DELAY_MS.
-    await awaitPaintAndIdle(doc.defaultView!);
-
-    expect(player.assetsReady).toBe(true);
-    expect(player.hasAttribute("assets-loading")).toBe(false);
-    expect(showSpy).not.toHaveBeenCalled();
-
-    player.remove();
+      vi.advanceTimersByTime(1_000);
+      expect(player.hasAttribute("assets-loading")).toBe(false);
+      expect(showSpy).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+      player.remove();
+    }
   });
 
   it("fires painted only after the raised loader has faded out, not at assetsready", async () => {

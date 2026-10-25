@@ -72,3 +72,8 @@ Baseline 代表「已審查」，不代表「全部已合併」。
 - commit 水位：`d94708e5312df021e1fdcac421f00ed3015f11bd`。從 `d1a5a05` 之後的 commit 全部以整樹合併採用，沒有逐筆讀 diff；PR 水位 **#4784**、issue 水位 **#4763** 不動，因為這些編號沒有逐筆審查。
 - 做法：以 `63574a7c7`（v0.8.35）為合併基底的橋接 commit，再合併 `upstream/main`；詳見 [`DECISIONS.md`](DECISIONS.md) 2026-10-07 條目，包含衝突表、保留的 fork 差異與驗證結果。
 - 結果在本機分支 `sync/upstream-d94708e5`，未推送，待獨立審查。
+
+## 2026-10-25：橋接 merge，水位推進到 `f5ab7711f`
+
+- commit 水位：`f5ab7711fb8d0a3a0dea8bebc8e959448dac02d4`。自 `d94708e5` 之後的 753 個 commit 以橋接 merge 採用，沒有逐筆讀 diff；PR 水位 **#4784**、issue 水位 **#4763** 不動，因為這些編號沒有逐筆審查。
+- 做法與逐檔衝突處理見 [`DECISIONS.md`](DECISIONS.md) 2026-10-25 條目。

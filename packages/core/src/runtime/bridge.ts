@@ -32,6 +32,7 @@ type BridgeDeps = {
   onDisablePickMode: () => void;
   onSetRuntimeData?: (channel: string, payload: unknown, requestId?: number) => void;
   onClearRuntimeData?: (channel: string, requestId?: number) => void;
+  onSetDisplayScale?: (scale: number) => void;
   getCanonicalFps: () => number;
 };
 
@@ -93,6 +94,9 @@ function dispatchControl(action: string, data: BridgeControlData, deps: BridgeDe
       return;
     case "set-idle-heartbeat":
       deps.onSetIdleHeartbeat(Boolean(data.slow));
+      return;
+    case "set-display-scale":
+      deps.onSetDisplayScale?.(Number(data.scale));
       return;
     case "set-root-duration":
       deps.onSetRootDuration(Number(data.durationSeconds ?? 0));

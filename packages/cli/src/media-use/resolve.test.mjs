@@ -16,7 +16,7 @@ import { execFileSync, spawn, spawnSync } from "node:child_process";
 import { appendRecord, findByPrompt, readManifest } from "./lib/manifest.mjs";
 import { regenerateIndex } from "./lib/index-gen.mjs";
 import { getProvider } from "./lib/providers.mjs";
-import { HEYGEN_NOT_FOUND_MESSAGE } from "./lib/heygen-cli.mjs";
+import { HEYGEN_INSTALL_COMMAND, HEYGEN_UPDATE_COMMAND } from "./lib/heygen-cli.mjs";
 import { freezeLocalFile } from "./lib/freeze.mjs";
 import { cachePut, cacheGet, importFromCache } from "./lib/cache.mjs";
 import { validateCubeFile } from "./lib/cube-validate.mjs";
@@ -74,8 +74,8 @@ function runResolve(args, opts = {}) {
 }
 
 function spawnResolve(args, opts = {}) {
-  const { env, ...rest } = opts;
-  return spawnSync(process.execPath, [RESOLVE_CLI, ...args], {
+  const { env, nodeArgs = [], ...rest } = opts;
+  return spawnSync(process.execPath, [...nodeArgs, RESOLVE_CLI, ...args], {
     cwd: REPO_ROOT,
     encoding: "utf8",
     env: { ...process.env, DO_NOT_TRACK: "1", ...env },
@@ -84,9 +84,9 @@ function spawnResolve(args, opts = {}) {
 }
 
 function spawnResolveAsync(args, opts = {}) {
-  const { env, ...rest } = opts;
+  const { env, nodeArgs = [], ...rest } = opts;
   return new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, [RESOLVE_CLI, ...args], {
+    const child = spawn(process.execPath, [...nodeArgs, RESOLVE_CLI, ...args], {
       cwd: REPO_ROOT,
       env: { ...process.env, DO_NOT_TRACK: "1", ...env },
       stdio: ["ignore", "pipe", "pipe"],
@@ -101,6 +101,31 @@ function spawnResolveAsync(args, opts = {}) {
     child.once("error", reject);
     child.once("close", (status, signal) => resolve({ status, signal, stdout, stderr }));
   });
+}
+
+const OPENVERSE_BY_WHOOSH = {
+  id: "ov-whoosh",
+  title: "Swoosh",
+  creator: "Ana",
+  license: "by",
+  foreign_landing_url: "https://freesound.org/s/1",
+  url: "https://cdn.openverse.test/swoosh.mp3",
+  filetype: "mp3",
+  duration: 820,
+  attribution: '"Swoosh" by Ana is licensed under CC BY 4.0.',
+};
+
+// Node args that stand Openverse in for the spawned resolve: `results` answers every search, 429 rate-limits it.
+function openverseImport(results) {
+  const stub = `const real = globalThis.fetch;
+globalThis.fetch = async (url, init) => {
+  const u = String(url);
+  if (u.startsWith("https://api.openverse.org/"))
+    return ${results === 429 ? 'new Response("", { status: 429 })' : `Response.json({ results: ${JSON.stringify(results)} })`};
+  if (u.startsWith("https://cdn.openverse.test/")) return new Response("ID3 openverse bytes");
+  return real(url, init);
+};`;
+  return [`--import=data:text/javascript,${encodeURIComponent(stub)}`];
 }
 
 function makeFrame(dir, name, color) {
@@ -156,18 +181,82 @@ function test(name, fn) {
 
 // --- manifest cache hit ---
 
-test("bundled SFX resolve without HeyGen on PATH", () => {
+test("SFX resolve from Openverse with the licence on the record and a credit", () => {
   setup();
   const result = spawnResolve(["--type", "sfx", "--intent", "whoosh", "--project", tmp, "--json"], {
     env: { HOME: tmp, PATH: tmp },
+    nodeArgs: openverseImport([OPENVERSE_BY_WHOOSH]),
   });
   assert.equal(result.status, 0, result.stderr);
   const parsed = JSON.parse(result.stdout);
   assert.equal(parsed.ok, true);
-  assert.equal(parsed.provenance.provider, "bundled.sfx");
-  assert.equal(parsed.advisory?.message, HEYGEN_NOT_FOUND_MESSAGE);
-  assert.equal(parsed.advisory.message.includes("| bash"), false);
-  assert.ok(existsSync(join(tmp, parsed.path)));
+  assert.equal(parsed.provenance.provider, "openverse.audio");
+  assert.equal(parsed.provenance.license, "by");
+  assert.equal(parsed.provenance.credit, OPENVERSE_BY_WHOOSH.attribution);
+  assert.equal(parsed.advisory, undefined);
+  assert.equal(readFileSync(join(tmp, parsed.path), "utf8"), "ID3 openverse bytes");
+  assert.equal(
+    readFileSync(join(tmp, ".media/audio/sfx/CREDITS.md"), "utf8").split("\n").at(-2),
+    `- \`${parsed.path}\`: ${OPENVERSE_BY_WHOOSH.attribution} Source: ${OPENVERSE_BY_WHOOSH.foreign_landing_url}`,
+  );
+  cleanup();
+});
+
+// Node args that hold each resolve just after its credits read until two have read (2 s at most), and give each
+// sound its own bytes.
+function creditRaceImport(barrier) {
+  const stub = `import fs from "node:fs";
+import { syncBuiltinESMExports } from "node:module";
+const read = fs.readFileSync;
+fs.readFileSync = (path, ...rest) => {
+  if (!String(path).endsWith("CREDITS.md")) return read(path, ...rest);
+  let text, error;
+  try {
+    text = read(path, ...rest);
+  } catch (e) {
+    error = e;
+  }
+  fs.writeFileSync(${JSON.stringify(barrier)} + "/" + process.pid, "");
+  const until = Date.now() + 2000;
+  while (fs.readdirSync(${JSON.stringify(barrier)}).length < 2 && Date.now() < until)
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 10);
+  if (error) throw error;
+  return text;
+};
+syncBuiltinESMExports();
+const prior = globalThis.fetch;
+globalThis.fetch = async (url, init) =>
+  String(url).startsWith("https://cdn.openverse.test/") ? new Response("ID3 " + url) : prior(url, init);`;
+  return [`--import=data:text/javascript,${encodeURIComponent(stub)}`];
+}
+
+test("two SFX resolves at once each keep their Openverse credit line", async () => {
+  setup();
+  const barrier = join(tmp, "credit-barrier");
+  mkdirSync(barrier);
+  const runs = await Promise.all(
+    ["swoosh", "thud"].map((intent) =>
+      spawnResolveAsync(["--type", "sfx", "--intent", intent, "--project", tmp, "--json"], {
+        env: { HOME: tmp, PATH: tmp },
+        nodeArgs: [
+          ...openverseImport([
+            {
+              ...OPENVERSE_BY_WHOOSH,
+              id: `ov-${intent}`,
+              url: `https://cdn.openverse.test/${intent}.mp3`,
+            },
+          ]),
+          ...creditRaceImport(barrier),
+        ],
+      }),
+    ),
+  );
+  for (const run of runs) assert.equal(run.status, 0, run.stderr);
+  const credited = readFileSync(join(tmp, ".media/audio/sfx/CREDITS.md"), "utf8")
+    .split("\n")
+    .filter((line) => line.startsWith("- "))
+    .map((line) => line.slice(3, line.indexOf("`:")));
+  assert.deepEqual(credited.sort(), runs.map((run) => JSON.parse(run.stdout).path).sort());
   cleanup();
 });
 
@@ -203,24 +292,28 @@ function writeFakeHeygen(body, exitCode = 0) {
   return binDir;
 }
 
-test("bundled SFX advises update when the HeyGen CLI is outdated", () => {
+test("an Openverse rate limit resolves SFX from the bundled library", () => {
   setup();
-  const binDir = writeFakeHeygen('echo "heygen v0.1.5 does not support --headers" >&2', 1);
   const result = spawnResolve(["--type", "sfx", "--intent", "whoosh", "--project", tmp, "--json"], {
-    env: { HOME: tmp, PATH: binDir },
+    env: { HOME: tmp, PATH: tmp },
+    nodeArgs: openverseImport(429),
   });
   assert.equal(result.status, 0, result.stderr);
   const parsed = JSON.parse(result.stdout);
   assert.equal(parsed.provenance.provider, "bundled.sfx");
-  assert.match(parsed.advisory?.message ?? "", /heygen update/);
+  assert.match(
+    result.stderr,
+    /Openverse rate limit reached \(HTTP 429\); using the bundled sound effects/,
+  );
+  assert.equal(existsSync(join(tmp, ".media/audio/sfx/CREDITS.md")), false);
   cleanup();
 });
 
-test("bundled SFX does not advise installation after a healthy catalog miss", () => {
+test("a sound Openverse has no licensed match for comes from the bundled library", () => {
   setup();
-  const binDir = writeFakeHeygen(`echo '{"data":[]}'`);
   const result = spawnResolve(["--type", "sfx", "--intent", "whoosh", "--project", tmp, "--json"], {
-    env: { HOME: tmp, PATH: binDir },
+    env: { HOME: tmp, PATH: tmp },
+    nodeArgs: openverseImport([{ ...OPENVERSE_BY_WHOOSH, license: "by-nc" }]),
   });
   assert.equal(result.status, 0, result.stderr);
   const parsed = JSON.parse(result.stdout);
@@ -229,12 +322,12 @@ test("bundled SFX does not advise installation after a healthy catalog miss", ()
   cleanup();
 });
 
-test("explicit local bundled SFX resolution does not advise installation", () => {
+test("explicit local bundled SFX resolution never asks Openverse", () => {
   for (const extraArgs of [["--local-only"], ["--provider", "bundled.sfx"]]) {
     setup();
     const result = spawnResolve(
       ["--type", "sfx", "--intent", "whoosh", "--project", tmp, "--json", ...extraArgs],
-      { env: { HOME: tmp, PATH: tmp } },
+      { env: { HOME: tmp, PATH: tmp }, nodeArgs: openverseImport([OPENVERSE_BY_WHOOSH]) },
     );
     assert.equal(result.status, 0, result.stderr);
     const parsed = JSON.parse(result.stdout);
@@ -244,17 +337,67 @@ test("explicit local bundled SFX resolution does not advise installation", () =>
   }
 });
 
-test("human bundled fallback prints the install hint once", () => {
+test("music without the HeyGen CLI fails naming it and the host app's own tool", () => {
   setup();
-  const result = spawnResolve(["--type", "sfx", "--intent", "whoosh", "--project", tmp], {
-    env: { HOME: tmp, PATH: tmp },
-  });
-  assert.equal(result.status, 0, result.stderr);
-  assert.equal(
-    result.stderr.match(/Install the CLI from https:\/\/developers\.heygen\.com\/cli/g)?.length,
-    1,
+  const result = spawnResolve(
+    ["--type", "bgm", "--intent", "calm piano", "--project", tmp, "--json"],
+    {
+      env: { HOME: tmp, PATH: tmp },
+    },
   );
-  assert.match(result.stdout, /resolved sfx_001/);
+  assert.equal(result.status, 1, result.stderr);
+  const parsed = JSON.parse(result.stdout);
+  assert.equal(parsed.ok, false);
+  assert.equal(parsed.code, "heygen_cli_missing");
+  assert.equal(parsed.fix, HEYGEN_INSTALL_COMMAND);
+  assert.match(parsed.error, /needs the heygen CLI, which is not installed/);
+  assert.match(parsed.error, /host app's own music tool/);
+  cleanup();
+});
+
+test("a sound effect nothing matches is a plain miss that never names the HeyGen CLI", async () => {
+  setup();
+  // The local media index answers 404, so the miss never depends on the network.
+  const server = createServer((_req, res) => {
+    res.writeHead(404);
+    res.end();
+  });
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  try {
+    const result = await spawnResolveAsync(
+      ["--type", "sfx", "--intent", "dog barking", "--project", tmp, "--json"],
+      {
+        env: {
+          HOME: tmp,
+          PATH: tmp,
+          HYPERFRAMES_REGISTRY: `http://127.0.0.1:${server.address().port}`,
+        },
+        nodeArgs: openverseImport([]),
+      },
+    );
+    assert.equal(result.status, 1, result.stderr);
+    const parsed = JSON.parse(result.stdout);
+    assert.equal(parsed.code, undefined);
+    assert.equal(parsed.error, 'no provider could resolve sfx: "dog barking"');
+  } finally {
+    server.close();
+    cleanup();
+  }
+});
+
+test("music with an outdated HeyGen CLI fails naming the update", () => {
+  setup();
+  const binDir = writeFakeHeygen('echo "heygen v0.1.5 does not support --headers" >&2', 1);
+  const result = spawnResolve(
+    ["--type", "bgm", "--intent", "calm piano", "--project", tmp, "--json"],
+    {
+      env: { HOME: tmp, PATH: binDir },
+    },
+  );
+  assert.equal(result.status, 1, result.stderr);
+  const parsed = JSON.parse(result.stdout);
+  assert.equal(parsed.code, "heygen_cli_outdated");
+  assert.equal(parsed.fix, HEYGEN_UPDATE_COMMAND);
   cleanup();
 });
 
@@ -801,9 +944,12 @@ test("missing required args exits 2", () => {
 
 test("--json returns error JSON on stub provider failure", () => {
   setup();
+  // A HeyGen CLI that finds nothing: the miss is the generic one on every machine, with or without a real CLI.
+  const binDir = writeFakeHeygen(`echo '{"data":[]}'`);
   try {
     runResolve(["--type", "bgm", "--intent", "stub fail", "--project", tmp, "--json"], {
       stdio: "pipe",
+      env: { HOME: tmp, PATH: binDir },
     });
     assert.fail("should have exited");
   } catch (err) {
@@ -1280,26 +1426,23 @@ async function captureResolveEvent({ provider, type = "bgm", intent }) {
     // their real email into this test's local-server payload despite HOME
     // being sandboxed (HEYGEN_CONFIG_DIR, not HOME, resolves the credentials
     // path). Every other test in this file keeps its untouched default env.
-    runResolve(["--type", type, "--intent", intent, "--project", tmp, "--json"], {
-      env: {
-        DO_NOT_TRACK: "0",
-        HYPERFRAMES_NO_TELEMETRY: "0",
-        CI: "",
-        NODE_ENV: "test",
-        HOME: sandboxHome,
-        HEYGEN_CONFIG_DIR: join(sandboxHome, ".heygen"),
-        MEDIA_USE_TELEMETRY_HOST: `http://127.0.0.1:${port}`,
+    // Async, so this process serves the POST while the child waits on it: a blocking spawn froze the server
+    // until the child gave up on its telemetry timeout, and the event arrived or not by luck.
+    const run = await spawnResolveAsync(
+      ["--type", type, "--intent", intent, "--project", tmp, "--json"],
+      {
+        env: {
+          DO_NOT_TRACK: "0",
+          HYPERFRAMES_NO_TELEMETRY: "0",
+          CI: "",
+          NODE_ENV: "test",
+          HOME: sandboxHome,
+          HEYGEN_CONFIG_DIR: join(sandboxHome, ".heygen"),
+          MEDIA_USE_TELEMETRY_HOST: `http://127.0.0.1:${port}`,
+        },
       },
-    });
-
-    // runResolve blocks synchronously (execFileSync) until the child exits, which
-    // pauses this process's own event loop for that whole span -- the child's
-    // request to our local server sits accepted-but-unprocessed in the kernel
-    // backlog until control returns here. Poll briefly to let the event loop
-    // drain it rather than asserting before the server has had a turn to run.
-    for (let i = 0; i < 100 && received.length === 0; i++) {
-      await new Promise((resolve) => setTimeout(resolve, 20));
-    }
+    );
+    assert.equal(run.status, 0, run.stderr);
   } finally {
     await new Promise((resolve) => server.close(resolve));
     rmSync(sandboxHome, { recursive: true, force: true });
@@ -1336,6 +1479,7 @@ test("track() posts to MEDIA_USE_TELEMETRY_HOST when set, proving real intercept
 for (const [provider, type, expected] of [
   ["heygen.tts", "voice", "network_paid"],
   ["heygen.audio.sounds", "bgm", "network_free"],
+  ["openverse.audio", "sfx", "network_free"],
   ["bundled.sfx", "sfx", "local"],
 ]) {
   test(`a resolve won by ${provider} sends provider_tier: ${expected}`, async () => {

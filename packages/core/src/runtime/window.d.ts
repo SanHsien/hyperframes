@@ -35,9 +35,12 @@ type ThreeLike = {
 
 declare global {
   interface Window {
+    __hfHasFrameSources?: () => boolean;
     __timelines: Record<string, RuntimeTimelineLike>;
     __player?: PlayerAPI;
     __hyperframes?: {
+      registerFrameSource: typeof import("./frameSources").registerFrameSource;
+      createFilmBridge: typeof import("./filmBridge").createFilmBridge;
       /** A path the calling composition wrote relative to its own file, as a URL the page can load. */
       assetUrl?: (path: string) => string;
       registerRuntimeDataHandler?: (
@@ -89,6 +92,8 @@ declare global {
     };
     __playerReady?: boolean;
     __renderReady?: boolean;
+    /** Set when start-up or the render-ready publish threw; readiness waits fail with it instead of seeking. */
+    __hfStartupError?: string;
     __hfRuntimeTeardown?: (() => void) | null;
     /** What each composition's scripts started on gsap's global timeline, by composition id. */
     __hfSceneAnimations?: Record<string, SceneAnimation[]> | null;
@@ -127,9 +132,9 @@ declare global {
     __hfReseekGpu?: (time: number) => void;
     /**
      * Await GPU work registered synchronously by `hf-seek` listeners through
-     * `event.detail.waitUntil(...)`.
+     * `event.detail.waitUntil(...)`; `videoFrames: false` skips the video-frame holds.
      */
-    __hfWaitForSeekCompletion?: () => Promise<void>;
+    __hfWaitForSeekCompletion?: (options?: { videoFrames?: boolean }) => Promise<void>;
     /**
      * Canonical root-timeline start for a media element. Snapshot capture uses
      * this runtime-owned resolver so reference expressions, authored timing

@@ -1,11 +1,13 @@
 import type { BrowserInstallFacts } from "../browser/installFacts.js";
-import { redactTelemetryString, type OutputResolutionIssueKind } from "@hyperframes/core";
+import type { OutputResolutionIssueKind } from "@hyperframes/core";
+import { redactTelemetryString } from "@hyperframes/core/telemetry-redaction";
 import type { SubTimelineWaitOutcome } from "@hyperframes/engine";
 import { FEEDBACK_RATING_SCALE } from "../utils/feedbackRating.js";
 import type { CatalogUsage } from "../utils/catalogUsage.js";
 import { flush, shouldTrack, trackEvent } from "./client.js";
 import { readConfig } from "./config.js";
 import { getPowerState } from "./system.js";
+import type { RenderCpuTelemetryPayload } from "./renderCpu.js";
 import { CliRuntimeError } from "../utils/commandResult.js";
 
 // Power state is volatile (a laptop docks/undocks mid-session), so it is
@@ -254,6 +256,16 @@ function renderEnvironmentEventProperties(props: RenderEnvironmentTelemetryPaylo
   };
 }
 
+function renderCpuEventProperties(props: RenderCpuTelemetryPayload) {
+  return {
+    cpu_busy_avg_pct: props.cpuBusyAvgPct,
+    cpu_busy_peak_pct: props.cpuBusyPeakPct,
+    cpu_cores_busy_peak: props.cpuCoresBusyPeak,
+    load_avg_start: props.loadAvgStart,
+    load_avg_end: props.loadAvgEnd,
+  };
+}
+
 function redactTelemetryMessage(value: string): string {
   return redactTelemetryString(value);
 }
@@ -324,7 +336,7 @@ export function trackRenderComplete(
     durationMs: number;
     fps: number;
     quality: string;
-    /** Authoring workflow skill that drove this render (e.g. "product-launch-video"). */
+    /** Authoring skill that drove this render (e.g. "hyperframes"). */
     authoringSkill?: string;
     /** Which step resolved authoringSkill: an explicit --skill flag, or the project's own config. */
     authoringSkillSource?: string;
@@ -341,8 +353,8 @@ export function trackRenderComplete(
     catalogUsage?: CatalogUsage;
     workers?: number;
     // Worker auto-sizing provenance (RenderPerfSummary.workerSizing). Answers
-    // "why N workers?" fleet-wide, and validates the advisory per-worker heap
-    // budget before it's enforced (field OOM: 6 auto workers on a 24GB/4GB-heap
+    // "why N workers?" fleet-wide, and reports the per-worker heap budget
+    // that caps auto sizing (field OOM: 6 auto workers on a 24GB/4GB-heap
     // machine — see computeWorkerSizing in @hyperframes/engine).
     workersBoundBy?: string;
     workersCpuBased?: number;
@@ -469,7 +481,8 @@ export function trackRenderComplete(
     distinctId?: string;
   } & RenderObservabilityTelemetryPayload &
     RenderOutputShapeTelemetryPayload &
-    RenderEnvironmentTelemetryPayload,
+    RenderEnvironmentTelemetryPayload &
+    RenderCpuTelemetryPayload,
 ): void {
   trackEvent(
     "render_complete",
@@ -592,6 +605,7 @@ export function trackRenderComplete(
       source: props.source ?? "cli",
       ...renderOutputShapeEventProperties(props),
       ...renderEnvironmentEventProperties(props),
+      ...renderCpuEventProperties(props),
       composition_duration_ms: props.compositionDurationMs,
       composition_width: props.compositionWidth,
       composition_height: props.compositionHeight,
@@ -639,7 +653,7 @@ export function trackRenderError(
   props: {
     fps: number;
     quality: string;
-    /** Authoring workflow skill that drove this render (e.g. "product-launch-video"). */
+    /** Authoring skill that drove this render (e.g. "hyperframes"). */
     authoringSkill?: string;
     /** Which step resolved authoringSkill: an explicit --skill flag, or the project's own config. */
     authoringSkillSource?: string;
@@ -665,7 +679,8 @@ export function trackRenderError(
     distinctId?: string;
   } & RenderObservabilityTelemetryPayload &
     RenderOutputShapeTelemetryPayload &
-    RenderEnvironmentTelemetryPayload,
+    RenderEnvironmentTelemetryPayload &
+    RenderCpuTelemetryPayload,
 ): void {
   trackEvent(
     "render_error",
@@ -687,6 +702,7 @@ export function trackRenderError(
       elapsed_ms: props.elapsedMs,
       ...renderOutputShapeEventProperties(props),
       ...renderEnvironmentEventProperties(props),
+      ...renderCpuEventProperties(props),
       peak_memory_mb: props.peakMemoryMb,
       memory_free_mb: props.memoryFreeMb,
       ...powerStateFields(),
@@ -827,7 +843,6 @@ export type AuthLoginMethod = "oauth" | "device" | "api_key";
 export type AuthLoginFailureReason =
   | "flow_error" // OAuth authorization/exchange threw a real error
   | "flow_timeout" // OAuth callback wait elapsed (user closed the tab / walked away)
-  | "no_credential" // flow reported success but nothing was persisted
   | "rejected" // backend rejected the supplied API key (401)
   | "invalid_input" // key was empty, header-unsafe, or too short
   | "aborted"; // prompt cancelled, or no key arrived on stdin before timeout
@@ -992,6 +1007,22 @@ export function trackSkillsInstallSkipped(props: { reason: string }): void {
   trackEvent("cli skill install skipped", { reason: props.reason });
 }
 
+export function trackFeedbackComment(props: {
+  comment: string;
+  doctorSummary?: string;
+  feedbackId?: string;
+  recentRenderIds?: string[];
+}): void {
+  trackEvent("cli_feedback_comment", {
+    comment: props.comment,
+    ...(props.doctorSummary ? { doctor_summary: props.doctorSummary } : {}),
+    ...(props.feedbackId ? { feedback_id: props.feedbackId } : {}),
+    ...(props.recentRenderIds?.length
+      ? { recent_render_ids: props.recentRenderIds.join(",") }
+      : {}),
+  });
+}
+
 export function trackRenderFeedback(props: {
   rating: number;
   renderDurationMs?: number;
@@ -1000,7 +1031,8 @@ export function trackRenderFeedback(props: {
   /**
    * Join key shared with the forwarded feedback report (Slack/backend): the
    * same uuid rides in the report's env string as `fid=…`, so a wild report
-   * resolves to exactly one PostHog `cli_render_feedback` event and vice versa.
+   * resolves to exactly one PostHog `cli_render_feedback` or
+   * `cli_feedback_comment` event and vice versa.
    */
   feedbackId?: string;
   /** render_job_id values of this install's recent renders (newest last). */
@@ -1075,6 +1107,7 @@ export function trackCheckReport(props: {
   motionWarnings: number;
   contrastErrors: number;
   contrastWarnings: number;
+  craftWarnings: number;
   launchSettleMs: number;
   seekLoopMs: number;
   contrastMs: number;
@@ -1100,6 +1133,7 @@ export function trackCheckReport(props: {
     motion_warnings: props.motionWarnings,
     contrast_errors: props.contrastErrors,
     contrast_warnings: props.contrastWarnings,
+    craft_warnings: props.craftWarnings,
     launch_settle_ms: props.launchSettleMs,
     seek_loop_ms: props.seekLoopMs,
     contrast_ms: props.contrastMs,

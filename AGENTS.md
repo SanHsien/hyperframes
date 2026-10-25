@@ -36,6 +36,17 @@
 - 維護工具：`tools/`（Windows gate、上游檢查、相對連結檢查、依賴新鮮度）。
 - 維護測試：`tools/tests/`（維護契約測試，獨立於產品測試目錄）。
 
+## 上游 Agent 技能與產品慣例（自上游 `CLAUDE.md`／`AGENTS.md` 併入，2026-10-25 採用 `f5ab7711f`）
+
+本 fork 只維護 `AGENTS.md`，不保留 `CLAUDE.md`。上游兩份指令檔的產品面內容摘要如下，細節以 `skills/*/SKILL.md` 與上游文件為準。
+
+- 上游目前發布 7 個 Agent 技能（上游已移除舊的工作流技能）：`/hyperframes`（製作、編輯、渲染影片的入口，先讀）、`/hyperframes-cli`、`/hyperframes-registry`、`/media-use` 為核心集；`/figma`、`/slideshow`、`/remotion-to-hyperframes` 依需求安裝。
+- 安裝：`npx hyperframes skills update`（核心集加已安裝者）；`npx hyperframes skills`（全部 7 個，只在明確要求時）。**不要在 HyperFrames 檢出目錄內跑 `npx skills add ... --all`**：它會選到 OpenClaw 目標，其 `skills/` 就是本 repo 的 `skills/`，會先刪除既有 `skills/<name>` 再連結；未提交的技能修改無法復原。
+- 新增或大幅改名技能時，同步更新：本檔與 `README.md` 的技能清單、`docs/guides/skills.mdx`、`docs/prompting/overview.mdx`、`docs/quickstart.mdx`、`packages/cli/src/templates/_shared/AGENTS.md`（上游另有同內容的 `CLAUDE.md` 範本，兩份位元組一致），以及 `skills/hyperframes/SKILL.md` 的 References 表。技能 `description:` 是一行說明的來源。
+- 產品程式的 lint／格式：`node_modules/.bin/oxlint <files>`、`node_modules/.bin/oxfmt <files>`、`node_modules/.bin/oxfmt --check <files>`；不是 eslint、prettier 或 biome。
+- 上游慣例：套件管理用 bun（不建 `pnpm-lock.yaml`）；TypeScript 避免 `any` 與 `as T`；渲染須確定性（不用 `Date.now()`、無種子的 `Math.random()`、渲染時不連網）；新增或改變 CLI 指令、旗標或使用者可見行為的變更，同一個變更要更新 `docs/`（新指令另加到 `docs/packages/cli.mdx` 的 "Find your command"）。
+- 編輯 `.html` 組合後跑 `npx hyperframes lint` 與 `npx hyperframes check`（瀏覽器關卡）。
+
 ## 開發原則
 
 - 一般變更直接推 `origin/main`，不開功能分支、不開維護 PR。只有在需要他人審查、或改動風險高到值得先讓 CI 在 PR 上跑一輪時，才退回 **branch → PR → CI → merge**。

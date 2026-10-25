@@ -1,4 +1,5 @@
 import { isHtmlElement } from "@hyperframes/core/runtime/dom-realm";
+import { applyAuthoredTiming } from "@hyperframes/core/studio-preview-mark";
 import { type TimelineElement, usePlayerStore } from "../player/store/playerStore";
 import { toAuthoredStart } from "../player/store/timelineElement";
 import {
@@ -15,7 +16,7 @@ import {
 } from "../player/components/timelineEditing";
 import { getElementZIndex } from "../player/lib/layerOrdering";
 import {
-  furthestClipEndFromSource,
+  furthestClipEndFromDocument,
   getTimelineElementIdentity,
   playbackStartAttributeForElement,
   readPlaybackStartAttributes,
@@ -29,6 +30,7 @@ import {
 import { serializeStudioFileMutations } from "../utils/studioFileMutationCoordinator";
 import type { TimelineZIndexReorderCommit } from "./useTimelineEditingTypes";
 import { setCompositionDurationToContent } from "../utils/timelineAssetDrop";
+import { rootCompositionDurationOf } from "../utils/rootDuration";
 import { readFileContent } from "./timelineTimingSync";
 import {
   findElementForSelection,
@@ -179,7 +181,7 @@ export function patchIframeDomTiming(
   try {
     const el = findTimelineElementInIframe(iframe, element, activeCompositionPath);
     if (!el) return;
-    for (const [name, value] of attrs) el.setAttribute(name, value);
+    applyAuthoredTiming(el, attrs);
   } catch {
     // Cross-origin or mid-navigation — file save is enqueued; iframe patch is best-effort.
   }
@@ -235,7 +237,7 @@ export function applyTimelineMoveAttributes(
 ): string {
   if (!Number.isFinite(start) || !Number.isFinite(duration)) {
     console.warn(
-      `[Timeline] applyTimelineMoveAttributes: non-finite timing (start=${start}, duration=${duration}) — patch skipped`,
+      `[Timeline] applyTimelineMoveAttributes: non-finite timing (start=${start}, duration=${duration}). Patch skipped`,
     );
     return original;
   }
@@ -263,7 +265,22 @@ export function applyTimelineMoveAttributes(
 // Root data-duration follows the furthest clip end in the source; the store's durations are
 // truncated to the current length, so reading them would ratchet the duration down every edit.
 export function syncCompositionDurationToContent(source: string): string {
-  return setCompositionDurationToContent(source, furthestClipEndFromSource(source));
+  return syncCompositionDurationWithEnd(source).source;
+}
+
+/** The synced source and the clip end it was synced to, from one parse of the source. */
+export function syncCompositionDurationWithEnd(source: string): {
+  source: string;
+  contentEnd: number;
+} {
+  const doc = new DOMParser().parseFromString(source, "text/html");
+  const contentEnd = furthestClipEndFromDocument(doc);
+  const synced = setCompositionDurationToContent(
+    source,
+    contentEnd,
+    rootCompositionDurationOf(doc),
+  );
+  return { source: synced, contentEnd };
 }
 
 export function buildTimelineMoveTimingPatch(

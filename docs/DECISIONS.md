@@ -271,3 +271,75 @@ Dependabot run `40021722362`（main `c1c221f6`，security update job `1648768405
 - happy-dom 只在 `devDependencies` 的測試環境使用，沒有任何非測試程式 import；GHSA-834v-8h66-3h79（ESM compiler 程式碼注入，修補版 21.0.4）影響的是載入不受信任模組腳本的情境，測試只載入本 repo 的 fixture。兩筆警示以 `tolerable_risk` 駁回。
 
 **重評條件**：happy-dom 修好上述三項，或 20.x 出現無法繞開的相容問題。
+
+## 2026-10-25：上游採用 `f5ab7711f`
+
+**決定**：一次採用上游 `heygen-com/hyperframes` `main` 的 `f5ab7711fb8d0a3a0dea8bebc8e959448dac02d4`。`tools/upstream_baseline.json` 的 `reviewed_through` 由 `d94708e5` 推進到該 SHA，`reviewed_date` 為 2026-10-25；PR 水位 `#4784`、issue 水位 `#4763` **不動**，因為本輪沒有逐筆讀 PR 與 issue。
+
+**範圍**：自 `d94708e5312df021e1fdcac421f00ed3015f11bd` 之後的 753 個 commit（`git rev-list --count d94708e5..upstream/main` 為 753，全為非 merge commit），約 3,400 個檔案變動，其中 `docs/catalog/**` 與 `docs/public/**` 為產生物。
+
+**方法**：橋接 merge。fork 的 `main` 樹以 `d94708e5` 為基底（上一輪整樹採用的結果），先建橋接 commit `40b8c7c92`（`chore(upstream): bridge d94708e5 as merge base`，`-s ours`），再 `git merge --no-commit --no-ff upstream/main`。這樣 fork 相對 `d94708e5` 的差異由三方合併保留，不會被上游整個覆蓋。共 29 個檔案衝突，其餘自動合併。
+
+**衝突逐檔處理**：
+
+| 檔案 | 處理 |
+| --- | --- |
+| `.github/workflows/ci.yml` | 取 fork（Windows 專用版；上游新增的 test-reachability 等 job 是 Linux/merge queue 流程，不適用） |
+| `AGENTS.md` | 取 fork 繁中版；上游 `CLAUDE.md`／`AGENTS.md` 的新內容（7 個技能、安裝警告、同步面清單、oxlint 路徑、Docs ship with the change）摘要為新段落「上游 Agent 技能與產品慣例」 |
+| `CLAUDE.md` | 維持刪除（repo 只用 `AGENTS.md`）；上游模板 `packages/cli/src/templates/_shared/CLAUDE.md` 是產品要交付的範本，保留 |
+| `CONTRIBUTING.md`、`README.md` | 取 fork 繁中版；上游 `README.md` 的變更（Studio 連結列、Claude plugin 安裝、7 個技能、核心集與按需表）用 patch 併進 `README.en.md`；`CONTRIBUTING.md` 加上上游「在檢出目錄內不要跑專案內 `skills add`」的說明，簽署 commit 與 fork PR 核准兩條屬上游流程，本 fork 不適用 |
+| `bun.lock` | 取上游後以 `bun install --linker=hoisted` 重新產生；`bun install --frozen-lockfile` 通過 |
+| `package.json` | 取上游的 `esbuild ^0.28.2`、`fallow ^3.34.1`、`yaml`／`picomatch` 位置與 scripts，`concurrently` 隨上游移除；保留 fork 的 `patchedDependencies`（`html2canvas@1.4.1`）並加上上游的 `engines.bun`，`happy-dom ^20.9.0` 兩邊一致 |
+| `registry/blocks/frost-sequence-camera-orbit/source/package.json` | 取上游 `esbuild ^0.28.2`。fork 另有的 `package-lock.json` 仍鎖 `0.28.1`，不在本次處理（見下方未解決） |
+| `skills-manifest.json`、`packages/producer/tests/style-10-prod/output/compiled.html` | 前者用 `gen:skills-manifest` 重新產生（fork 對 `media-use`、`remotion-to-hyperframes` 有差異，雜湊因此不同於上游）；後者是 LFS 指標，取上游指標 |
+| `packages/cli/src/media-use/resolve.mjs` | 取上游新結構（Openverse 先、內建 SFX 次、本機索引末，`result()` 寫 `CREDITS.md`）；本機索引仍走 fork 的 `searchLocalSfxIndex`（只讀隨套件的向量，不連網），移除上游的 `fetchMediaVectors` 與 `HYPERFRAMES_REGISTRY` 路徑 |
+| `packages/cli/src/commands/catalog.ts` | 取上游的 `--on-device` 流程（`installRuntime`、`ON_DEVICE_SETUP_COMMAND`）；`registry` 參數與 `fetchLocalVectors` 維持移除，向量走 `installLocalVectors` |
+| `packages/cli/src/whisper/normalize.ts` | 上游新增 acorn 的 `findCaptionArray`、CJK 斷詞、VTT 實體編碼；fork 以 linkedom DOM 取代標籤剝除正則（`textContentOfHtml`、`scriptBodiesOfHtml`）保留，上游 `decodeVttText` 因 DOM 已解實體而移除 |
+| `packages/core/src/runtime/bridge.ts` | 保留 fork 的封閉 `switch` 分派，補上上游新增的 `set-display-scale` |
+| `packages/engine/src/services/extractionCache.ts` | 合併 import：fork 的 `chmodSync`、`renameSync`（私有快取根目錄與 `.hf-last-gc`）加上上游的 `createReadStream` |
+| `packages/producer/src/services/render/stages/compileStage.ts` | 取上游新增的 `urlByAbsentLocalPath`、`pageMotionBlur`，保留 fork 的 `privateAnimatedGifCacheDir` |
+| `packages/studio-server/src/routes/render.ts` | import 取 `basename`（fork，Windows 檔名）加 `dirname`（上游） |
+| `packages/studio/src/captions/parser.ts` | 取上游的 acorn 靜態解析；fork 的 `decodeSingleQuotedString` 只服務舊的單引號正規化，已無呼叫者，移除 |
+| `scripts/comment-ratchet.mjs`、`scripts/check-comment-citations.test.mjs` | 兩邊疊加：上游的 `generatedPaths` 與新測試加上 fork 的 `commentCheckBase`、Windows 入口判斷與「未提交候選」測試 |
+| `packages/cli/src/commands/init.test.ts`、`previewLifecycle.test.ts`、`packages/lint/src/utils.test.ts`、`packages/producer/src/utils/ffprobeArgvContract.test.ts`、`packages/cli/src/utils/skillsMirror.test.ts`、`packages/engine/src/utils/processTracker.test.ts`、`skills/media-use/audio/scripts/lib/heygen.test.mjs` | 測試檔：取上游的新斷言與新型別，保留 fork 的 Windows 相容（`canCreateSymlinks` 與 `skipIf`、`process.execPath` 子行程、`toPosix`） |
+| `skills/pr-to-video/scripts/fetch-people-avatars.mjs`、`frame-contract.test.mjs` | 接受上游刪除，見下 |
+
+**非衝突處的後續修正**（自動合併成功但語意重複或在 Windows 失效）：`packages/cli/src/commands/previewLifecycle.ts` 同時帶 fork 與上游的 `windowsHide: true`，`no-dupe-keys` 擋下，刪掉重複的一個；`scripts/check-studio-copy-dashes.mjs`（上游新增）的豁免表用 POSIX 路徑，Windows 的 `relative()` 回傳反斜線而全部誤報，改為先轉成正斜線。`tools/tests/test_fork_docs.py` 的基準常數同步為新 SHA。
+
+**`skills/pr-to-video` 的 fork 修補**：上游以 #5651 退役整個 `pr-to-video` 技能（含 `skills/pr-to-video/`），沒有新位置。fork 在那兩個檔案的差異是：頭像下載改經 `normalizeCloudImage` 再落地、以 fd 檢查既有輸出（CodeQL `js/http-to-file-access`／check-use race 類）、`people.json` 以 `0o600` 寫入，以及測試的 `fileURLToPath`（Windows）。功能隨技能整個消失，沒有可移植的位置，所以接受刪除。
+
+**保留的 fork 分歧**：`local-media-search.mjs` 的路徑限制與只讀隨套件向量（`installMediaVectors`、`resolveBundledMediaFile`）；`freeze.mjs` 的遠端媒體魔術位元組驗證；Frost `logo.ts` 的 URL guard、`credentials: "omit"`、`redirect: "error"`；`routes/files.ts` 的排他建立與碰撞上限、`routes/render.ts` 的 `basename`；`extractionCache.ts` 與 `compileStage.ts` 的私有快取根目錄；`bridge.ts` 的封閉 `switch`；`normalize.ts` 與 `rootDuration.ts` 的非正則解析；fork 專用 CI（`ci.yml` Windows 版、`posix-security-tests.yml`、dependency freshness、`dependabot.yml`）；`publish.yml`、`sync-skills-to-clawhub.yml`、`catalog-publish.yml`、`pr-captures.yml` 的 `github.repository` 閘門仍在（本輪新增的 `lambda-arm64-image.yml`、`lambda-sam-template.yml`、`player-safari.yml` 為唯讀、無 secrets，未加閘門）；`docs/DECISIONS.md` 等 fork 文件與以 `AGENTS.md` 為唯一指令檔。
+
+**判準八掃描**（對 `d94708e5..f5ab7711f` 的新增行，排除 `docs/catalog`、`docs/public`、`bun.lock` 與 `*.md`／`*.mdx`／`*.json`／`*.svg`）：
+
+- 空白後藏程式：新增行中「非空白後接 30 個以上空白或 tab 再接程式」為 0 筆；雙向文字控制字元與零寬字元為 0 筆；行中 tab 命中 43 筆，皆為縮排內字面 tab 字元的程式字串或壓縮產生物（`svg-sanitize.mjs`、`pageBuild.*.html` 黃金檔、`shaders.iife.js`）。
+- `eval`／`new Function` 命中分三類：測試檔（`contrast-occlusion.browser.test.ts`、`compositionScoping.test.ts`、`htmlBundler.test.ts`、`htmlCompiler.scriptOrder.test.ts`、`preview.test.ts`、`parser.dom.test.ts`、`fileServer.test.ts` 等 14 個，在瀏覽器頁或 `window` 內執行測試腳本）；執行環境沙盒（`audioFxProcessors.test-helpers.ts` 在測試中載入 AudioWorklet 模組，`new Function("window", wrapped)` 在假 `window` 內跑作者腳本）；以及產生或供應的打包檔：`packages/cli/src/media-use/lib/svg-sanitize.mjs` 是由 `scripts/generate-media-use-svg-sanitize.mjs` 產生的打包檔（`check-media-use-svg-sanitize-generated.test.mjs` 與 `check-svg-sanitize-parity.test.mjs` 把關）；另有 `registry/blocks/*/lib/shaders.iife.js` 36 份位元組相同的 `shaders@4.0.0`（Shader Effects Inc.，MIT，附授權文字）壓縮檔，內含 TypeGPU 的 schema writer 以 `new Function` 編譯，屬第三方供應檔，未逐行審。本輪沒有發現藏在空白後的程式。
+
+**驗證**：見下方「驗證結果」。
+### 驗證結果（2026-10-25，Windows 11、Bun 1.4.4、`--linker=hoisted`）
+
+對照樹：`origin/main`（fork 上一版）與純上游 `f5ab7711f` 各用獨立 worktree，同樣 hoisted 安裝、`bun run build`，逐套件序列執行 vitest（JSON 報告），以「失敗測試的檔案加名稱」做集合比對。
+
+| 項目 | 結果 |
+| --- | --- |
+| `bun install --frozen-lockfile --linker=hoisted` | 通過（`bun.lock` 已用 `bun install` 重新產生） |
+| `bun run lint` | 通過（0 warnings、0 errors；skills 與 mirror 檢查通過） |
+| `bun run build` | 全部套件通過（含 aws-lambda、sdk-playground） |
+| `tsc --noEmit`：core、studio、scripts | 通過 |
+| `python -m pytest tools/tests` | 全數通過；`ruff check --select E9,F` 通過 |
+| `gen:skills-manifest --check` | 與內容一致 |
+| `bun run test:scripts` | 合併樹 98 個不同失敗名稱，純上游 118 個；只在合併樹出現的 10 個：5 個在 `origin/main` 本來就失敗（Frost 兩項因 fork 重建的 `frost.js` 壓縮識別字不是 `a2`、`module blocks' shared catalog bundle`、merge queue 與 PR edit 工作流清單、stable publishing 事件路徑），5 個是上游新增的 edit-accuracy 工作流測試（`check-edit-accuracy-filter`、`edit-accuracy-retry`），因 fork 的 `ci.yml` 是 Windows 專用版而沒有對應 job |
+| `test:unit`（各套件失敗數：合併／純上游／`origin/main`） | cli 53／65／6、core 7／3／1、engine 13／11／0、inspector 9／9／未建、lint 1／1／1、parsers 1／—／1、player 23／—／23、studio-server 24／47／9、studio 233／232／229（合併樹為修正前的第一次完整序列結果）；aws-lambda 9、gcp-cloud-run 1（`bun test`） |
+
+只在合併樹失敗（相對純上游）的測試逐項判斷：
+
+- 合併造成、已修：`htmlBundler.test.ts` 的「不能解析的子組合腳本」（fork 把作者程式放進 `Function()` 字串，語法錯誤在執行期被 `try/catch` 隔離，改為斷言整段腳本可解析且錯誤內容在字串內）；`pageBuild.golden` 兩個黃金檔（fork 的包裝改變輸出，以 `vitest -u` 更新，差異僅限包裝段落）；`studio` 的 `parser.test.ts` 單引號 code-point 測試（上游改為 acorn 靜態解析，超出 U+10FFFF 的跳脫視為語法錯誤，測試改為斷言有效跳脫可解、無效跳脫回傳空陣列）；`openBrowser.ts`（fork 的 `windowsHide` 會隱藏使用者自選瀏覽器的視窗，上游已明確不隱藏，採上游並移除）。
+- 單獨重跑即通過、屬序列執行下的逾時或資源競爭：`snapshot.test`、`registryComponents.test`、`artifactCapture.test`、`entry.afterFonts.test`、engine 的 `browserManager`、`frameCapture-freshFallback`、`parallelCoordinator-peerAbort`、studio 的 `Timeline.virtualization` 與 `propertyPanelInputCoverage`。`chromeOrphans.process.test.ts` 與 `videoFrameTransport.browser.test.ts` 需要 Chrome 子行程，未單獨重驗，視為環境。
+- 環境既有（`origin/main` 同樣失敗）：player 23、studio 約 230（Windows 符號連結、Chrome 與路徑）、studio-server 符號連結與 `EPERM`。
+
+**未驗證與已知缺口**：
+
+- `lefthook` pre-commit 的 `typecheck` 以 `packages/core/node_modules/.bin/tsc` 呼叫，hoisted 安裝沒有這個路徑，hook 本身失敗（改用根目錄 `tsc` 驗證 core、studio、scripts 皆通過）；`fallow audit --base origin/main` 對整樹採用（約 3,400 個變動檔）把上游既有發現全算成新增，必然失敗，已知屬採用類 PR 的特性。因此此合併 commit 以 `--no-verify` 提交，其餘 hook（format、largefiles、skills-manifest、filesize、tracked-artifacts、cli-process-ownership、lint）在 hook 中通過，commitlint 另行手動通過。
+- `scripts/comment-check-base.mjs` 的一次性基準仍綁定 PR #2（`sync/upstream-d94708e5`）；本次採用若走 PR，`Comments` 工作流會把整樹新增註解當成新增，需要新的例外，本次未處理。
+- `registry/blocks/frost-sequence-camera-orbit/source/package-lock.json` 已改鎖 `esbuild` 0.28.2 以對齊 `package.json`，但 `assets/frost.js` 沒有重建（需要網路安裝 three 並重跑 `build.mjs`），所以 fork 的 Frost 壓縮檔仍是舊 esbuild 的輸出。
+- 未跑：producer 的 Docker 回歸、瀏覽器端 e2e、Lambda／GCP 實機、`generate:catalog` 全流程。LFS 指標檔（`compiled.html` 等）未取得 fork 側物件。

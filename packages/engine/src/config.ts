@@ -7,6 +7,7 @@
  */
 
 import { tmpdir } from "node:os";
+import { DISTRIBUTED_FPS, type DistributedFps } from "@hyperframes/core/distributed-fps";
 import { chromeMajorCeiling } from "./services/chromeHostCeiling.js";
 import { join } from "node:path";
 import {
@@ -23,7 +24,7 @@ import { DEFAULT_VP9_CPU_USED, normalizeVp9CpuUsed } from "./services/vp9Options
  */
 export interface EngineConfig {
   // ── Rendering ────────────────────────────────────────────────────────
-  fps: 24 | 30 | 60;
+  fps: DistributedFps;
   quality: "draft" | "standard" | "high";
   format: "jpeg" | "png";
   jpegQuality: number;
@@ -51,6 +52,11 @@ export interface EngineConfig {
    *   Cost: one extra Chrome launch (~1-2 s) per process; result cached.
    */
   browserGpuMode: "software" | "hardware" | "auto";
+  /**
+   * Render a `data-requires-webgpu` composition on SwiftShader when no GPU is in use, instead of refusing it.
+   * Off by default: software WebGPU is slow and skips the compositor workaround for HF#3049.
+   */
+  allowSoftwareWebGpu: boolean;
   enableBrowserPool: boolean;
   browserTimeout: number;
   protocolTimeout: number;
@@ -179,7 +185,7 @@ export interface EngineConfig {
   // ── FFmpeg timeouts ──────────────────────────────────────────────────
   /** Timeout for FFmpeg frame encoding (ms). Default: 600_000 */
   ffmpegEncodeTimeout: number;
-  /** Timeout for FFmpeg mux/faststart processes (ms). Default: 300_000 */
+  /** FFmpeg mux/faststart timeout (ms); extraction waits this long for each new frame. Default: 300_000 */
   ffmpegProcessTimeout: number;
   /**
    * Inactivity timeout for FFmpeg streaming encode (ms). The timer resets on
@@ -287,6 +293,7 @@ export const DEFAULT_CONFIG: EngineConfig = {
 
   disableGpu: false,
   browserGpuMode: "software",
+  allowSoftwareWebGpu: false,
   enableBrowserPool: true,
   browserTimeout: 120_000,
   protocolTimeout: 300_000,
@@ -340,6 +347,7 @@ const OPTIONAL_ENGINE_CONFIG_FIELDS = [
 
 const BOOLEAN_ENGINE_CONFIG_FIELDS = [
   "disableGpu",
+  "allowSoftwareWebGpu",
   "enableBrowserPool",
   "forceScreenshot",
   "staticFrameDedup",
@@ -371,7 +379,7 @@ const POSITIVE_NUMBER_ENGINE_CONFIG_FIELDS = [
 ] as const;
 
 const ENUM_ENGINE_CONFIG_FIELDS = {
-  fps: [24, 30, 60],
+  fps: DISTRIBUTED_FPS,
   quality: ["draft", "standard", "high"],
   format: ["jpeg", "png"],
   browserGpuMode: ["software", "hardware", "auto"],
@@ -791,6 +799,13 @@ export function explainDrawElementDisabled(args: {
   return "disabled";
 }
 
+/** `pageNavigationTimeout` alone, for callers that need the page-load budget without the rest of the config. */
+export function resolvePageNavigationTimeout(): number {
+  const raw = process.env.PRODUCER_PAGE_NAVIGATION_TIMEOUT_MS;
+  const parsed = raw === undefined || raw === "" ? NaN : Number(raw);
+  return Number.isFinite(parsed) ? parsed : DEFAULT_CONFIG.pageNavigationTimeout;
+}
+
 export function resolveConfig(overrides?: Partial<EngineConfig>): EngineConfig {
   const env = (key: string): string | undefined => process.env[key];
   const envNum = (key: string, fallback: number): number => {
@@ -837,9 +852,12 @@ export function resolveConfig(overrides?: Partial<EngineConfig>): EngineConfig {
       DEFAULT_CONFIG.largeRenderThreshold,
     ),
 
-    chromePath: env("PRODUCER_HEADLESS_SHELL_PATH"),
     disableGpu: envBool("PRODUCER_DISABLE_GPU", DEFAULT_CONFIG.disableGpu),
     browserGpuMode: envBrowserGpuMode(),
+    allowSoftwareWebGpu: envBool(
+      "PRODUCER_ALLOW_SOFTWARE_WEBGPU",
+      DEFAULT_CONFIG.allowSoftwareWebGpu,
+    ),
     enableBrowserPool: envBool("PRODUCER_ENABLE_BROWSER_POOL", DEFAULT_CONFIG.enableBrowserPool),
     browserTimeout: envNum("PRODUCER_PUPPETEER_LAUNCH_TIMEOUT_MS", DEFAULT_CONFIG.browserTimeout),
     protocolTimeout: envNum(
@@ -920,10 +938,7 @@ export function resolveConfig(overrides?: Partial<EngineConfig>): EngineConfig {
       "PRODUCER_RENDER_READY_TIMEOUT_MS",
       DEFAULT_CONFIG.renderReadyTimeout,
     ),
-    pageNavigationTimeout: envNum(
-      "PRODUCER_PAGE_NAVIGATION_TIMEOUT_MS",
-      DEFAULT_CONFIG.pageNavigationTimeout,
-    ),
+    pageNavigationTimeout: resolvePageNavigationTimeout(),
 
     verifyRuntime: env("PRODUCER_VERIFY_HYPERFRAME_RUNTIME") !== "false",
     runtimeManifestPath: env("PRODUCER_HYPERFRAME_MANIFEST_PATH"),
@@ -1060,7 +1075,7 @@ export function resolveConfig(overrides?: Partial<EngineConfig>): EngineConfig {
     merged.enableStreamingEncode = false;
     merged.streamingEncodeAutoDisabledOnWin32Compound = true;
     console.error(
-      "[hyperframes] Windows compound-workaround auto-detected — disabling streaming-encode " +
+      "[hyperframes] Windows compound-workaround auto-detected, disabling streaming-encode " +
         "(platform=win32, software-GPU forced, workers=1). Field signal ts=1784131903. " +
         "Override: PRODUCER_ENABLE_STREAMING_ENCODE=true.",
     );

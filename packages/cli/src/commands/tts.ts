@@ -103,7 +103,7 @@ export default defineCommand({
     }
 
     let text: string;
-    if (isTextFile(input)) {
+    if (args["text-file"] !== undefined || isTextFile(input)) {
       text = readFileSync(resolve(input), "utf-8").trim();
       if (!text) {
         console.error(c.error("File is empty."));
@@ -121,9 +121,9 @@ export default defineCommand({
     // ── Resolve output path ───────────────────────────────────────────
     const output = resolve(args.output ?? "speech.wav");
     const voice = args.voice ?? DEFAULT_VOICE;
-    const speed = args.speed ? parseFloat(args.speed) : 1.0;
+    const speed = args.speed === undefined ? 1.0 : Number(args.speed);
 
-    if (isNaN(speed) || speed <= 0 || speed > 3) {
+    if (!Number.isFinite(speed) || speed < 0.1 || speed > 3) {
       console.error(c.error("Speed must be a number between 0.1 and 3.0"));
       failCommand();
     }

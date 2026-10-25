@@ -17,6 +17,8 @@ pwsh -NoProfile -File tools\bootstrap_dev.ps1
 
 這會驗證維護骨架。產品完整建置與測試見 [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md)。
 
+已發布的技能原始碼在 `skills/`。要在這個檢出目錄裡安裝技能，用 `npx hyperframes skills update`（全域安裝）；專案內的 `npx skills add ...` 請在另一個影片專案裡跑，它的目的地可能與 `skills/` 重疊並覆寫未提交的修改。`.claude/skills/` 與 `.agents/skills/` 的 repo 內建技能已包含在檢出目錄中。
+
 ## 提交方式
 
 本 fork 由維護者直接推 `main`，不開短期分支。改完先跑上面的 Windows gate。

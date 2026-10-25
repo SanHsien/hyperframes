@@ -1,4 +1,6 @@
-import { describe, it, expect, vi } from "vitest";
+import { cpus, totalmem } from "os";
+import { getHeapStatistics } from "v8";
+import { afterEach, describe, it, expect, vi } from "vitest";
 import {
   calculateOptimalWorkers,
   computeWorkerSizing,
@@ -128,7 +130,43 @@ describe("calculateOptimalWorkers", () => {
   });
 });
 
+vi.mock("os", async (importOriginal) => {
+  const os = await importOriginal<typeof import("os")>();
+  return { ...os, default: os, cpus: vi.fn(os.cpus), totalmem: vi.fn(os.totalmem) };
+});
+vi.mock("v8", async (importOriginal) => {
+  const v8 = await importOriginal<typeof import("v8")>();
+  return { ...v8, default: v8, getHeapStatistics: vi.fn(v8.getHeapStatistics) };
+});
+
 describe("computeWorkerSizing", () => {
+  afterEach(() => {
+    vi.mocked(cpus).mockRestore();
+    vi.mocked(totalmem).mockRestore();
+    vi.mocked(getHeapStatistics).mockRestore();
+  });
+
+  // The field case: a 24GB 14-core Mac, Node's default ~4GB heap, a long 1080x1920 project.
+  it("never auto-picks more workers than the V8 heap can feed", () => {
+    vi.mocked(cpus).mockReturnValue(
+      Array.from({ length: 14 }, () => ({}) as ReturnType<typeof cpus>[number]),
+    );
+    vi.mocked(totalmem).mockReturnValue(24 * 1024 ** 3);
+    vi.mocked(getHeapStatistics).mockReturnValue({
+      heap_size_limit: 4192 * 1024 ** 2,
+    } as ReturnType<typeof getHeapStatistics>);
+    const sizing = computeWorkerSizing(1300, undefined, { concurrency: "auto" });
+    expect(sizing.heapBasedWorkers).toBe(4);
+    expect(sizing.workers).toBe(4);
+    expect(sizing.boundBy).toBe("heap");
+    expect(sizing.exceedsHeapAdvisory).toBe(false);
+    expect(computeWorkerSizing(1300, 6, { concurrency: "auto" }).workers).toBe(6);
+    vi.mocked(getHeapStatistics).mockReturnValue({
+      heap_size_limit: 8192 * 1024 ** 2,
+    } as ReturnType<typeof getHeapStatistics>);
+    expect(computeWorkerSizing(1300, undefined, { concurrency: "auto" }).workers).toBe(5);
+  });
+
   it("matches calculateOptimalWorkers and reports every constraint", () => {
     const config = { concurrency: "auto" as const };
     const sizing = computeWorkerSizing(900, undefined, config);
@@ -173,40 +211,15 @@ describe("computeWorkerSizing", () => {
 });
 
 describe("shouldDisableBrowserPoolForParallelWorker", () => {
-  const linuxHeadlessWorker = {
-    parallel: true,
-    platform: "linux" as NodeJS.Platform,
-    deviceScaleFactor: 1,
-    headlessShellPath: "/tmp/chrome-headless-shell",
-  };
+  // heygen-com/hyperframes#5548: pages sharing one browser share its
+  // connections to the file server, so every platform isolates workers.
+  it("gives every parallel worker its own browser", () => {
+    expect(shouldDisableBrowserPoolForParallelWorker({ parallel: true })).toBe(true);
+  });
 
-  it.each([
-    ["BeginFrame", false],
-    ["forced screenshot", true],
-  ])(
-    "disables the browser pool for parallel Linux/headless %s workers",
-    (_mode, forceScreenshot) => {
-      expect(
-        shouldDisableBrowserPoolForParallelWorker({
-          ...linuxHeadlessWorker,
-          forceScreenshot,
-        }),
-      ).toBe(true);
-    },
-  );
-
-  it.each([
-    ["non-parallel", { parallel: false, forceScreenshot: true }],
-    ["non-linux", { platform: "darwin" as NodeJS.Platform, forceScreenshot: true }],
-    ["no headless shell", { headlessShellPath: undefined, forceScreenshot: true }],
-    ["supersampled", { deviceScaleFactor: 2, forceScreenshot: false }],
-  ])("keeps the shared pool for %s workers", (_case, overrides) => {
-    expect(
-      shouldDisableBrowserPoolForParallelWorker({
-        ...linuxHeadlessWorker,
-        ...overrides,
-      }),
-    ).toBe(false);
+  it("keeps the shared pool for a single worker", () => {
+    expect(shouldDisableBrowserPoolForParallelWorker({ parallel: false })).toBe(false);
+    expect(shouldDisableBrowserPoolForParallelWorker({})).toBe(false);
   });
 });
 
