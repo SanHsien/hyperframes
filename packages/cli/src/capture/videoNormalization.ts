@@ -96,6 +96,10 @@ export async function normalizeVideoStream(
     stdio: ["pipe", "ignore", "ignore"],
     windowsHide: true,
   });
+  // ffmpeg exits early on bad input (-err_detect explode); the resulting EPIPE/EOF on stdin is
+  // reported through the write callbacks and the exit code, and would otherwise be an uncaught
+  // 'error' event that takes the whole process down.
+  child.stdin.on("error", () => {});
   let settled = false;
   const exited = new Promise<number>((resolve, reject) => {
     child.once("error", reject);
