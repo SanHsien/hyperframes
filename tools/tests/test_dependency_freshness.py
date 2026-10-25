@@ -97,3 +97,36 @@ def test_report_names_both_exits_so_the_next_person_does_not_invent_a_third() ->
     assert "freshness-hold:" in report
     assert "dependency-deferrals.json" in report
     assert "mute button" in report
+
+
+@pytest.mark.parametrize("payload", ["[]", '"text"', "null", '{"deferrals": []}'])
+def test_malformed_deferrals_file_is_ignored_not_a_crash(
+    tmp_path: Path, payload: str
+) -> None:
+    path = tmp_path / "dependency-deferrals.json"
+    path.write_text(payload, encoding="utf-8")
+    assert checker.load_deferrals(path) == {}
+
+
+def test_deferral_matches_the_name_pypi_normalises_to(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """`Foo_Bar` in a requirements file and `foo-bar` in the deferrals are one package."""
+    path = tmp_path / "dependency-deferrals.json"
+    path.write_text(
+        json.dumps(
+            {"deferrals": {"foo-bar": {"deferredLatest": "9.1", "reason": "not now"}}}
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(checker, "fetch_pypi_version", lambda name: "9.1")
+    package = {
+        "name": "Foo_Bar",
+        "minimum": "1.0",
+        "requirement": "Foo_Bar>=1.0",
+        "source": "requirements-dev.txt",
+        "hold": "",
+    }
+    rows = checker.collect_status([package], checker.load_deferrals(path))
+    assert rows[0]["deferred_reason"] == "not now"
+    assert checker.needs_review(rows[0]) is False
