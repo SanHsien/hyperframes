@@ -381,7 +381,7 @@ Dependabot run `40021722362`（main `c1c221f6`，security update job `1648768405
 - `packages/engine/src/index.ts`：同時匯出 `isSelfOrAncestorHidden` 與 fork 的 `assertPrivateCacheRoot`。
 - `skills-manifest.json`：以 `gen-skills-manifest.ts` 重新產生。
 
-**引進（移植做法）**：`packages/cli/src/utils/cancellableProcess.ts` 逐 chunk `toString()` 會把跨 chunk 的 UTF-8 多位元組字元（CJK）切成兩個 U+FFFD。上游 #5273（open）、#5296（closed 未合併）都在修這個，fork 實測重現（新增兩個測試，修前 `'��幕'`），改用 `StringDecoder`。
+**引進（移植做法）**：`packages/cli/src/utils/cancellableProcess.ts` 逐 chunk `toString()` 會把跨 chunk 的 UTF-8 多位元組字元（CJK）切成兩個 U+FFFD。上游 #5273（open）、#5296（closed 未合併）都在修這個，fork 實測重現（新增兩個測試，修前 `'��幕'`），改用 `StringDecoder`。**更新 2026-10-27：#5273 已在上游合併為 `2be8bc2b9`，見該日條目的衝突判斷（採上游的實作）。**
 
 **不引進／本 fork 已無此缺陷**（附證據）：
 
@@ -437,8 +437,8 @@ fork 專有程式與這批 commit 重疊的只有 17 個檔（上面 5 個衝突
 
 | PR（目前 head） | 內容與規模 | 本 fork 的缺陷證據 | 結論與觸發條件 |
 | --- | --- | --- | --- |
-| #6373 `83ea696`（open，外部） | player 的 `controls` 晚加入時補上目前播放狀態；4 檔 +44 | `packages/player/src/hyperframes-player.ts` 與上游一致，即上游 issue #6372 | 不採用；合併時隨 commit 軸帶入 |
-| #6375 `1e29216`（open，外部） | 長錄音分析：`Math.max(0, ...values)` 改 `reduce`，加 `--skip-file-seconds` 文件；3 檔 +44/-6 | `packages/cli/src/audio/analysis/run.ts:106` 仍展開 `...envelope(...).values`，即 issue #6374；是大陣列展開的堆疊上限，非 Windows 專屬 | 不採用；合併時帶入，或本線有人回報長音檔分析失敗時提前 |
+| #6373 `83ea696`（open，外部） | player 的 `controls` 晚加入時補上目前播放狀態；4 檔 +44 | `packages/player/src/hyperframes-player.ts` 與上游一致，即上游 issue #6372 | 不採用；合併時隨 commit 軸帶入。**更新 2026-10-27：已合併為 `d507323ef`，隨續批帶入** |
+| #6375 `1e29216`（open，外部） | 長錄音分析：`Math.max(0, ...values)` 改 `reduce`，加 `--skip-file-seconds` 文件；3 檔 +44/-6 | `packages/cli/src/audio/analysis/run.ts:106` 仍展開 `...envelope(...).values`，即 issue #6374；是大陣列展開的堆疊上限，非 Windows 專屬 | 不採用；合併時帶入，或本線有人回報長音檔分析失敗時提前。**更新 2026-10-27：已合併為 `ec866ed1c`，隨續批帶入** |
 | #6384 `49f5d7e`（closed） | studio e2e 的量測方式；3 檔 +48/-6，僅測試 | 本線不跑 edit-accuracy e2e | 不採用 |
 | #6391 `bfb6c5c`（open） | aws-lambda 每個 chunk 記錄耗時；2 檔 +35/-4 | 純觀測性 | 不採用 |
 | #6394 `adfe30c`（closed） | arm64 映像內附未封裝 Chrome；7 檔 +308/-35 | fork 不發佈 Lambda 映像 | 不採用 |
@@ -448,8 +448,8 @@ fork 專有程式與這批 commit 重疊的只有 17 個檔（上面 5 個衝突
 | #6403 `8be76ee`（open，外部） | benchmark 輸出改用 `mkdtemp` 並清理；2 檔 +30/-6 | `benchmark.ts` 仍寫到 cwd 的 `renders/.benchmark` | 不採用 |
 | #6407、#6408、#6411（open，維護者的 metadata PR） | npm homepage 指向 hyperframes.heygen.com、官方 MCP registry 的 `server.json`、認領 context7 | 都是上游身分資訊 | **永不採用**：fork 不發佈，也不該替上游登錄或認領。無觸發條件 |
 | #6410 `7565caa`（open） | 工作者與 slot 數量讀 CPU quota（cgroup）；12 檔 +45/-29，動到 `videoFrameExtractor.ts` | cgroup 配額是 Linux 容器概念，Windows 原生不適用 | 不採用；觸發：fork 開始提供容器化 render 環境 |
-| #6415 `bb8dfce`（open，外部） | fonts gate 先載入尚未被排版用到的宣告字型；2 檔 +81/-2 | `packages/core/src/runtime/afterFonts.ts` 與上游一致 | 不採用；合併時帶入 |
-| #6417、#6418、#6419（open，維護者） | player 自動播放被擋時各 take 播自己的音訊；playbench 量測工具（`make-media.sh` 需要 bash，Windows 原生跑不了）；音訊 clip 準時加入與音量曲線 | 與已合併的 #6397 同一系列的預覽音訊修正 | 不採用；等合併。#6418 的 playbench 在本線也不會跑 |
+| #6415 `bb8dfce`（open，外部） | fonts gate 先載入尚未被排版用到的宣告字型；2 檔 +81/-2 | `packages/core/src/runtime/afterFonts.ts` 與上游一致 | 不採用；合併時帶入。**更新 2026-10-27：已合併為 `36a24aeb8`，隨續批帶入** |
+| #6417、#6418、#6419（open，維護者） | player 自動播放被擋時各 take 播自己的音訊；playbench 量測工具（`make-media.sh` 需要 bash，Windows 原生跑不了）；音訊 clip 準時加入與音量曲線 | 與已合併的 #6397 同一系列的預覽音訊修正 | 不採用；等合併。#6418 的 playbench 在本線也不會跑。**更新 2026-10-27：#6418 已合併為 `7d6c02f85`（隨續批帶入）；#6417、#6419 仍等合併** |
 | #6424、#6425、#6426、#6427、#6428、#6429（open，維護者） | 影片超出媒體尾端仍跟動畫（5 檔 +155/-26）；snapshot 影片色彩與 render 一致（動到 `videoFrameExtractor.ts` 與 `engine/src/index.ts`）；`hyperframes <dir>` 開啟專案；兩筆 studio 捲動效能；studio 靜態組合移動後音訊持續 | 都是上游持續進行中的系列工作 | 不採用；等合併後隨 commit 軸帶入 |
 
 **issue 軸（8 筆，#6372–#6422）**：#6372、#6374、#6381、#6398 各對應上表的 #6373、#6375、#6395、#6399，處理同左；#6385（Desktop 匯出資料夾）、#6387（Desktop Codex Fast 模式）已 closed，是 Desktop app 功能，本 fork 沒有該產品；#6388 是第三方「AI 輔助報告」的宣傳貼文（已 closed），內含外部連結，未開啟、不處理；#6422（player 加移動與縮放模式，open，功能提案）不採用，觸發：上游實作合併。
@@ -465,3 +465,33 @@ fork 專有程式與這批 commit 重疊的只有 17 個檔（上面 5 個衝突
   - `studio-server` 的 `src/history/*`、`hfIdPersist` 共 11 項失敗（符號連結 `EPERM` 等）：這些檔案這次合併都沒動，與前一次採用記錄的「studio-server 符號連結與 EPERM」同型，未逐一對照 `origin/main` 基準。
   - `docs/catalog/` 重排與 Prompt Guide 等 mdx 只做了 `tools/check_links.py` 的相對連結檢查，沒有跑 Mintlify 建置。
   - 這次提交以 `LEFTHOOK_EXCLUDE=fallow` 略過 `fallow` hook：`lefthook.yml` 的 `fallow audit --base origin/main` 對整樹採用結構性必然失敗（把上游既有發現全算成新增）；前兩次的 `--no-verify` 也是同一原因。其餘 hook 照常實跑（含 `typecheck`，`node_modules/.bin/tsc` 存在且指令 exit 0；先前紀錄說該路徑不存在是錯的，見上面兩處的更正註記）。型別、測試與 `dev_check` 另外手動跑過。
+
+## 2026-10-27：上游續批 `85dcc193d` → `7d6c02f85`，commit 軸推進（PR／issue 水位不動）
+
+**決定**：把 `7d6c02f85`（8 個 commit：#6418、#5273、#6245、#5593、#5447、#6415、#6373、#6375）併入 `85dcc193d` 的採用 commit 之上，commit 水位推進到 `7d6c02f85`。這 8 筆 PR 編號都在既有 PR 水位 #6429 之內（它們原先是「未合併」，現在是「已合併」），所以 PR／issue 水位這個 commit 不動。
+
+**判準八掃描**：對 `git diff 85dcc193d 7d6c02f85` 的 2279 行新增行掃 `\S\s{40,}\S`、`eval(`／`new Function(`／`globalThis.`／`global.require`／`atob(`／`fromCharCode`、120 字元以上的 base64／hex、零寬與雙向控制字元、400 字元以上的行；全部 0 命中（最長一行 239 字元；`child_process` 出現在 `playbench/run.ts` 的 import，是量測腳本自己的子行程，內容為固定參數）。已合併的 PR 內容就是 commit 內容，沒有 force-push 的空間。
+
+**合併衝突與取捨**（2 個檔）：
+
+- `.github/workflows/ci.yml`：取 fork 的 Windows-only 版本。上游這批只動了兩處註解（#6245 把 `--skip-skills` 說明改回正常描述），行為不變；`windows-render.yml` 的同一處註解自動合併進來。
+- `packages/cli/src/utils/cancellableProcess.ts`（**#5273 與 fork 自行移植的 `744a620fe` 重疊**）：兩邊都用 `StringDecoder` 逐串流解碼並在 `close` 沖出尾端。差別只在計算輸出上限的方式：fork 用 `Buffer.byteLength(stdout) + Buffer.byteLength(stderr)`（量解碼後的字串），上游改成累計原始 chunk 的位元組數 `outputBytes`。上游的做法比較對——解碼後的字串會把不完整的位元組換成 3 位元組的 U+FFFD，量字串會讓上限的判斷隨解碼結果浮動，而且每個 chunk 都重算整個字串的長度。上游並新增 5 個測試釘住「分割字元在合併上限只算一次」「超過原始上限仍然 ENOBUFS」「串流結束時沖出不完整的尾端」。結論：**整檔採上游，fork 的實作退場**；fork 的兩個測試（`cancellable process output decoding`）與上游測試涵蓋同一性質，保留，不衝突。重看條件：上游再次改動這個函式的緩衝或終止邏輯時，與本檔的 fork 差異只剩這兩個測試。
+
+**逐項處理**：
+
+| 上游 | 內容 | 本 fork 的狀態 | 結論 |
+| --- | --- | --- | --- |
+| #6375 `ec866ed1c` | `loudest()` 用 `reduce` 取代 `Math.max(0, ...values)` | 原列「不採用；合併時帶入」，`run.ts:106` 仍展開大陣列 | 合併；`run.test.ts` 通過 |
+| #6373 `d507323ef` | 晚加入的 `controls` 補上目前播放狀態 | 原列「合併時帶入」 | 合併；player 252 通過 |
+| #6415 `36a24aeb8` | fonts gate 對 `unloaded` 的字型呼叫 `load()` | 原列「合併時帶入」；對 CJK 子集字型有利 | 合併；`entry.afterFonts.test.ts` 15 通過 |
+| #5447 `64cb6556e` | lint 兩個 finding 加 `fixHint` | 與 fork 無重疊 | 合併；lint 511 通過 |
+| #6245 `d1b347132` | init 的 `--skip-skills` 說明改回正常、範例改回 `--skip-skills` | `init.ts` 與 fork 的 `singleLineLogValue` 在不同位置，自動合併 | 合併 |
+| #5593 `2d695a843` | studio 匯出 GIF（含迴圈次數、30 fps 上限）；25 檔 +762/-178 | `render.ts` 與 fork 的 `basename()` 檔名取值在不同行，自動合併；producer 早已支援 `gif` | 合併；studio 的 9 個 render 相關檔 51 通過、studio-server 93 通過、cli 的 `studioServer.test.ts` 通過 |
+| #5273 `2be8bc2b9` | 子行程輸出跨 chunk 的 UTF-8 解碼 | 與 `744a620fe` 重疊 | 見上方衝突判斷 |
+| #6418 `7d6c02f85` | player 的 `playbench` 量測工具（9 檔 +1238） | `run.ts` 與 `make-media.sh` 需要 bash 與 PulseAudio，Windows 原生跑不了；`playbench.test.ts` 只測分析函式，6 個在 Windows 通過；`typecheck` script 多了一個 tsconfig，通過 | 合併，不執行 `bun run playbench` |
+
+**驗證**：
+
+- 型別：core、lint、studio-server、studio、player（含 `tests/playbench/tsconfig.json`）、cli 的 `tsc --noEmit` 全部 exit 0。
+- 測試（這批改到的檔）：cli 9 檔 142 通過、3 跳過（`cancellableProcess`、`audio/analysis/run`、`studioServer`、`commands/init*`）；core `entry.afterFonts` 15；lint 511；studio-server `render`＋`history/uncopied` 93；player `hyperframes-player` 252＋`tests/playbench` 6；studio `components/renders`＋`vite.adapter.render` 51。studio 的 `RenderQueue.test.tsx` 在這台 Node v26.12.1 會因內建實驗性 `localStorage` 為 `undefined` 失敗 20 項（與前次記錄同一環境問題），以 `NODE_OPTIONS=--localstorage-file=<暫存檔>` 重跑全過。
+- 提交：`LEFTHOOK_EXCLUDE=fallow`。其餘 pre-commit hook 與 commit-msg 照常實跑（輸出見該次提交）；`fallow audit --base origin/main` 對整樹採用結構性過不了，與 `85dcc193d` 條目相同。

@@ -79,6 +79,9 @@ export function runCancellableProcess(
     if (child.pid) options.onSpawn?.(child.pid);
     let stdout = "";
     let stderr = "";
+    const stdoutDecoder = new StringDecoder("utf8");
+    const stderrDecoder = new StringDecoder("utf8");
+    let outputBytes = 0;
     let settled = false;
     let terminationReason: unknown;
     let terminationSignal: NodeJS.Signals | undefined;
@@ -112,20 +115,19 @@ export function runCancellableProcess(
     };
     const onAbort = (): void => terminate(signal?.reason ?? new Error("Operation aborted"));
 
-    // A multibyte character (CJK text) can arrive split across two chunks; decode per stream.
-    const stdoutDecoder = new StringDecoder("utf8");
-    const stderrDecoder = new StringDecoder("utf8");
     child.stdout?.on("data", (chunk: Buffer | string) => {
-      const text = typeof chunk === "string" ? chunk : stdoutDecoder.write(chunk);
-      stdout += text;
-      options.onStdout?.(text);
-      if (Buffer.byteLength(stdout) + Buffer.byteLength(stderr) > maxBufferBytes) {
+      const decoded = typeof chunk === "string" ? chunk : stdoutDecoder.write(chunk);
+      stdout += decoded;
+      options.onStdout?.(decoded);
+      outputBytes += typeof chunk === "string" ? Buffer.byteLength(chunk) : chunk.length;
+      if (outputBytes > maxBufferBytes) {
         terminate(new Error(`Process output exceeded ${maxBufferBytes} bytes`), "ENOBUFS");
       }
     });
     child.stderr?.on("data", (chunk: Buffer | string) => {
       stderr += typeof chunk === "string" ? chunk : stderrDecoder.write(chunk);
-      if (Buffer.byteLength(stdout) + Buffer.byteLength(stderr) > maxBufferBytes) {
+      outputBytes += typeof chunk === "string" ? Buffer.byteLength(chunk) : chunk.length;
+      if (outputBytes > maxBufferBytes) {
         terminate(new Error(`Process output exceeded ${maxBufferBytes} bytes`), "ENOBUFS");
       }
     });
@@ -133,9 +135,9 @@ export function runCancellableProcess(
     // fallow-ignore-next-line complexity
     child.once("close", async (status, closeSignal) => {
       if (settled) return;
-      const stdoutTail = stdoutDecoder.end();
-      stdout += stdoutTail;
-      if (stdoutTail) options.onStdout?.(stdoutTail);
+      const trailingStdout = stdoutDecoder.end();
+      stdout += trailingStdout;
+      if (trailingStdout) options.onStdout?.(trailingStdout);
       stderr += stderrDecoder.end();
       if (terminationTask) terminationSignal = await terminationTask.catch(() => terminationSignal);
       if (settled) return;
