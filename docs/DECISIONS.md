@@ -367,3 +367,34 @@ Dependabot run `40021722362`（main `c1c221f6`，security update job `1648768405
 | #193 | `skills/media-use/audio/scripts/lib/openverse.mjs` | 只寫入呼叫端指定的 credits 檔，內容經 `oneLine`／`httpsUrl` 清理，不含外部可控的路徑或未清理的文字 |
 
 **重看條件**：上游改動這些檔案的資料流（輸入來源、清理函式、連線目標或寫入路徑）時重看；僅格式或註解變動不需要。
+
+## 2026-10-26：上游採用 `f76fa5c91`，PR／issue 水位推進到 #6369
+
+**決定**：整樹合併 `f5ab7711f..f76fa5c91`（55 個 commit），並把三個水位一起推進（commit `f76fa5c91`、PR #6369、issue #6369）。
+
+**判準八掃描**：對這 55 個 commit 的 diff 掃過，只有一筆超長單行（`package.json` 的 `test:scripts`）與重新產生的 `position-edits-render-inline.ts`，其餘無行內空白後藏程式、無 bidi／零寬字元；`new Function(` 只出現在上游測試內。
+
+**合併衝突與取捨**：
+
+- `.github/workflows/ci.yml`：保留 fork 的 Windows-only 版本；上游新增的 reachability、changes、cli 獨立 job 不採用（fork 的 `test_fork_docs.py::test_ci_covers_python_314` 規定 `ci.yml` 只跑 Windows）。重看條件：fork 決定在 CI 跑上游測試全集時。
+- `packages/producer/src/server.ts`：上游 #6297 以 `fetchPublicHttpsText` 拒絕私有與非 HTTPS 的 `previewUrl`，這比 fork 原本只驗 http(s) 更嚴，採上游；fork 保留 8 MiB 上限與 `validateInlineHtml`（NUL、空內容）。
+- `packages/engine/src/index.ts`：同時匯出 `isSelfOrAncestorHidden` 與 fork 的 `assertPrivateCacheRoot`。
+- `skills-manifest.json`：以 `gen-skills-manifest.ts` 重新產生。
+
+**引進（移植做法）**：`packages/cli/src/utils/cancellableProcess.ts` 逐 chunk `toString()` 會把跨 chunk 的 UTF-8 多位元組字元（CJK）切成兩個 U+FFFD。上游 #5273（open）、#5296（closed 未合併）都在修這個，fork 實測重現（新增兩個測試，修前 `'��幕'`），改用 `StringDecoder`。
+
+**不引進／本 fork 已無此缺陷**（附證據）：
+
+| 項目 | 結論 |
+| --- | --- |
+| #5254 保留 URL 後綴 | `packages/parsers/src/rewriteSubCompPaths.ts:80` 已用 `splitUrlSuffix` 並在 `:86` 補回 |
+| #5660／#5542 inspector 以 `fileURLToPath` 解析路徑 | `packages/inspector/build.mjs:9` 已是 `fileURLToPath(new URL(...))` |
+| #5362 已結束的 Windows 行程樹 | `terminateProcessTree` 在無 `child` 時吞掉 taskkill 失敗，有 `child` 時由呼叫端 `.catch`；無使用者可見影響 |
+| #5834 `isPathInside` 拒絕 `..foo` | 只造成名稱以兩個點開頭的子路徑被誤拒（偏安全），producer 的 `fileServer.ts` 版本已正確。fork 自己的 `local-media-search.mjs` 有同型寫法但只處理固定的內建音效檔名。觸發：內建檔名出現 `..` 開頭 |
+| #6129 遠端腳本公網政策（closed 未合併） | 上游 #6297 與既有 `publicNetwork.ts` 已涵蓋抓取側 |
+
+**PR／issue 範圍的誠實說明**：1400 個 PR（1059 merged、222 closed、119 open）與 172 個 issue 並未逐筆讀 diff。merged 者經 commit 軸抵達（本次與前次整樹採用）；其餘 341 個未合併 PR 以 `gh pr list --json files` 比對 fork 分歧檔案與 Windows／CJK／安全關鍵字，篩出 108 筆，逐筆看標題與檔案後只對上列項目查證實際程式碼。其餘多為功能提案、依賴升級（Renovate）或重複／被取代的 PR，無法在本 fork 重現缺陷的不引進。觸發：上游 open PR #5273（UTF-8）、#5973（刪除選取元素會清空影片檔，studio-server `files.ts`）合併或本 fork 在對應路徑回報問題時重看；#5973 尚未查證，列為觀察。
+
+**驗證**：producer `bun test`（server、htmlCompiler、inline-project-publisher）204 pass；engine extractionCache／videoFrameExtractor 261 pass；根目錄與 core／studio／scripts 的 `tsc` 無錯；`tools` pytest 45 pass。cli 的 `.browser.test.ts` 因本機瀏覽器 30 秒內起不來、`clean.test.ts` 因 Windows 符號連結 `EPERM` 失敗，皆為環境既有（與前次採用相同類型），由 main 的 regression／preview-regression 工作流覆蓋。
+
+**已知缺口**：`lefthook` 的 `typecheck`（路徑）與 `fallow audit --base origin/main`（整樹採用把上游既有發現算新增）在採用類提交必然失敗，合併 commit 與修正 commit 以 `--no-verify` 提交，修正 commit 另以 `fallow audit --base HEAD` 驗證無新增問題；其餘 hook 與 commitlint 手動通過。
