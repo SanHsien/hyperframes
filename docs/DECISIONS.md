@@ -495,3 +495,39 @@ fork 專有程式與這批 commit 重疊的只有 17 個檔（上面 5 個衝突
 - 型別：core、lint、studio-server、studio、player（含 `tests/playbench/tsconfig.json`）、cli 的 `tsc --noEmit` 全部 exit 0。
 - 測試（這批改到的檔）：cli 9 檔 142 通過、3 跳過（`cancellableProcess`、`audio/analysis/run`、`studioServer`、`commands/init*`）；core `entry.afterFonts` 15；lint 511；studio-server `render`＋`history/uncopied` 93；player `hyperframes-player` 252＋`tests/playbench` 6；studio `components/renders`＋`vite.adapter.render` 51。studio 的 `RenderQueue.test.tsx` 在這台 Node v26.12.1 會因內建實驗性 `localStorage` 為 `undefined` 失敗 20 項（與前次記錄同一環境問題），以 `NODE_OPTIONS=--localstorage-file=<暫存檔>` 重跑全過。
 - 提交：`LEFTHOOK_EXCLUDE=fallow`。其餘 pre-commit hook 與 commit-msg 照常實跑（輸出見該次提交）；`fallow audit --base origin/main` 對整樹採用結構性過不了，與 `85dcc193d` 條目相同。
+
+## 2026-10-27（補）：續批追到 `acd0bc361`，PR 水位推進到 #6439
+
+**決定**：同日上一條之後上游又多了 2 個 commit（#5366、#3943），而 `check_upstream_updates.py` 對 PR 軸列出 #6430–#6439 共 10 筆，所以另開一個 merge commit 把 commit 軸補到 `acd0bc361`、PR 水位推到 #6439，讓 `--strict` 能是綠的。issue 水位 #6422 不動（水位之上沒有新 issue）。
+
+**判準八掃描**：commit 軸對 `git diff 7d6c02f85 acd0bc361` 的 355 行新增行，PR 軸對 10 筆 PR 用 `gh pr diff` 取目前 head 的 diff（共 1,937 行新增行），掃空白夾內容、`eval(`／`new Function(`／`globalThis.`／`global.require`／`atob(`／`fromCharCode`、120 字元以上的 base64／hex、零寬與雙向控制字元；全部 0 隱藏內容。單獨檢視的命中都是正常內容：#6432 的 `new Function(` 是測試把產品內的 `mediaElementTime` 原始碼拿來求值；#6433 的 `$eval` 是 puppeteer 的 `page.$eval`；#6433 改的 `output.mp4` 是 Git LFS 指標檔（oid 與 size 兩行，沒有二進位內容）；#6436、#6437 的 URL 是測試用的 `localhost`、`127.0.0.1`、`cdn.example.com`；`#5366` 的 407 字元長行是 `docs/guides/media.mdx` 的說明文字。
+
+**合併**（1 個衝突）：`skills-manifest.json` 的 `media-use` 雜湊衝突，以 `packages/cli/scripts/gen-skills-manifest.ts` 重新產生（media-use 119 檔，只有 `media-use` 的雜湊變動），不手改。
+
+**commit 軸**：
+
+| 上游 | 內容 | 本 fork 的狀態 | 結論 |
+| --- | --- | --- | --- |
+| #5366 `dfb7e5a4d` | 偏好記錄寫入以 `preferences.json.lock` 序列化，暫存檔名帶 pid；7 檔 +338/-57 | 兩份 `prefs-store.mjs`（`skills/` 與 `packages/cli/src/media-use/lib/`）同步更新，`check-media-use-copy-parity` 3 通過；`config-lock.mjs` 本來就在兩處；不動 fork 分歧檔 | 合併；`prefs-store` 兩個測試檔 21 通過 |
+| #3943 `acd0bc361` | 有限迴圈 GIF 輸入尊重「停用迴圈」覆寫；2 檔 +17/-7 | `animatedGifPrep.ts` 與上游一致 | 合併；`bun test` 11 通過（這個檔用 `bun:test`，vitest 跑不起來是 runner 問題） |
+
+**PR 軸（#6430–#6439，10 筆，全部 open，目前 head 在括號內）**：全部不採用、等上游合併後隨 commit 軸帶入，除非下面另有觸發條件。
+
+| PR | 內容 | 本 fork 對應檔案的實際狀態 | 結論與觸發 |
+| --- | --- | --- | --- |
+| #6430 (`418a31572`) | 失敗的根組合腳本錯誤附上查找的元素與位置，用 `Debugger.getScriptSource`；2 檔 +114/-8 | `frameCapture.ts` 與上游一致，沒有 `describeThrowSite` | 不採用；診斷訊息改進，無安全或 Windows 面。觸發：合併 |
+| #6431 (`302e2aa9f`) | CLI 被強制結束時由常駐的小子行程殺掉它的子行程（Windows 用 `taskkill /T /F`），Chrome 改 `pipe: true`；7 檔 +163/-18 | `packages/cli/src/utils/childReaper.ts` 不存在；`browserManager.ts:51` 仍是 `sigintLaunchOptions`；PR 會再改剛從 #5273 取得的 `cancellableProcess.ts` | 不採用：它新增一個 detached 的 `node -e` 行程並在其中呼叫 `taskkill`，直接碰 fork 的 `check:cli-process-ownership` 防線（只有行程根才可終止行程），要先和那條規則對齊再談。觸發：合併，或本線回報 CLI 被強制結束後 Chrome 殘留 |
+| #6432 (`2364387b5`) | 預覽與 render 用同一個 `mediaElementTime` 決定暫停時的影片畫面；31 檔 +234/-100，**動到 fork 分歧檔** `generators/hyperframes.ts`、`videoFrameExtractor.ts`（與其測試） | `videoFrameExtractor.ts:2720` 仍是 `Math.floor(sourceTime * extracted.fps + 1e-9)`；`generators/hyperframes.ts:869` 仍是 `media.currentTime = mediaTime`；`runtime/mediaClock.ts` 不存在 | 不採用：fork 在這兩個檔案各有自己的改動（各 8 與 77 行差異），照抄要手工合併，且新增 `package-subpaths.json` 出口。觸發：合併；合併時這兩個檔案要逐行對 fork 的差異 |
+| #6433 (`85748ef02`，外部) | HDR 的無時間覆蓋層與子樹遮罩（SVG 也納入）；6 檔 +312/-22 | `screenshotService.ts`／`videoFrameInjector.ts` 與上游一致，仍是 `instanceof HTMLElement` | 不採用；HDR 路徑本線不是 Windows 重點。觸發：合併 |
+| #6434 (`8106c6bad`，外部) | probe 有 risk frame 時，分段擷取先關掉 probe session 再開新的；2 檔 +36 | `captureSegmentedStage.ts:294` 仍是 `probeSession ?? (await openSegmentedSession(input))`，沒有 `deRiskFrames` 判斷 | 不採用；只影響 drawElement 分段擷取的失敗復原。觸發：合併，或本線出現分段擷取 probe 失敗回報 |
+| #6435 (`a66cd1ffc`) | 包在 wrapper 裡的組合取 wrapper 的 `data-start`；5 檔 +142/-9 | `startResolver.ts` 與上游一致，`inheritedTimingHost` 只看直接父層 | 不採用；觸發：合併 |
+| #6436 (`cdc5d0825`) | 沒有註冊 timeline 的腳本不再等 45 秒；7 檔 +189/-7，**動到 fork 分歧檔** `compositionScoping.ts` | fork 的 `wrapScopedCompositionScript` 把作者程式放進 `Function(...)` 的字串字面值（`compositionScoping.ts` 約 680 行），上游在原始碼兩側插入的 `/*hf-authored-begin*/`／`end` 標記不會出現在原文，`authorScriptsMayRegisterTimelines` 讀到整個包裝（它自己提到 `__timelines`）會永遠回 true，修正等於不生效 | **不能照抄**：要移植設計，把標記放進 `jsonScriptLiteral` 之前的原文。觸發：合併；合併時對 fork 的 `Function()` 形式重做 |
+| #6437 (`0d618045d`，外部) | drawElement 失敗後分段擷取改走截圖重試；4 檔 +380/-58 | `capturePlan.ts:235` 仍是 `forceScreenshot: keepSegmenting \|\| ...`；`renderOrchestrator.ts` 不是 fork 分歧檔 | 不採用；觸發：合併 |
+| #6438 (`144976264`) | 影片不再超前播放頭或超過出點；3 檔 +187/-18 | `runtime/media.ts` 與上游一致，沒有 `prerollSourceTime`；與 #6432 動同一批檔案 | 不採用；觸發：合併，與 #6432 一起處理 |
+| #6439 (`faf489da8`) | `hyperframes check` 偵測會遺失或靜音的音訊；13 檔 +597/-80 | `utils/checkAudio.ts` 不存在；功能新增 | 不採用；觸發：合併 |
+
+**驗證**：
+
+- 本條新增的程式變更只有 #5366 與 #3943，測試見上表。
+- 提交：`LEFTHOOK_EXCLUDE=fallow`，其餘 hook 實跑；`fallow` 理由同上一條。
+- 範圍說明：任務原先只點名到 `7d6c02f85`；追加 `acd0bc361` 與 #6430–#6439 是因為上游在審查期間又前進，而 `check_upstream_updates.py --strict` 以活的 `upstream/main` 為準。這個 merge commit 與上一個分開，要退回只需要還原最後一個 commit。提交前再抓一次上游，`upstream/main` 已前進到 `9ecb13ed6`（又 4 個 commit：#6395、#6209、#6363、#6403，另有 PR #6440–#6442），本批刻意停在 `acd0bc361`，那一段留給下一批，所以這個 commit 之後 `--strict` 會因為新項目而不是綠的。其中 #6395、#6403 在「2026-10-26（補）」的表裡原列「不採用；等合併」，下一批要更新。
