@@ -534,7 +534,7 @@ fork 專有程式與這批 commit 重疊的只有 17 個檔（上面 5 個衝突
 
 ## 2026-10-27（續）：上游追到 `ad4d3fad1`（v0.8.205），PR 水位推進到 #6458、issue 水位到 #6443
 
-**決定**：把 20 個新 commit（`acd0bc361..ad4d3fad1`，含 v0.8.205 發布）以 merge 帶入，無衝突；PR 軸 #6440–#6458 與 issue #6443 逐筆處理後，三個水位一起推進。這批是補上前一條「刻意停在 `acd0bc361`」留下的那一段，所以 `--strict` 回到綠的。
+**決定**：把 20 個新 commit（`acd0bc361..ad4d3fad1`，含 v0.8.205 發布）以 merge 帶入，無衝突；PR 軸 #6440–#6458 與 issue #6443 逐筆處理後，三個水位一起推進。這批是補上前一條「刻意停在 `acd0bc361`」留下的那一段，但提交前上游又前進了（見該條「範圍說明」），所以這個 commit 之後 `--strict` 是紅的，不是綠的：它以活的 `upstream/main` 為準，水位只推到 `ad4d3fad1`。
 
 **判準八掃描**：對 merge 後的 2,818 行新增行，以及 11 個 open PR（#6440、#6441、#6444、#6450–#6454、#6456–#6458，共 1,358 行新增行）的目前 head diff，掃空白夾內容、`eval(`／`new Function(`／`globalThis.`／`global.require`／`atob(`／`fromCharCode`、120 字元以上的 base64／hex、零寬與雙向控制字元：全部 0 隱藏內容。唯一的 `new Function(` 命中在 #6454 的測試，是把產品的包裝後腳本放進假 `window` 求值（與前幾輪同型）。
 
@@ -564,19 +564,21 @@ fork 專有程式與這批 commit 重疊的只有 17 個檔（上面 5 個衝突
 
 **PR 軸（#6440–#6458，19 筆）**：已合併的 #6442、#6445–#6449、#6455 經 commit 軸抵達（上表）。未合併的 11 筆取目前 head 讀 diff，並對 merge 後的樹做 `git apply --check`：全部可套用、全部不採用，等上游合併後隨 commit 軸帶入。
 
-| PR | 內容 | 本 fork 對應檔案的實際狀態 | 結論與觸發 |
-| --- | --- | --- | --- |
-| #6440 | Docker 映像的 Node 升到 22.23.4、bun 升到 1.4.4（Brotli CVE-2026-111497） | 只動三個 Dockerfile；`Dockerfile.test`、`gcp-cloud-run/Dockerfile` 是分歧檔但差異各只有 1 行；本機 bun 已是 1.4.4，Windows 路徑不用這些映像 | 不採用；觸發：合併，或本線開始建置這些映像 |
-| #6441 | 編譯時每個唯一媒體來源只 probe 一次 | `htmlCompiler.ts` 是分歧檔，改動位置不同（fork 改的是 `inlineScriptBodies`） | 不採用；觸發：合併 |
-| #6444 | 輸出設定關鍵影格間隔與峰值位元率上限（16 檔 +578） | `engine/src/index.ts` 的 fork 差異是多匯出 `assertPrivateCacheRoot`，不同行 | 不採用；編碼參數變更會影響輸出位元組，要等上游合併並在 Windows 實跑一次。觸發：合併 |
-| #6450 | prompt 預覽編輯器加無障礙名稱 | studio 元件，無重疊 | 不採用；觸發：合併 |
-| #6451 | 媒體預覽在檔案或專案改變後重試 | studio 元件，無重疊 | 不採用；觸發：合併 |
-| #6452 | 縮放後的預覽 iframe 不畫畫布外框 | 動 `hex-baseline.json`，無重疊 | 不採用；觸發：合併 |
-| #6453 | PNG 色彩標籤不再改變預覽／check／snapshot／render 的像素（14 檔 +258，新增 `core/package-subpaths.json` 出口） | `fileServer.ts` 的分歧在 `openRegularFile` 的 `0o600`，`htmlBundler.test.ts` 的分歧在別處，hunk 不重疊 | 不採用；新增 core 子路徑出口，要照 `package-subpaths` 流程。觸發：合併 |
-| #6454 | `check` 處理切掉下伸部的遮罩，與共用場景自己的選擇器（6 檔，含兩份 golden） | `layout-audit.browser.js` 的 PR hunk 在 `visibleTextLineRects`，fork 的差異在 `hasPaint`／`isTransparentColor`（改用 `colorAlpha` 判斷透明），不同區；`compositionScoping.ts` 的 PR hunk 在 wrapper 前置程式，fork 的 `Function()` 字串只影響後面的作者程式，兩者不重疊 | 不採用；觸發：合併，合併時兩份 golden 要重算 |
-| #6456（外部） | `line_unread` 從區塊渲染文字計字（對應 issue #6443） | `craftAudit.ts` 與上游一致；`layout-audit.browser.js` 是分歧檔，PR 只在 craft 文字部件多加一行 `blockText`，與 fork 的差異不同區 | 不採用；觸發：合併。在那之前，逐字元 `<span>` 的標題會被 `check` 誤報停留時間不足（只影響警告，不影響 render） |
-| #6457 | `parsers` 的套件大小預算調成實測值加餘裕 | 只改 `package-size-budgets.json` 一行 | 不採用；觸發：合併 |
-| #6458 | CLI 組合路徑錯誤訊息帶出解析後的入口與專案目錄（6 檔） | 無重疊 | 不採用；觸發：合併 |
+| PR | 審查時 head | 內容 | 本 fork 對應檔案的實際狀態 | 結論與觸發 |
+| --- | --- | --- | --- | --- |
+| #6440 | `0285440da`（17:43Z 強推；18:53Z 又被換成 `c18b1d9ee`，那是審查之後） | Docker 映像的 Node 升到 22.23.4、bun 升到 1.4.4（Brotli CVE-2026-111497） | 只動三個 Dockerfile；`Dockerfile.test`、`gcp-cloud-run/Dockerfile` 是分歧檔但差異各只有 1 行；本機 bun 已是 1.4.4，Windows 路徑不用這些映像 | 不採用；觸發：合併，或本線開始建置這些映像 |
+| #6441 | `2deec4775`（18:04Z 強推；前一版 `8979ecafc`） | 編譯時每個唯一媒體來源只 probe 一次 | `htmlCompiler.ts` 是分歧檔，改動位置不同（fork 改的是 `inlineScriptBodies`） | 不採用；觸發：合併 |
+| #6444 | `bf04b7677`（18:07Z 強推，16 檔 +578，與本條所寫相符；18:39Z 又被換成 `b42613181`，28 檔 +801，那是審查之後。更早的 `b85e7f816` 統計相同） | 輸出設定關鍵影格間隔與峰值位元率上限（16 檔 +578） | `engine/src/index.ts` 的 fork 差異是多匯出 `assertPrivateCacheRoot`，不同行 | 不採用；編碼參數變更會影響輸出位元組，要等上游合併並在 Windows 實跑一次。觸發：合併 |
+| #6450 | `fa50e82a9` | prompt 預覽編輯器加無障礙名稱 | studio 元件，無重疊 | 不採用；觸發：合併 |
+| #6451 | `5e2652b4a` | 媒體預覽在檔案或專案改變後重試 | studio 元件，無重疊 | 不採用；觸發：合併 |
+| #6452 | `68ddd6411` | 縮放後的預覽 iframe 不畫畫布外框 | 動 `hex-baseline.json`，無重疊 | 不採用；觸發：合併 |
+| #6453 | `a54fb04d3`（14 檔 +258，與本條所寫相符） | PNG 色彩標籤不再改變預覽／check／snapshot／render 的像素（14 檔 +258，新增 `core/package-subpaths.json` 出口） | `fileServer.ts` 的分歧在 `openRegularFile` 的 `0o600`，`htmlBundler.test.ts` 的分歧在別處，hunk 不重疊 | 不採用；新增 core 子路徑出口，要照 `package-subpaths` 流程。觸發：合併 |
+| #6454 | `5caeff07d` | `check` 處理切掉下伸部的遮罩，與共用場景自己的選擇器（6 檔，含兩份 golden） | `layout-audit.browser.js` 的 PR hunk 在 `visibleTextLineRects`，fork 的差異在 `hasPaint`／`isTransparentColor`（改用 `colorAlpha` 判斷透明），不同區；`compositionScoping.ts` 的 PR hunk 在 wrapper 前置程式，fork 的 `Function()` 字串只影響後面的作者程式，兩者不重疊 | 不採用；觸發：合併，合併時兩份 golden 要重算 |
+| #6456（外部） | `eabf072d8` | `line_unread` 從區塊渲染文字計字（對應 issue #6443） | `craftAudit.ts` 與上游一致；`layout-audit.browser.js` 是分歧檔，PR 只在 craft 文字部件多加一行 `blockText`，與 fork 的差異不同區 | 不採用；觸發：合併。在那之前，逐字元 `<span>` 的標題會被 `check` 誤報停留時間不足（只影響警告，不影響 render） |
+| #6457 | `195af01c5` | `parsers` 的套件大小預算調成實測值加餘裕 | 只改 `package-size-budgets.json` 一行 | 不採用；觸發：合併 |
+| #6458 | `d6f782686` | CLI 組合路徑錯誤訊息帶出解析後的入口與專案目錄（6 檔） | 無重疊 | 不採用；觸發：合併 |
+
+**審查時 head 的來歷**：上游 PR 的作者可以在審查後強推（判準八），所以表中記的是審查當時的 head，之後才能偵測換版。當時沒有逐筆記下 SHA，這一欄是事後用 GitHub 的 PR timeline（`head_ref_force_pushed` 事件的 `commit_id` 與時間）、各 commit 的 committer 時間、以及本條已寫的檔數／行數反推：審查發生在 `ad4d3fad1` 合入（18:05Z）之後、本條提交（18:20Z）之前，取該窗口內的 head；#6440 與 #6444 在審查後又被強推，現行 head 與審查時不同，下一批會對新 head 重掃。#6450、#6451、#6452、#6454、#6456、#6457、#6458 自首次推送後沒有強推，其 head 就是現行 head。
 
 **前一輪仍 open 的 PR 重驗**：#6430、#6435、#6439 已合併並隨本批抵達。#6431–#6434、#6436–#6438 共 7 筆取目前 head 重做 `git apply --check`：#6432、#6433、#6434、#6437 現在可直接套用（#6432 的 head 已從 `2364387b5` 變成 `36602a8d4`）；#6431（`cancellableProcess.ts`，因 #5273）、#6436（`compositionScoping.ts` 的 `Function()` 包裝）、#6438（`media.test.ts`）套不上。結論與前一條相同：全部等上游合併；#6436 仍不能照抄，#6431 仍要先和行程所有權防線對齊。#6432 的 hunk 雖然可套用，合併時仍要逐行對 fork 的 `videoFrameExtractor.ts` 與新增的出口。
 
@@ -593,7 +595,7 @@ fork 專有程式與這批 commit 重疊的只有 17 個檔（上面 5 個衝突
 - 提交：`LEFTHOOK_EXCLUDE=fallow`，其餘 hook 實跑；`fallow` 理由同前幾條。
 - 範圍說明：提交前再抓一次上游，`upstream/main` 又前進 3 個 commit（#6425、#6427、#6429）與 5 筆 PR（#6459–#6463），其中 #6459（Windows 的 Chrome 檢查）與 #6461（Windows 預覽記錄搬到 `LOCALAPPDATA`）與 Windows 直接相關。本批刻意停在 `ad4d3fad1`，那一段留給下一批，所以這個 commit 之後 `--strict` 會因新項目而不是綠的。
 
-## 2026-10-27（續）：`Windows render verification` run 40368383385 的紅燈不是三個上游合併造成的，不改程式
+## 2026-10-27（CI 紅燈）：`Windows render verification` run 40368383385 的紅燈不是三個上游合併造成的，不改程式
 
 **決定**：`74dcac16f`（`750f37bb6`、`3de9a09a1`、`74dcac16f` 三個上游合併，base `f3255f6af`）的 run 40368383385 第一次嘗試失敗，對同一個 SHA 重跑失敗的 job 後成功。這是 runner 抖動，不是合併帶入的回歸，所以不回退任何上游變更，也不改測試或設定；只記錄證據與觸發條件。
 
