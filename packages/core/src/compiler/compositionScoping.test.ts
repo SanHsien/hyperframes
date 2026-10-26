@@ -2,6 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 import { parseHTML } from "linkedom";
 import { JSDOM } from "jsdom";
 import {
+  AUTHORED_SOURCE_BEGIN,
+  AUTHORED_SOURCE_END,
   buildVariablesByCompScript,
   dedupeFontFaceRules,
   scopeCssToComposition,
@@ -1031,7 +1033,10 @@ window.__afterTimeline = window.__timelines.scene;
     const literal = /Function\("document", "gsap", "window", "__hyperframes", (".*")\)\.call/.exec(
       wrapped,
     )?.[1];
-    expect(JSON.parse(literal ?? "")).toBe(source);
+    // The literal carries the authored-source markers (see the delimiter tests below) as comments.
+    expect(JSON.parse(literal ?? "")).toBe(
+      `${AUTHORED_SOURCE_BEGIN}${source}\n${AUTHORED_SOURCE_END}`,
+    );
   });
 
   it("wraps unscoped composition script source as a string literal", () => {
@@ -1535,5 +1540,39 @@ describe("composition scoping – renamed-id selector runtime", () => {
     );
     expect(captured.hash).toBe("rect");
     expect(captured.bracket).toBe("circle");
+  });
+});
+
+describe("wrapScopedCompositionScript — authored source delimiters", () => {
+  // The page-side scan (engine `authorScriptsMayRegisterTimelines`) keeps only the text between
+  // the markers. This fork carries the authored code in a JSON string literal, so the region is
+  // the literal's contents, not the raw source.
+  const authoredRegion = (wrapped: string) =>
+    wrapped
+      .split(AUTHORED_SOURCE_BEGIN)
+      .slice(1)
+      .map((region) => region.split(AUTHORED_SOURCE_END)[0])
+      .join("\n");
+
+  it("holds the authored source between the markers and leaves the wrapper's own __timelines use outside", () => {
+    const wrapped = wrapScopedCompositionScript("draw();", "scene");
+    const region = authoredRegion(wrapped);
+    expect(JSON.parse(`"${region}"`).trim()).toBe("draw();");
+    expect(wrapped).toContain("__timelines");
+    expect(region).not.toContain("__timelines");
+  });
+
+  it("puts an authored __timelines use inside the region even when the source has quotes and angle brackets", () => {
+    const wrapped = wrapScopedCompositionScript(
+      'if (1 < 2) window.__timelines["scene"] = null; // </script>',
+      "scene",
+    );
+    expect(authoredRegion(wrapped)).toContain("__timelines");
+  });
+
+  it("starts the source on the begin marker's own line, so authored line numbers do not shift", () => {
+    expect(wrapScopedCompositionScript("first();\nsecond();", "scene")).toContain(
+      `${AUTHORED_SOURCE_BEGIN}first();`,
+    );
   });
 });

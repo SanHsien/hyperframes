@@ -264,7 +264,12 @@ function joinJavaScriptFragments(fragments: readonly string[]): string {
 export function serializeGsapAnimations(
   animations: GsapAnimation[],
   timelineVar = "tl",
-  options?: { includeMediaSync?: boolean; preamble?: string; postamble?: string },
+  options?: {
+    includeMediaSync?: boolean;
+    mediaElementLeadSeconds?: number;
+    preamble?: string;
+    postamble?: string;
+  },
 ): string {
   const sorted = [...animations].sort((a, b) => {
     const aNum =
@@ -318,7 +323,7 @@ export function serializeGsapAnimations(
         const mediaTime = time - start;
         if (time >= start && time < end) {
           if (Math.abs(media.currentTime - mediaTime) > 0.1) {
-            media.currentTime = mediaTime;
+            media.currentTime = mediaTime + ${Number(options.mediaElementLeadSeconds ?? 0)};
           }
           if (media.paused && !${timelineVar}.paused()) {
             media.play().catch(function() {});

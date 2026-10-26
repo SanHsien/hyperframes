@@ -30,6 +30,7 @@ import {
   exportClipWindow,
   hasClipStarted,
   isInClipWindow,
+  mediaElementTime,
   parseStrictFiniteTimingNumber,
   readMediaStart,
   toFps,
@@ -908,6 +909,13 @@ function chromeGuessForUntaggedMatrix(metadata: VideoMetadata): string[] {
   return [`setparams=colorspace=${hd ? "bt709" : "smpte170m"}`];
 }
 
+export function sdrCanvasColourFilters(metadata: VideoMetadata, toneMappedToSdr = false): string[] {
+  if (!isHdrColorSpaceUtil(metadata.colorSpace)) {
+    return [...chromeGuessForUntaggedMatrix(metadata), SDR_CANVAS_PASSTHROUGH_FILTER];
+  }
+  return toneMappedToSdr ? [SDR_CANVAS_PASSTHROUGH_FILTER] : [];
+}
+
 /**
  * Longest stretch of output one ffmpeg process extracts; longer ranges split into segments
  * that run side by side. Segments sample the same absolute times as a single pass, so their
@@ -1154,10 +1162,7 @@ async function extractVideoFramesRangeUnredacted(
     vfFilters.push(hdrToSdrToneMapFilter(metadata.colorSpace ?? {}, frameColour));
   }
   if (toneMappedToSdr || (!isHdr && !options.sdrToHdrTransfer)) {
-    vfFilters.push(
-      ...(isHdr ? [] : chromeGuessForUntaggedMatrix(metadata)),
-      SDR_CANVAS_PASSTHROUGH_FILTER,
-    );
+    vfFilters.push(...sdrCanvasColourFilters(metadata, toneMappedToSdr));
     if (format === "jpg") {
       if (options.shownBox) vfFilters.push(halveToCoverScaleFilter(options.shownBox));
       vfFilters.push(SDR_JPEG_AS_BT601_FULL_RANGE_FILTER);
@@ -2715,9 +2720,9 @@ function getFrameIndexAtTime(
     const cycle = Math.max(0, resolvePlayableVideoDuration(extracted.metadata) - mediaStart);
     if (cycle > 0 && sourceTime >= cycle) sourceTime %= cycle;
   }
-  // Add epsilon before flooring to avoid IEEE 754 boundary errors where
-  // e.g. 0.28 * 25 === 6.999999999999999 instead of 7.
-  const frameIndex = Math.floor(sourceTime * extracted.fps + 1e-9);
+  // The frame the preview's <video> shows at this source time, so render and preview pick the same one.
+  const shownTime = mediaElementTime(mediaStart + sourceTime) - mediaStart;
+  const frameIndex = Math.floor(shownTime * extracted.fps);
   if (frameIndex < 0 || extracted.totalFrames <= 0) return null;
   if (
     isVideoHiddenBeforeStreamStart(

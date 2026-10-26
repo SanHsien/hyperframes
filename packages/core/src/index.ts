@@ -186,6 +186,7 @@ export {
   type SubCompositionValidityReason,
 } from "./compiler/subCompositionValidity";
 export { RUNTIME_BOOTSTRAP_ATTR, stripEmbeddedRuntimeScripts } from "./compiler/htmlDocument";
+export { AUTHORED_SOURCE_BEGIN, AUTHORED_SOURCE_END } from "./compiler/compositionScoping";
 export { COMPOSITION_SOURCE_URL } from "./compiler/scriptRuns";
 export { queryByAttr } from "./utils/cssSelector";
 export {
@@ -376,6 +377,7 @@ export {
 export { createRuntimeStartTimeResolver } from "./runtime/startResolver.js";
 // Also exposed via the ./runtime/clip-window subpath; re-exported here for the same dist-emit reason.
 export { hasClipStarted, isClipVisibleAt, isInClipWindow } from "./runtime/clipWindow.js";
+export { MEDIA_ELEMENT_LEAD_SECONDS, mediaElementTime } from "./runtime/mediaClock.js";
 export {
   normalizePlaybackRate,
   normalizeRateSpec,

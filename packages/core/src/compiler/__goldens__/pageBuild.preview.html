@@ -632,13 +632,14 @@ window.__hfVariablesByComp = Object.assign({}, window.__hfVariablesByComp || {},
     var report = window.__hfScriptState;
     if (typeof report === "function") report("start", __hfCompositionSrc || "index.html");
     try {
-      Function("document", "gsap", "window", "__hyperframes", `
+      Function("document", "gsap", "window", "__hyperframes", `/*hf-authored-begin*/
   (function () {
     var root = document.querySelector('[data-composition-id="card"]');
     window.__timelines = window.__timelines || {};
     window.__timelines.card = gsap.timeline({ paused: true }).from(root.querySelector(".title"), { opacity: 0 });
   })();
-`).call(
+
+/*hf-authored-end*/`).call(
         window,
         __hfScopedDocument,
         __hfScopedGsap,
@@ -1182,13 +1183,14 @@ window.__hfVariablesByComp = Object.assign({}, window.__hfVariablesByComp || {},
     var report = window.__hfScriptState;
     if (typeof report === "function") report("start", __hfCompositionSrc || "index.html");
     try {
-      Function("document", "gsap", "window", "__hyperframes", `
+      Function("document", "gsap", "window", "__hyperframes", `/*hf-authored-begin*/
   (function () {
     var root = document.querySelector('[data-composition-id="card"]');
     window.__timelines = window.__timelines || {};
     window.__timelines.card = gsap.timeline({ paused: true }).from(root.querySelector(".title"), { opacity: 0 });
   })();
-`).call(
+
+/*hf-authored-end*/`).call(
         window,
         __hfScopedDocument,
         __hfScopedGsap,
@@ -1732,13 +1734,14 @@ window.__hfVariablesByComp = Object.assign({}, window.__hfVariablesByComp || {},
     var report = window.__hfScriptState;
     if (typeof report === "function") report("start", __hfCompositionSrc || "index.html");
     try {
-      Function("document", "gsap", "window", "__hyperframes", `
+      Function("document", "gsap", "window", "__hyperframes", `/*hf-authored-begin*/
   (function () {
     var root = document.querySelector('[data-composition-id="card"]');
     window.__timelines = window.__timelines || {};
     window.__timelines.card = gsap.timeline({ paused: true }).from(root.querySelector(".title"), { opacity: 0 });
   })();
-`).call(
+
+/*hf-authored-end*/`).call(
         window,
         __hfScopedDocument,
         __hfScopedGsap,

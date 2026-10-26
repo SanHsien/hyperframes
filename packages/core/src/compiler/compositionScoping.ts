@@ -375,6 +375,9 @@ const SCOPED_HYPERFRAMES_EXPRESSION = `!__hfBaseHyperframes
         },
       })`;
 
+export const AUTHORED_SOURCE_BEGIN = "/*hf-authored-begin*/";
+export const AUTHORED_SOURCE_END = "/*hf-authored-end*/";
+
 export function scopedModulePrelude(
   timelineCompositionId: string,
   compositionSrc?: string | null,
@@ -677,7 +680,10 @@ export function wrapScopedCompositionScript(
     if (typeof report === "function") report("start", __hfCompositionSrc || "index.html");
     try {
       // Keep authored code in a string literal so it cannot alter this wrapper's structure.
-      Function("document", "gsap", "window", "__hyperframes", ${jsonScriptLiteral(source)}).call(
+      // The markers are part of the literal, not around it: an upstream scan reads the page's
+      // script text between them to tell the author's code from this wrapper's own __timelines
+      // use. The begin marker shares the first source line so error line numbers do not shift.
+      Function("document", "gsap", "window", "__hyperframes", ${jsonScriptLiteral(`${AUTHORED_SOURCE_BEGIN}${source}\n${AUTHORED_SOURCE_END}`)}).call(
         window,
         __hfScopedDocument,
         __hfScopedGsap,

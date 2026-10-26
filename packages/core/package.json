@@ -393,6 +393,12 @@
       "import": "./src/runtime/clipWindow.ts",
       "types": "./src/runtime/clipWindow.ts"
     },
+    "./runtime/media-clock": {
+      "bun": "./src/runtime/mediaClock.ts",
+      "node": "./dist/runtime/mediaClock.js",
+      "import": "./src/runtime/mediaClock.ts",
+      "types": "./src/runtime/mediaClock.ts"
+    },
     "./runtime/clip-reveal": {
       "bun": "./src/runtime/clipReveal.ts",
       "node": "./dist/runtime/clipReveal.js",
@@ -422,6 +428,12 @@
       "node": "./dist/compiler/htmlDocument.js",
       "import": "./src/compiler/htmlDocument.ts",
       "types": "./src/compiler/htmlDocument.ts"
+    },
+    "./compiler/png-colour-tags": {
+      "bun": "./src/compiler/pngColourTags.ts",
+      "node": "./dist/compiler/pngColourTags.js",
+      "import": "./src/compiler/pngColourTags.ts",
+      "types": "./src/compiler/pngColourTags.ts"
     },
     "./runtime/position-edits": {
       "bun": "./src/runtime/positionEdits.ts",
@@ -829,6 +841,10 @@
         "import": "./dist/runtime/clipWindow.js",
         "types": "./dist/runtime/clipWindow.d.ts"
       },
+      "./runtime/media-clock": {
+        "import": "./dist/runtime/mediaClock.js",
+        "types": "./dist/runtime/mediaClock.d.ts"
+      },
       "./runtime/clip-reveal": {
         "import": "./dist/runtime/clipReveal.js",
         "types": "./dist/runtime/clipReveal.d.ts"
@@ -848,6 +864,10 @@
       "./compiler/html-document": {
         "import": "./dist/compiler/htmlDocument.js",
         "types": "./dist/compiler/htmlDocument.d.ts"
+      },
+      "./compiler/png-colour-tags": {
+        "import": "./dist/compiler/pngColourTags.js",
+        "types": "./dist/compiler/pngColourTags.d.ts"
       },
       "./runtime/position-edits": {
         "import": "./dist/runtime/positionEdits.js",
