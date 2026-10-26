@@ -198,6 +198,14 @@ Source: `packages/lint/src/rules/composition.ts`.
 
 **Fix:** Give the root `id="root"` and style it with `#root` plus plain descendant selectors.
 
+### `subcomposition_style_outside_template`
+
+**Warning.** A sub-composition file with a `<template>` has a `<style>`, or a `<link rel="stylesheet">`
+outside `<head>`, that sits outside the template. Mounting keeps only the template's content and the
+stylesheet links in `<head>`, so those styles never apply in preview, snapshot or render.
+
+**Fix:** Move it inside `<template>`, next to the composition root.
+
 ### `template_literal_selector`
 
 **Error.** `querySelector` is called with a template-literal variable, which the bundler's CSS parser crashes on.
@@ -519,6 +527,12 @@ Source: `packages/lint/src/rules/media.ts`.
 **Warning.** An `<hf-audio-group>` carries `data-fx-carve` (or a carve-derived chain), but a carve belongs on the bed clip, not the bus.
 
 **Fix:** Remove `data-fx-carve` from the group and carve the bed clip instead.
+
+### `audio_group_holds_elements`
+
+**Warning.** Elements sit inside an `<hf-audio-group>`. Most often the group was written self-closed (`<hf-audio-group id="sfx" />`), which HTML does not close on a custom element, so every later sibling lands inside it. Being inside routes no audio through the bus, and while the group has `data-hidden` those elements are hidden and silenced in preview and render.
+
+**Fix:** Close the group with `</hf-audio-group>` right after its opening tag, and give clips meant for the bus `data-audio-group`.
 
 ### `audio_group_no_members`
 

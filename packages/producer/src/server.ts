@@ -32,6 +32,7 @@ import crypto from "node:crypto";
 import { Hono, type Context } from "hono";
 import { streamSSE } from "hono/streaming";
 import { serve } from "@hono/node-server";
+import { fetchPublicHttpsText } from "@hyperframes/engine";
 import {
   RenderCancelledError,
   createRenderJob,
@@ -90,6 +91,7 @@ interface RenderInput {
   pageMotionBlur?: RenderConfig["pageMotionBlur"];
   outputDynamicRange?: "auto" | "hdr" | "sdr";
   workers?: number;
+  maxRenderMs?: number;
   crf?: number;
   videoBitrate?: string;
   useGpu: boolean;
@@ -138,6 +140,7 @@ const SAFE_RENDER_ERROR_CODES = new Set<string>([
   "VIDEO_SOURCE_UNRENDERABLE",
   "VIDEO_EXTRACTION_FAILED",
   "ENCODER_INTERRUPTED",
+  "RENDER_TOO_SLOW",
 ]);
 
 /**
@@ -232,6 +235,7 @@ export function parseRenderOptions(body: Record<string, unknown>): Omit<RenderIn
   const fps = parseServerFps(body.fps);
   const quality = parseServerQuality(body.quality);
   const workers = typeof body.workers === "number" ? body.workers : undefined;
+  const maxRenderMs = typeof body.maxRenderMs === "number" ? body.maxRenderMs : undefined;
   const useGpu = body.gpu === true;
   const debug = body.debug === true;
   // Preserve the pre-structured-warning HTTP contract for callers that do
@@ -256,6 +260,7 @@ export function parseRenderOptions(body: Record<string, unknown>): Omit<RenderIn
     fps,
     quality,
     workers,
+    maxRenderMs,
     crf,
     videoBitrate,
     useGpu,
@@ -317,6 +322,7 @@ function buildRenderJobConfig(input: RenderInput, outputPath: string, log: Produ
       quality: input.quality,
       format: input.format ?? "mp4",
       workers: input.workers,
+      maxRenderMs: input.maxRenderMs,
       crf: input.crf,
       videoBitrate: input.videoBitrate,
       useGpu: input.useGpu,
@@ -360,6 +366,14 @@ function resolvePreparedRenderOutput(
 function validateRenderOverrides(body: Record<string, unknown>): string | undefined {
   const encoder = parseEncoderOptions(body, parseServerFormat(body.format) ?? "mp4");
   if (!encoder.ok) return encoder.error;
+  if (
+    body.maxRenderMs !== undefined &&
+    (typeof body.maxRenderMs !== "number" ||
+      !Number.isInteger(body.maxRenderMs) ||
+      body.maxRenderMs < 0)
+  ) {
+    return "maxRenderMs must be a non-negative integer number of milliseconds";
+  }
   if (body.variables !== undefined && !isPlainObject(body.variables)) {
     return 'variables must be a JSON object keyed by variable id (e.g. {"title":"Hello"})';
   }
@@ -431,53 +445,10 @@ async function resolveInlineRenderHtml(body: Record<string, unknown>): Promise<
   const previewUrl = nonEmptyString(body.previewUrl);
   if (!previewUrl)
     return { error: "Missing render source: provide projectDir, previewUrl, or html" };
-  let parsedPreviewUrl: URL;
   try {
-    parsedPreviewUrl = new URL(previewUrl);
-  } catch {
-    return { error: "previewUrl must be a valid http(s) URL" };
-  }
-  if (parsedPreviewUrl.protocol !== "http:" && parsedPreviewUrl.protocol !== "https:") {
-    return { error: "previewUrl must use http or https" };
-  }
-  try {
-    const response = await fetch(previewUrl, { method: "GET", redirect: "error" });
-    if (!response.ok) {
-      return { error: `Failed to fetch previewUrl: ${response.status} ${response.statusText}` };
-    }
-    const declaredLength = Number(response.headers.get("content-length"));
-    if (Number.isFinite(declaredLength) && declaredLength > MAX_PREVIEW_RESPONSE_BYTES) {
-      return { error: `previewUrl response exceeds ${MAX_PREVIEW_RESPONSE_BYTES} byte limit` };
-    }
-    if (!response.body) return { error: "previewUrl response has no body" };
-    const reader = response.body.getReader();
-    const chunks: Uint8Array[] = [];
-    let total = 0;
-    try {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        total += value.byteLength;
-        if (total > MAX_PREVIEW_RESPONSE_BYTES) {
-          await reader.cancel();
-          return { error: `previewUrl response exceeds ${MAX_PREVIEW_RESPONSE_BYTES} byte limit` };
-        }
-        chunks.push(value);
-      }
-    } finally {
-      reader.releaseLock();
-    }
-    let html: string;
-    try {
-      html = new TextDecoder("utf-8", { fatal: true }).decode(
-        Buffer.concat(
-          chunks.map((chunk) => Buffer.from(chunk)),
-          total,
-        ),
-      );
-    } catch {
-      return { error: "previewUrl response must be valid UTF-8 HTML" };
-    }
+    // Upstream's fetch refuses private and non-HTTPS targets; the fork keeps its tighter body cap
+    // and the structural check every inline payload gets.
+    const html = await fetchPublicHttpsText(previewUrl, { maxBytes: MAX_PREVIEW_RESPONSE_BYTES });
     const validationError = validateInlineHtml(html);
     return validationError ? { error: validationError } : { html };
   } catch (error) {
