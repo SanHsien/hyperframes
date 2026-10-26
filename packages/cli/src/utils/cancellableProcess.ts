@@ -133,7 +133,9 @@ export function runCancellableProcess(
     // fallow-ignore-next-line complexity
     child.once("close", async (status, closeSignal) => {
       if (settled) return;
-      stdout += stdoutDecoder.end();
+      const stdoutTail = stdoutDecoder.end();
+      stdout += stdoutTail;
+      if (stdoutTail) options.onStdout?.(stdoutTail);
       stderr += stderrDecoder.end();
       if (terminationTask) terminationSignal = await terminationTask.catch(() => terminationSignal);
       if (settled) return;

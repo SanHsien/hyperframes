@@ -370,14 +370,14 @@ Dependabot run `40021722362`（main `c1c221f6`，security update job `1648768405
 
 ## 2026-10-26：上游採用 `f76fa5c91`，PR／issue 水位推進到 #6369
 
-**決定**：整樹合併 `f5ab7711f..f76fa5c91`（55 個 commit），並把三個水位一起推進（commit `f76fa5c91`、PR #6369、issue #6369）。
+**決定**：整樹合併 `f5ab7711f..f76fa5c91`（58 個 commit），並把三個水位一起推進（commit `f76fa5c91`、PR #6369、issue #6369）。
 
-**判準八掃描**：對這 55 個 commit 的 diff 掃過，只有一筆超長單行（`package.json` 的 `test:scripts`）與重新產生的 `position-edits-render-inline.ts`，其餘無行內空白後藏程式、無 bidi／零寬字元；`new Function(` 只出現在上游測試內。
+**判準八掃描**：對這 58 個 commit 的 diff 掃過，只有一筆超長單行（`package.json` 的 `test:scripts`）與重新產生的 `position-edits-render-inline.ts`，其餘無行內空白後藏程式、無 bidi／零寬字元；`new Function(` 只出現在上游測試內。
 
 **合併衝突與取捨**：
 
 - `.github/workflows/ci.yml`：保留 fork 的 Windows-only 版本；上游新增的 reachability、changes、cli 獨立 job 不採用（fork 的 `test_fork_docs.py::test_ci_covers_python_314` 規定 `ci.yml` 只跑 Windows）。重看條件：fork 決定在 CI 跑上游測試全集時。
-- `packages/producer/src/server.ts`：上游 #6297 以 `fetchPublicHttpsText` 拒絕私有與非 HTTPS 的 `previewUrl`，這比 fork 原本只驗 http(s) 更嚴，採上游；fork 保留 8 MiB 上限與 `validateInlineHtml`（NUL、空內容）。
+- `packages/producer/src/server.ts`：上游 #6297 以 `fetchPublicHttpsText` 拒絕私有與非 HTTPS 的 `previewUrl`，這比 fork 原本只驗 http(s) 更嚴，採上游；fork 保留 8 MiB 上限與 `validateInlineHtml`（NUL、空內容）。fork 原本的兩項檢查隨之放棄：`redirect: "error"`（上游改為每一跳都重做公網檢查）與 `TextDecoder` 的 fatal UTF-8 拒絕（`fetchPublicHttpsText` 用寬鬆解碼，壞位元組會變成 U+FFFD 而非被拒）。重看條件：producer 因壞編碼 HTML 渲染出亂碼被回報時，在 `resolveInlineRenderHtml` 補上 `�` 檢查。上游新增的 `.github/actions/setup-test-workspace` 在 fork 的 Windows-only `ci.yml` 沒有被使用，保留無害。
 - `packages/engine/src/index.ts`：同時匯出 `isSelfOrAncestorHidden` 與 fork 的 `assertPrivateCacheRoot`。
 - `skills-manifest.json`：以 `gen-skills-manifest.ts` 重新產生。
 
