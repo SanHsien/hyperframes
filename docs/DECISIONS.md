@@ -370,7 +370,7 @@ Dependabot run `40021722362`（main `c1c221f6`，security update job `1648768405
 
 ## 2026-10-26：上游採用 `f76fa5c91`，PR／issue 水位推進到 #6369
 
-**決定**：整樹合併 `f5ab7711f..f76fa5c91`（58 個 commit），並把三個水位一起推進（commit `f76fa5c91`、PR #6369、issue #6369）。
+**決定**：整樹合併 `f5ab7711f..b054bb98f`（65 個 commit；先採用到 `f76fa5c91` 的 58 個，審查與 CI 期間上游再多 7 個，同日併入，含 #6361 與 #5824 等），並把三個水位一起推進（commit `b054bb98f`、PR #6369、issue #6369）。第二段 7 個 commit 同樣掃過判準八（無超長行、無 eval／bidi），`ci.yml` 衝突仍保留 fork 版。
 
 **判準八掃描**：對這 58 個 commit 的 diff 掃過，只有一筆超長單行（`package.json` 的 `test:scripts`）與重新產生的 `position-edits-render-inline.ts`，其餘無行內空白後藏程式、無 bidi／零寬字元；`new Function(` 只出現在上游測試內。
 

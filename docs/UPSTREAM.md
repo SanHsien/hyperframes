@@ -80,7 +80,7 @@ Baseline 代表「已審查」，不代表「全部已合併」。
 
 ## 2026-10-26：整樹採用 `f76fa5c91`，三個水位推進
 
-- commit 水位：`f76fa5c91c4097fef6c8760bf99ff35f4f5e0e7a`（自 `f5ab7711f` 之後 58 個 commit，判準八掃描無隱藏內容）；PR 水位 **#6369**、issue 水位 **#6369**。
+- commit 水位：`b054bb98febe2f0fa79519c3c0f1a7f946d273af`（`b054bb98f`，自 `f5ab7711f` 之後 65 個 commit；中間採用點 `f76fa5c91`，判準八掃描無隱藏內容）；PR 水位 **#6369**、issue 水位 **#6369**。
 - PR／issue 以 `--state all` 列出 1400 與 172 筆：merged 者經 commit 軸抵達，341 個未合併 PR 以分歧檔案與 Windows／CJK／安全關鍵字篩出 108 筆，逐項查證並只引進 UTF-8 分段解碼一項；其餘結論與觸發條件見 [DECISIONS](DECISIONS.md) 的「2026-10-26：上游採用 `f76fa5c91`」。
 - `check_upstream_updates.py` 現在會加大 `gh --limit` 直到碰到水位，不再在 1000 筆處靜默截斷。
 
