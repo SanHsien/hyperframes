@@ -124,3 +124,29 @@ describe("render setup worker failure", () => {
     }
   });
 });
+
+describe("cancellable process output decoding", () => {
+  it("keeps a multibyte character that arrives split across two stdout chunks", async () => {
+    const script = [
+      'const bytes = Buffer.from("字幕", "utf8");',
+      "process.stdout.write(bytes.subarray(0, 2));",
+      "setTimeout(() => process.stdout.write(bytes.subarray(2)), 150);",
+    ].join("\n");
+    const seen: string[] = [];
+    const result = await runCancellableProcess(process.execPath, ["-e", script], {
+      onStdout: (chunk) => seen.push(chunk),
+    });
+    expect(result.stdout).toBe("字幕");
+    expect(seen.join("")).toBe("字幕");
+  });
+
+  it("keeps a multibyte character that arrives split across two stderr chunks", async () => {
+    const script = [
+      'const bytes = Buffer.from("字幕", "utf8");',
+      "process.stderr.write(bytes.subarray(0, 2));",
+      "setTimeout(() => process.stderr.write(bytes.subarray(2)), 150);",
+    ].join("\n");
+    const result = await runCancellableProcess(process.execPath, ["-e", script]);
+    expect(result.stderr).toBe("字幕");
+  });
+});
