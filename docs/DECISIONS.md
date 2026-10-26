@@ -621,3 +621,48 @@ fork 專有程式與這批 commit 重疊的只有 17 個檔（上面 5 個衝突
 - 不回退 `750f37bb6`／`3de9a09a1`／`74dcac16f` 的任何部分。
 
 **重看條件**：同一個 suite 或任何只做清理的 hook 在 Windows run 再出現 `Hook timed out`，且重跑後同一個 SHA 變綠，累計到第二次，就在 `packages/engine/vitest.config.ts` 加 `hookTimeout`（fork 側一行，需附這兩次 run 的 ID）；如果重跑仍紅，才當成回歸，從這次記錄的耗時表開始二分。回貢上游要主人當次對話明確同意。
+
+## 2026-10-27（再續）：上游追到 `8f618c5ff`（v0.8.206），commit 水位推進，PR 水位只到 #6459，issue 水位不動
+
+**決定**：把 14 個新 commit（`ad4d3fad1..8f618c5ff`）分三個 merge 帶入（`15367a9f6`、`74905aeff`、`8f618c5ff`，各自可單獨還原）。commit 水位推到 `8f618c5ff`；PR 水位只推到 #6459，因為 #6460 之後的 PR 與 issue #6465 這一輪沒有審完（見最後的未完成清單）；issue 水位維持 #6443。審查期間上游還在前進，提交前 `upstream/main` 就是 `8f618c5ff`，之後若再前進，`--strict` 會是紅的，這是預期。
+
+**判準八掃描**：對 `ad4d3fad1..8f618c5ff` 的 1,497 行新增行（分兩段：`ad4d3fad1..15367a9f6` 1,191 行、`15367a9f6..8f618c5ff` 306 行）掃空白夾內容、`eval(`／`new Function(`／`globalThis.`／`global.require`／`atob(`／`fromCharCode`、120 字元以上的 base64／hex、零寬與雙向控制字元、400 字元以上單行：0 命中。另對 22 個 open PR 的目前 head diff 掃同一組：只有 #6433 測試裡的 puppeteer `page.$eval`、#6454 測試裡把包裝後腳本放進假 `window` 的 `new Function(`，都是良性。
+
+**唯一衝突：#6436 與本 fork 的 `Function()` 包裝**（`compositionScoping.ts`）。前一輪預判「不能照抄」，這次實測確認。上游在原始碼兩側插入 `/*hf-authored-begin*/`／`end`，頁面端的 `authorScriptsMayRegisterTimelines` 只讀兩標記之間的文字，藉此把包裝自己的 `__timelines` 排除。本 fork 把作者程式放進 `Function(...)` 的 JSON 字串字面值，如果標記圍在字面值外面，掃描讀到的就是整個包裝，包裝自己提到 `__timelines`，永遠回 true，修正等於不生效。做法：標記放進字面值內（`jsonScriptLiteral(BEGIN + source + "
+" + END)`），begin 標記與第一行原始碼同一行，錯誤行號不位移。證據：
+
+- 新增 `packages/engine/src/services/frameCapture-authorScan.scopedWrapper.test.ts`，用 `@hyperframes/core/compiler` 的真實 `wrapScopedCompositionScript` 輸出跑上游的掃描；把標記拿掉再重建 core dist，第一個測試失敗（`expected true to be false`），放回後 3 通過。
+- `compositionScoping.test.ts` 的分隔符測試改寫成釘性質（作者程式在標記之間、包裝自己的 `__timelines` 在標記之外、含引號與角括號的 `__timelines` 仍在區內、begin 標記同行）；原本釘「字面值等於原始碼」的測試改成等於「標記＋原始碼＋標記」。
+- `pageBuild.preview.html`／`pageBuild.render.html` 兩份 golden 只多兩行標記註解（逐行比對 diff）。
+
+**逐項處理（commit 軸）**：
+
+| 上游 | 內容 | 本 fork 的狀態 | 結論 |
+| --- | --- | --- | --- |
+| #6425 `37f14fdcb` | snapshot 的影片畫格與 render 同色（4 檔） | `snapshot.ts`、`videoFrameExtractor.ts` 的 fork 差異在別處（`assertPrivateCacheRoot`），自動合併 | 合併；`snapshot.test` 通過 |
+| #6427 `f1b5d89a1`、#6429 `121bf20e9` | studio 圖層走訪與預覽訊息的效能 | 無重疊 | 合併；`domEditLayerWalkCache`、`previewMessageRouter` 通過 |
+| #6431 `5148326fd` | CLI 被殺時不留子行程（`childReaper.ts`，Chrome 改 `pipe: true`）；前一輪註明要先對齊行程所有權防線 | `check:cli-process-ownership` 通過；`cancellableProcess.ts` 與上游一致 | 合併；`childReaper`、`cancellableProcess`、`chromeOrphans` 的 kill 兩項通過。`chromeOrphans.process.test.ts` 的「check 結束後不留 Chrome／watchdog」失敗，把 #6431 的三個產品檔還原到 `ad4d3fad1` 後同樣失敗（fresh HOME 下 check 的瀏覽器 30 秒內起不來，手動重現），所以不是這個 commit 造成，但原因沒有查完 |
+| #6436 `4a5ee7361` | 沒有註冊 timeline 的組合不再等 45 秒 | 見上方 | 移植設計（標記進字面值），不照抄 |
+| #6432 `e3e93aa7f` | 暫停預覽與 render 用同一個媒體時間（33 檔） | 前一輪標「動 fork 分歧檔」；`videoFrameExtractor.ts`、`generators/hyperframes.ts`、`gsapSerialize.ts` 的 fork 差異（`assertPrivateCacheRoot`、`joinJavaScriptFragments`）與上游 hunk 不同區，自動合併；重建 parsers dist 後 `hyperframes.test` 47 通過 | 合併；core compiler／runtime／generators 3258 通過 |
+| #6453 `3e16603d3` | PNG 色彩標籤不改變像素；新增 core 子路徑出口 | `fileServer.ts` 的 `0o600` 差異不重疊 | 合併；producer `fileServer` 54 通過 |
+| #6450、#6451、#6457 | studio 無障礙名稱、媒體預覽重試、套件大小預算 | 無重疊 | 合併；studio 18 通過 |
+| #6469 `85fdc9aa8` | 發布 v0.8.206 | 版本號 | 合併 |
+| #6464 `9ebc1f8a1` | 專案鎖在拒絕硬連結的環境也能用（改用 `createFileAtomically`） | **Windows 相關**；`projectLock.ts` 非分歧檔，`core/atomicFile.ts` 已在 | 合併；`projectLock` 8 通過（含 6 個行程併發接管） |
+| #6461 `74905aeff` | Windows 的預覽與 catch-up 紀錄搬到 `LOCALAPPDATA`，被拒絕的 log 退到 null device | **Windows 相關**；`previewLifecycle.test.ts` 的 fork 差異 4 行，自動合併 | 合併；`previewLifecycle`、`appHistory`、`desktopApp` 通過 |
+| #6459 `8f618c5ff` | Windows 的 Chrome 檢查改用 PowerShell 讀檔案版本，不信 `chrome.exe --version` | **Windows 相關**；`preflight.ts` 非分歧檔 | 合併；`preflight.test` 28 通過；本機 Chrome 同一條 `Get-Item` 指令回 156.0.8078.48 |
+
+**PR 軸**：上表已合併的 PR 與前一輪 open 的 #6431、#6432、#6436、#6450、#6451、#6453、#6457 經 commit 軸抵達。PR 水位只推到 #6459。
+
+**未審完、不進水位**（PR #6460 起與 issue #6465）：以下只做了 `git apply --check`（對 `8f618c5ff` 的樹）與隱藏內容掃描，沒有逐筆對 fork 檔案下結論，下一批要做。目前 head：#6460 `8549d66af`（24 檔，套得上）、#6462 `eb804f0a6`（`Dockerfile.test`、`gcp-cloud-run/Dockerfile` 是分歧檔）、#6463 `ea99169c6`（init 在拒絕硬連結的環境也能建檔；Windows 相關，`writeNewFile.ts` 與上游一致，`projectConfig.create.test.ts` 是分歧檔；已讀 diff，結論待測）、#6466 `5a20b67dd`（對應 issue #6465，loopback Studio 探測加 1 秒上限）、#6467 `0484fe2ff`、#6468 `83ecb8f83`、#6470 `9c2cbc214`、#6471 `c216986ba`、#6472 `21968d83d`、#6473 `0348f90f0`。issue #6465 的結論待 #6466 一起下。
+
+**前一輪仍 open 的 PR 目前 head**（`git apply --check` 對 `8f618c5ff` 的樹）：#6428 `781935309`、#6433 `85748ef02`、#6434 `8106c6bad`、#6437 `0d618045d`、#6440 `c18b1d9ee`（已換版）、#6441 `2deec4775`、#6444 `b42613181`（已換版）、#6452 `68ddd6411`、#6454 `5caeff07d`、#6456 `eabf072d8`、#6458 `d6f782686` 全部套得上；#6438 `4b10a8d3e` 套不上，它疊在 `fix/player-audio-joins` 之上（base 不是 main，39 檔 +893/-270），不能獨立合併。結論仍是等上游合併；#6454 動 `compositionScoping.ts` 與兩份 golden，合併時 golden 要對本條的標記重算。#6440 與 #6444 的新 head 沒有重讀 diff。
+
+**驗證**（皆在 merge 後的樹，Windows 11 本機，Node 26）：
+
+- core `src/compiler`、`src/runtime`、`src/generators` 3258 通過；唯一失敗是 `pageBuild.golden`（上述標記，已更新）與一項 `hyperframes.test`（parsers dist 過期，重建後 47 通過）。
+- engine：`videoFrameExtractor`、`frameCapture-subTimelinePoll`、`-subTimelineWarning`、新增的 `authorScan.scopedWrapper` 共 246 通過、2 跳過（`--testTimeout=90000`）。
+- cli：#6431／#6425／伺服器相關 6 檔 144 通過、3 跳過、1 失敗（`chromeOrphans` 見上）；`projectLock`、`previewLifecycle`、`appHistory`、`desktopApp` 通過；`preflight` 28 通過。`projectLock` 併發接管測試在預設環境會因 Node 26 的 `DEP0205` 警告寫進子行程 stderr 而失敗，`NODE_OPTIONS=--disable-warning=DEP0205` 後 8 通過。
+- producer：`scriptFailureAttribution` 通過；`fileServer.test.ts` 要用 `bun test`，54 通過、2 失敗（Windows 無權建立符號連結 `EPERM`）。
+- player 23 項失敗是 Node 26 的 `localStorage` 全域；`NODE_OPTIONS=--no-experimental-webstorage` 後 386 通過。studio 18、studio-server 134 通過。
+- `scripts/package-subpaths.test.mjs` 仍只有已知的路徑寫死失敗（`/repo/...` vs `C:\repo\...`）。
+- 提交：`LEFTHOOK_EXCLUDE=fallow`，其餘 hook 實跑（`typecheck`、`cli-process-ownership`、`commitlint` 等）；`fallow` 理由同前幾條。`8f618c5ff` 那次 merge 我誤跑過一次不帶排除的 `git commit --no-edit`，hook 全數實跑並通過，隨後用排除 fallow 的 amend 改訊息（沒有 `--no-verify`）。
