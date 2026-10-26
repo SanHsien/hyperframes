@@ -531,3 +531,64 @@ fork 專有程式與這批 commit 重疊的只有 17 個檔（上面 5 個衝突
 - 本條新增的程式變更只有 #5366 與 #3943，測試見上表。
 - 提交：`LEFTHOOK_EXCLUDE=fallow`，其餘 hook 實跑；`fallow` 理由同上一條。
 - 範圍說明：任務原先只點名到 `7d6c02f85`；追加 `acd0bc361` 與 #6430–#6439 是因為上游在審查期間又前進，而 `check_upstream_updates.py --strict` 以活的 `upstream/main` 為準。這個 merge commit 與上一個分開，要退回只需要還原最後一個 commit。提交前再抓一次上游，`upstream/main` 已前進到 `9ecb13ed6`（又 4 個 commit：#6395、#6209、#6363、#6403，另有 PR #6440–#6442），本批刻意停在 `acd0bc361`，那一段留給下一批，所以這個 commit 之後 `--strict` 會因為新項目而不是綠的。其中 #6395、#6403 在「2026-10-26（補）」的表裡原列「不採用；等合併」，下一批要更新。
+
+## 2026-10-27（續）：上游追到 `ad4d3fad1`（v0.8.205），PR 水位推進到 #6458、issue 水位到 #6443
+
+**決定**：把 20 個新 commit（`acd0bc361..ad4d3fad1`，含 v0.8.205 發布）以 merge 帶入，無衝突；PR 軸 #6440–#6458 與 issue #6443 逐筆處理後，三個水位一起推進。這批是補上前一條「刻意停在 `acd0bc361`」留下的那一段，所以 `--strict` 回到綠的。
+
+**判準八掃描**：對 merge 後的 2,818 行新增行，以及 11 個 open PR（#6440、#6441、#6444、#6450–#6454、#6456–#6458，共 1,358 行新增行）的目前 head diff，掃空白夾內容、`eval(`／`new Function(`／`globalThis.`／`global.require`／`atob(`／`fromCharCode`、120 字元以上的 base64／hex、零寬與雙向控制字元：全部 0 隱藏內容。唯一的 `new Function(` 命中在 #6454 的測試，是把產品的包裝後腳本放進假 `window` 求值（與前幾輪同型）。
+
+**合併**：沒有衝突，`skills-manifest.json` 自動合併後仍與 `skills/` 一致。本機的 `packages/core/dist` 是舊的，要先 `bun run --cwd packages/core build`，producer 的 `htmlCompiler.scriptOrder` 才不會因 `isAlwaysAppliedStyle` 匯入為 `undefined` 而失敗；CI 的建置步驟本來就會做。
+
+**commit 軸（20 個）**：
+
+| 上游 | 內容 | 本 fork 的狀態 | 結論 |
+| --- | --- | --- | --- |
+| #6403 `803655a67` | benchmark 的每輪輸出檔隔離 | 原列「不採用；等合併」 | 合併；`benchmark.test.ts` 通過 |
+| #6363 `a07ab5087` | K8s 範例 Dockerfile 的 Chrome 版本對齊 | 範例檔，無重疊 | 合併 |
+| #6209 `ecc2396e8` | 產品片文件連到完整工作區 | 純文件與 skill 參考 | 合併 |
+| #6395 `9ecb13ed6` | 場景字型 `@font-face` 去重後再內嵌；把 `isAlwaysAppliedStyle` 從 `htmlBundler.ts` 移到 `scriptRuns.ts` 並匯出 | 原列「不採用；等合併」；`htmlCompiler.ts` 是分歧檔（`inlineScriptBodies`），改動在 `coalesceHeadStylesAndBodyScripts` 開頭，位置不同 | 合併；core `pageBuild.golden` 單獨 4 通過，producer `htmlCompiler` 系列依 runner 全過 |
+| #6424 `d8398c9da` | 超過媒體結尾的影片仍跟著動畫的樣式更新 | `frameCapture.ts`、`screenshotService.ts` 與上游一致 | 合併；`videoFrameInjector.test.ts` 通過 |
+| #6426 `324671829` | `hyperframes <dir>` 等於 `hyperframes open <dir>`，改寫 `process.argv` | 只用 `statSync` 讀目錄，沒有碰行程所有權 | 合併；`cli.lifecycle`、`projectShortcut` 通過 |
+| #6442 `b76b52937`（`e34f9f01d`） | Windows 上提供 HyperFrames app 下載 | 與 Windows 相關，無重疊 | 合併；`desktopApp`、`desktopRoutes`、`OpenInDesktopButton.dom` 通過 |
+| #6446 `b4eab1a8c` | 發布 v0.8.205 | 版本號與 manifest | 合併 |
+| #6445／#6448 | 文件：app 的 Windows 安裝步驟、quickstart 提到 Windows | 純文件 | 合併 |
+| #6430 `83a29e920` | 失敗的根組合腳本錯誤附上查找的元素（`Debugger.getScriptSource`） | 原列「不採用；等合併」 | 合併；`frameCapture-isolateScript.browser` 在放寬逾時後通過（見驗證） |
+| #6402 `0cc14ddb8` | `play`／`present` 的連接埠驗證 | 與 `preview` 共用 `port.ts` | 合併；`port`、`serverPort` 通過 |
+| #6435 `0979e32a8` | 包在 wrapper 裡的組合取 wrapper 的 `data-start` | 原列「不採用；等合併」 | 合併；core `startResolver` 通過 |
+| #6439 `d83bf997b` | `check` 偵測會遺失或靜音的音訊（13 檔） | 原列「不採用；等合併」；功能新增 | 合併；`check`、`checkAudio` 通過 |
+| #6447 | 每週摘要文件 | 純文件 | 合併 |
+| #6449 `37543d223` | 查連接埠與剪貼簿時隱藏 Windows 主控台視窗 | **直接是 Windows 修正**；`portUtils.ts` 是分歧檔（fork 的 `allowedTcpPort`），改動位置不同，自動合併無衝突 | 合併；兩個 `windowsHide` 測試通過 |
+| #5436 `95aba51e2` | 補三條字幕規則的 lint 測試 | 只加測試 | 合併；lint `captions.test.ts` 21 通過 |
+| #6455 `ad4d3fad1` | 編譯期把 HEIC／HEIF 轉成 JPEG（15 檔 +827），需要 ffmpeg／ffprobe 7.0 以上 | 新增 `heifImagePrep.ts`，用 `runFfmpeg`／`runFfprobe`／`renameWithRetry`，路徑全走 `node:path`；`animatedGifPrep.ts` 只被匯出共用 | 合併；`heifImagePrep`、`htmlCompiler.heif` 在本機 ffmpeg 9.0.2 通過 |
+
+**PR 軸（#6440–#6458，19 筆）**：已合併的 #6442、#6445–#6449、#6455 經 commit 軸抵達（上表）。未合併的 11 筆取目前 head 讀 diff，並對 merge 後的樹做 `git apply --check`：全部可套用、全部不採用，等上游合併後隨 commit 軸帶入。
+
+| PR | 內容 | 本 fork 對應檔案的實際狀態 | 結論與觸發 |
+| --- | --- | --- | --- |
+| #6440 | Docker 映像的 Node 升到 22.23.4、bun 升到 1.4.4（Brotli CVE-2026-111497） | 只動三個 Dockerfile；`Dockerfile.test`、`gcp-cloud-run/Dockerfile` 是分歧檔但差異各只有 1 行；本機 bun 已是 1.4.4，Windows 路徑不用這些映像 | 不採用；觸發：合併，或本線開始建置這些映像 |
+| #6441 | 編譯時每個唯一媒體來源只 probe 一次 | `htmlCompiler.ts` 是分歧檔，改動位置不同（fork 改的是 `inlineScriptBodies`） | 不採用；觸發：合併 |
+| #6444 | 輸出設定關鍵影格間隔與峰值位元率上限（16 檔 +578） | `engine/src/index.ts` 的 fork 差異是多匯出 `assertPrivateCacheRoot`，不同行 | 不採用；編碼參數變更會影響輸出位元組，要等上游合併並在 Windows 實跑一次。觸發：合併 |
+| #6450 | prompt 預覽編輯器加無障礙名稱 | studio 元件，無重疊 | 不採用；觸發：合併 |
+| #6451 | 媒體預覽在檔案或專案改變後重試 | studio 元件，無重疊 | 不採用；觸發：合併 |
+| #6452 | 縮放後的預覽 iframe 不畫畫布外框 | 動 `hex-baseline.json`，無重疊 | 不採用；觸發：合併 |
+| #6453 | PNG 色彩標籤不再改變預覽／check／snapshot／render 的像素（14 檔 +258，新增 `core/package-subpaths.json` 出口） | `fileServer.ts` 的分歧在 `openRegularFile` 的 `0o600`，`htmlBundler.test.ts` 的分歧在別處，hunk 不重疊 | 不採用；新增 core 子路徑出口，要照 `package-subpaths` 流程。觸發：合併 |
+| #6454 | `check` 處理切掉下伸部的遮罩，與共用場景自己的選擇器（6 檔，含兩份 golden） | `layout-audit.browser.js` 的 PR hunk 在 `visibleTextLineRects`，fork 的差異在 `hasPaint`／`isTransparentColor`（改用 `colorAlpha` 判斷透明），不同區；`compositionScoping.ts` 的 PR hunk 在 wrapper 前置程式，fork 的 `Function()` 字串只影響後面的作者程式，兩者不重疊 | 不採用；觸發：合併，合併時兩份 golden 要重算 |
+| #6456（外部） | `line_unread` 從區塊渲染文字計字（對應 issue #6443） | `craftAudit.ts` 與上游一致；`layout-audit.browser.js` 是分歧檔，PR 只在 craft 文字部件多加一行 `blockText`，與 fork 的差異不同區 | 不採用；觸發：合併。在那之前，逐字元 `<span>` 的標題會被 `check` 誤報停留時間不足（只影響警告，不影響 render） |
+| #6457 | `parsers` 的套件大小預算調成實測值加餘裕 | 只改 `package-size-budgets.json` 一行 | 不採用；觸發：合併 |
+| #6458 | CLI 組合路徑錯誤訊息帶出解析後的入口與專案目錄（6 檔） | 無重疊 | 不採用；觸發：合併 |
+
+**前一輪仍 open 的 PR 重驗**：#6430、#6435、#6439 已合併並隨本批抵達。#6431–#6434、#6436–#6438 共 7 筆取目前 head 重做 `git apply --check`：#6432、#6433、#6434、#6437 現在可直接套用（#6432 的 head 已從 `2364387b5` 變成 `36602a8d4`）；#6431（`cancellableProcess.ts`，因 #5273）、#6436（`compositionScoping.ts` 的 `Function()` 包裝）、#6438（`media.test.ts`）套不上。結論與前一條相同：全部等上游合併；#6436 仍不能照抄，#6431 仍要先和行程所有權防線對齊。#6432 的 hunk 雖然可套用，合併時仍要逐行對 fork 的 `videoFrameExtractor.ts` 與新增的出口。
+
+**issue 軸（#6443，open）**：`check` 的 `line_unread` 把每個逐字元 `<span>` 算成一個字，七個字的標題被算成 25 個字，停留門檻從 2.6 秒變成 8.0 秒。#6456 是對應修正。本線不自行修（`craftAudit.ts` 與上游一致，自修會變成新的分歧檔）；觸發：#6456 合併，或本線有人回報 `check` 對逐字動畫標題誤報。
+
+**驗證**（皆在 merge 後的樹，Windows 11 本機）：
+
+- cli 12 檔 266 通過、1 跳過（`cli.lifecycle`、`benchmark`、`check`、`serverPort`、`desktopRoutes`、`portUtils.windowsHide`、`checkAudio`、`clipboard.windowsHide`、`desktopApp`、`hdrPromotion`、`port`、`projectShortcut`）。
+- core `startResolver` 與 `src/compiler` 23 檔 681 通過；唯一一項 `pageBuild.golden` 是並行時 5 秒逾時，單獨重跑 4 通過。
+- engine：預設逾時下 `firstBeginFrame`、`freshFallback`、`softwareWebGpu` 等 5 項是 Chrome 在本機啟動超過 5 秒，不是斷言失敗；`--testTimeout=90000` 重跑 `firstBeginFrame`、`freshFallback`、`softwareWebGpu`、`isolateScript.browser`、`chromeMemory` 5 檔 37 通過。
+- producer：`bun test` 跑 `htmlCompiler`、`htmlCompiler.heif`、`heifImagePrep` 共 200 通過；`htmlCompiler.scriptOrder` 是 vitest 檔，core dist 重建後 7 通過；`test:classification` 通過。`wrappedMountTiming.integration`、`motionBlurVideo.integration` 要完整 render，這輪沒有執行。
+- lint `captions` 21 通過；studio `OpenInDesktopButton.dom` 21 通過。
+- 已知環境問題，與本批無關：`scripts/package-subpaths.test.mjs` 在 Windows 失敗，斷言寫死 `/repo/packages/...` 而實際是 `C:\repo\...`（該檔與 `package-subpaths.json` 都不在本批的變更內）。
+- 提交：`LEFTHOOK_EXCLUDE=fallow`，其餘 hook 實跑；`fallow` 理由同前幾條。
+- 範圍說明：提交前再抓一次上游，`upstream/main` 又前進 3 個 commit（#6425、#6427、#6429）與 5 筆 PR（#6459–#6463），其中 #6459（Windows 的 Chrome 檢查）與 #6461（Windows 預覽記錄搬到 `LOCALAPPDATA`）與 Windows 直接相關。本批刻意停在 `ad4d3fad1`，那一段留給下一批，所以這個 commit 之後 `--strict` 會因新項目而不是綠的。

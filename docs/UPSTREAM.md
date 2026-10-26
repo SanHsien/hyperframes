@@ -99,3 +99,8 @@ Baseline 代表「已審查」，不代表「全部已合併」。
 
 - commit 水位：`acd0bc361ffa238bda6d8cadbb97360b7fb9b1ab`（自 `7d6c02f85` 之後 2 個 commit：#5366、#3943，判準八掃描無隱藏內容）；PR 水位 **#6439**、issue 水位 **#6422** 不動。
 - #6430–#6439 共 10 筆 open PR 逐筆取目前 head 讀 diff 並掃隱藏內容，全部等上游合併；其中 #6436 不能照抄（fork 的 `Function()` 包裝讓上游的標記失效），#6431 要先和行程所有權防線對齊。逐項結論見 [DECISIONS](DECISIONS.md) 同日「補」條目。
+
+## 2026-10-27（續）：追到 `ad4d3fad1`，三個水位推進
+
+- commit 水位：`ad4d3fad139490104f5bbeba66a2892c609e37fc`（自 `acd0bc361` 之後 20 個 commit，含 v0.8.205；判準八掃描無隱藏內容）；PR 水位 **#6458**、issue 水位 **#6443**。
+- #6440–#6458 的 11 筆 open PR 取目前 head 讀 diff 並對 merge 後的樹做 `git apply --check`，全部可套用、全部等上游合併；前一輪 7 筆仍 open 的 PR 也重驗，#6431、#6436、#6438 仍套不上。逐項結論與驗證見 [DECISIONS](DECISIONS.md) 同日「續」條目。
