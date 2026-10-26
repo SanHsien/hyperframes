@@ -84,3 +84,8 @@ Baseline 代表「已審查」，不代表「全部已合併」。
 - PR／issue 以 `--state all` 列出 1400 與 172 筆：merged 者經 commit 軸抵達，341 個未合併 PR 以分歧檔案與 Windows／CJK／安全關鍵字篩出 108 筆，逐項查證並只引進 UTF-8 分段解碼一項；其餘結論與觸發條件見 [DECISIONS](DECISIONS.md) 的「2026-10-26：上游採用 `f76fa5c91`」。
 - `check_upstream_updates.py` 現在會加大 `gh --limit` 直到碰到水位，不再在 1000 筆處靜默截斷。
 
+
+## 2026-10-26（補）：整樹採用 `85dcc193d`，三個水位推進
+
+- commit 水位：`85dcc193d560567c8d08e7f09c0f7fc9f2197c56`（自 `535317115` 之後 46 個 commit，v0.8.201–v0.8.204，判準八掃描無隱藏內容）；PR 水位 **#6429**、issue 水位 **#6422**。
+- 這一段的 52 個 PR 與 8 個 issue 都逐筆處理：已合併的經 commit 軸抵達，未合併的 23 個 PR 取目前 head 讀 diff 並掃隱藏內容，全部等上游合併；逐項結論、5 個合併衝突的取捨與驗證缺口見 [DECISIONS](DECISIONS.md) 同日「補」條目。

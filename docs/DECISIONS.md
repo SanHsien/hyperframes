@@ -348,7 +348,7 @@ Dependabot run `40021722362`（main `c1c221f6`，security update job `1648768405
 
 **未驗證與已知缺口**：
 
-- `lefthook` pre-commit 的 `typecheck` 以 `packages/core/node_modules/.bin/tsc` 呼叫，hoisted 安裝沒有這個路徑，hook 本身失敗（改用根目錄 `tsc` 驗證 core、studio、scripts 皆通過）；`fallow audit --base origin/main` 對整樹採用（約 3,400 個變動檔）把上游既有發現全算成新增，必然失敗，已知屬採用類 PR 的特性。因此此合併 commit 以 `--no-verify` 提交，其餘 hook（format、largefiles、skills-manifest、filesize、tracked-artifacts、cli-process-ownership、lint）在 hook 中通過，commitlint 另行手動通過。
+- `lefthook` pre-commit 的 `typecheck` 以 `packages/core/node_modules/.bin/tsc` 呼叫，hoisted 安裝沒有這個路徑，hook 本身失敗（改用根目錄 `tsc` 驗證 core、studio、scripts 皆通過）；`fallow audit --base origin/main` 對整樹採用（約 3,400 個變動檔）把上游既有發現全算成新增，必然失敗，已知屬採用類 PR 的特性。因此此合併 commit 以 `--no-verify` 提交，其餘 hook（format、largefiles、skills-manifest、filesize、tracked-artifacts、cli-process-ownership、lint）在 hook 中通過，commitlint 另行手動通過。（**註（2026-10-27 更正，原文不改）**：此處 `typecheck` 失敗的說法已過時——`node_modules/.bin/tsc` 存在，`lefthook.yml` 的 `typecheck` 指令實跑 exit 0；只有 `fallow` 對整樹採用結構性過不了。）
 - `scripts/comment-check-base.mjs` 的一次性基準仍綁定 PR #2（`sync/upstream-d94708e5`）；本次採用若走 PR，`Comments` 工作流會把整樹新增註解當成新增，需要新的例外，本次未處理。
 - `registry/blocks/frost-sequence-camera-orbit/source/package-lock.json` 已改鎖 `esbuild` 0.28.2 以對齊 `package.json`，但 `assets/frost.js` 沒有重建（需要網路安裝 three 並重跑 `build.mjs`），所以 fork 的 Frost 壓縮檔仍是舊 esbuild 的輸出。
 - 未跑：producer 的 Docker 回歸、瀏覽器端 e2e、Lambda／GCP 實機、`generate:catalog` 全流程。LFS 指標檔（`compiled.html` 等）未取得 fork 側物件。
@@ -397,4 +397,71 @@ Dependabot run `40021722362`（main `c1c221f6`，security update job `1648768405
 
 **驗證**：producer `bun test`（server、htmlCompiler、inline-project-publisher）204 pass；engine extractionCache／videoFrameExtractor 261 pass；根目錄與 core／studio／scripts 的 `tsc` 無錯；`tools` pytest 45 pass。cli 的 `.browser.test.ts` 因本機瀏覽器 30 秒內起不來、`clean.test.ts` 因 Windows 符號連結 `EPERM` 失敗，皆為環境既有（與前次採用相同類型），由 main 的 regression／preview-regression 工作流覆蓋。
 
-**已知缺口**：`lefthook` 的 `typecheck`（路徑）與 `fallow audit --base origin/main`（整樹採用把上游既有發現算新增）在採用類提交必然失敗，合併 commit 與修正 commit 以 `--no-verify` 提交，修正 commit 另以 `fallow audit --base HEAD` 驗證無新增問題；其餘 hook 與 commitlint 手動通過。
+**已知缺口**：`lefthook` 的 `typecheck`（路徑）與 `fallow audit --base origin/main`（整樹採用把上游既有發現算新增）在採用類提交必然失敗，合併 commit 與修正 commit 以 `--no-verify` 提交，修正 commit 另以 `fallow audit --base HEAD` 驗證無新增問題；其餘 hook 與 commitlint 手動通過。（**註（2026-10-27 更正，原文不改）**：此處 `typecheck` 失敗的說法已過時——`node_modules/.bin/tsc` 存在，`lefthook.yml` 的 `typecheck` 指令實跑 exit 0；只有 `fallow` 對整樹採用結構性過不了。）
+
+## 2026-10-26（補）：上游採用 `85dcc193d`，commit 軸 `535317115` → `85dcc193d`，PR／issue 水位推進到 #6429／#6422
+
+**決定**：整樹合併 `535317115..85dcc193d`（46 個 commit，745 個檔，其中 472 個是 `docs/catalog/` 重排；v0.8.201–v0.8.204 四次 release bump 一併進來）。三個水位一起推進：commit `85dcc193d`、PR #6429、issue #6422。一次審完，沒有分批。
+
+**判準八掃描**（取 PR 目前的 head，不信舊紀錄）：
+
+- commit 軸：對整段 `git diff 535317115 upstream/main`（排除 `docs/catalog` 與 `bun.lock`，另單獨掃 `docs/catalog` 6736 行）的新增行掃 `\S\s{40,}\S`、`eval(`／`new Function(`／`globalThis.`／`global.require`／`atob(`／`fromCharCode`、120 字元以上的 base64／hex、1000 字元以上的單行、零寬與 bidi 字元。命中 17 筆全部查過：markdown 表格欄位對齊（`docs/prompting/*`、`docs/studio/canvas.mdx`、`skills/remotion-to-hyperframes/references/api-map.md`）、兩行超長文件（`harness-tool-context.mdx`、`html-schema.mdx`）、`package.json` 的 `test:scripts` 檔名清單，以及測試檔裡的 `$$eval`、`globalThis.viewportScriptRan`、`window.eval(gsap)`（測試自己的探針，不是隱藏內容）。無行內空白後藏程式、無 bidi。
+- PR 軸：未合併的 23 筆（21 open、2 closed）逐筆用 `gh pr diff` 取目前 head 的 diff，掃同一組樣式，全部 0 命中；已合併的 29 筆內容就在上面的 commit 掃描範圍內。
+- 本次沒有發現需要拒收的內容。
+
+**合併衝突與取捨**（5 個檔）：
+
+- `.github/workflows/ci.yml`：保留 fork 的 Windows-only 版本（`test_fork_docs.py::test_ci_covers_python_314` 規定），上游新增的 edit-accuracy 分片、smoke、filesize 等 job 不採用。重看條件：fork 決定在 CI 跑上游測試全集時。上游 #6406 的 `scripts/ci/inline-gsap.mjs` 與其測試隨樹進來，但 fork 的 `ci.yml` 不呼叫它。
+- `packages/core/src/runtime/bridge.ts`：fork 把控制訊息分派從 `Map` 查表改成封閉的 `switch`（不讓訊息值變成間接函式呼叫），上游同時新增 `set-preview-quality`、`retry-preview-copies`、`request-preview-facts` 三個動作。保留 fork 的 `switch`，把三個新動作加進去（行為與上游查表版相同：`deps.onSetPreviewQuality?.(Number(data.level))` 等）。
+- `packages/producer/src/server.ts`：兩邊各新增常數，全部保留（fork 的 `MAX_INLINE_HTML_BYTES`／`INLINE_PROJECT_*` 與上游的 `SSE_KEEPALIVE_MS`）。
+- `packages/studio-server/src/helpers/proxyTranscoder.test.ts`：採上游的 `copiesIn()`（要略過新增的 `.fast-`／`.content-` 索引檔），比對檔名維持 fork 的 `basename(...)`，因為 Windows 路徑是反斜線，`.split("/").at(-1)` 取不到檔名；上游新增的另一處 `.split("/").at(-1)` 也一併改成 `basename`。
+- `skills-manifest.json`：用 `packages/cli/scripts/gen-skills-manifest.ts` 重新產生（media-use 119 檔、remotion-to-hyperframes 78 檔）。
+
+**合併後補的三處測試**（都是 fork 的 Windows 環境或函式包裝與上游測試的落差，產品程式未動）：
+
+- `proxyTranscoder.test.ts`：上游新增的兩個測試（「copied project … symlinked clip」「link is retargeted」）直接 `symlinkSync`，在沒有符號連結權限的 Windows 帳號上 `EPERM`。新增 `symlinkOrSkip()`，與 fork 同檔案既有的寫法一致（只在 `win32` 且 `EPERM`／`EACCES`／`ENOSYS` 時跳過，其他錯誤照拋）。代價：這兩個測試在本機沒有實際驗證符號連結行為。
+- `htmlCompiler.scriptOrder.test.ts`「不能解析的子組合腳本」：fork 把作者的行內程式放進 `Function()` 字串，語法錯誤在執行期被隔離，所以頁面上不會留下不可解析的 `<script>`；`htmlBundler.test.ts` 的同型測試早就改成斷言這一點，producer 這一份漏改。這不是本次合併造成的（合併沒動這個檔案，也沒動 core 的 compiler），已改為與 `htmlBundler.test.ts` 相同的斷言。
+- `aws-lambda/src/handler.test.ts:1273`：`ffprobe` 在 Windows 輸出 CRLF，`split("\n")` 留下 `\r`，改 `split(/\r?\n/)`。這行是上游 2026-10-21 的既有程式，不在本次 delta。
+
+**逐項處理：已合併的 46 個 commit，全部採用。** 依主題：
+
+- core 預覽與 runtime：#6355（腳本隱藏的 clip 在跳轉後保持隱藏）、#5793（長媒體分析不卡頓並取樣整段）、#5800（變速或循環影片一次 seek 到位）、#6365（預覽用較輕的副本）、#6397（音量淡入淡出以音訊時鐘斜坡播放）。
+- engine 與 producer：#6364＋#6405（chunk 擷取 round-robin，只對按牆鐘計費的呼叫端）、#5878（Mac 影片幀走 media engine）、#6413（擷取停滯幾分鐘內失敗）、#6420（Chrome 首次啟動慢不再誤降級為截圖擷取）、#6421（指向頁面自己的媒體 src 不算來源）。
+- studio 與 studio-server：#5880、#6366、#6416、#6389（前端）；#6342、#6358、#6350、#6386（歷史鎖的 pid 被別的行程占用時接手）。
+- cli：#6368（snapshot `--describe` 改為 opt-in）、#6369（不再出貨會被端點掃描器標記的環境變數名稱）、#6362、#6371、#6124（`.env` 帶引號的多行值）、#6390、#6376、#5446，以及 #6396＋#6400＋#6401＋#6409（check／check-review 新旗標與 inspector 整合，cli 新增 `@hyperframes/inspector` workspace 依賴）。
+- 文件與維護：#6360、#6378、#6379、#6380、#6382、#6383、#6393、#6414（docs 重排與樣式）、#6370（套件大小預算）、#6392、#6406（測試頁內嵌 GSAP）、四個 release（#6377、#6404、#6412、#6423）。
+
+fork 專有程式與這批 commit 重疊的只有 17 個檔（上面 5 個衝突加 12 個自動合併）。自動合併者逐一確認：`videoFrameExtractor.ts` 的 `assertPrivateCacheRoot` 與上游 #5878 的 media engine 解碼分支互不相干；`htmlCompiler.ts` 的 `inlineScriptBodies()`（fork 用 DOM 取代 `INLINE_SCRIPT_PATTERN` 正則）與上游 #6421 改的 `discoverMediaFromBrowser` 是不同函式；`build-copy.mjs`、`lefthook.yml`、`package.json` 兩邊改的是不同段落。
+
+**逐項處理：未合併的 PR（23 筆，全部不採用，等上游合併）。** 慣例同前：fork 的產品程式大多與上游一致，未合併 PR 的缺陷在本線同樣存在，但它們可能在審查中改寫，摘取後會與日後合併版本分岔。下列只有 #6395、#6399、#6410、#6425 動到 fork 有分歧的檔案（`htmlCompiler.ts`、`htmlCompiler.test.ts`、`htmlBundler.test.ts`、`videoFrameExtractor.ts`、`engine/src/index.ts`），其餘與 fork 的 261 個分歧檔沒有交集。
+
+| PR（目前 head） | 內容與規模 | 本 fork 的缺陷證據 | 結論與觸發條件 |
+| --- | --- | --- | --- |
+| #6373 `83ea696`（open，外部） | player 的 `controls` 晚加入時補上目前播放狀態；4 檔 +44 | `packages/player/src/hyperframes-player.ts` 與上游一致，即上游 issue #6372 | 不採用；合併時隨 commit 軸帶入 |
+| #6375 `1e29216`（open，外部） | 長錄音分析：`Math.max(0, ...values)` 改 `reduce`，加 `--skip-file-seconds` 文件；3 檔 +44/-6 | `packages/cli/src/audio/analysis/run.ts:106` 仍展開 `...envelope(...).values`，即 issue #6374；是大陣列展開的堆疊上限，非 Windows 專屬 | 不採用；合併時帶入，或本線有人回報長音檔分析失敗時提前 |
+| #6384 `49f5d7e`（closed） | studio e2e 的量測方式；3 檔 +48/-6，僅測試 | 本線不跑 edit-accuracy e2e | 不採用 |
+| #6391 `bfb6c5c`（open） | aws-lambda 每個 chunk 記錄耗時；2 檔 +35/-4 | 純觀測性 | 不採用 |
+| #6394 `adfe30c`（closed） | arm64 映像內附未封裝 Chrome；7 檔 +308/-35 | fork 不發佈 Lambda 映像 | 不採用 |
+| #6395 `f37a6f7`（open，外部） | 組裝後去除重複的 `@font-face` 再內嵌，對應 issue #6381（524 MB HTML、導覽逾時）；7 檔 +83/-7，動到 fork 分歧的 `htmlCompiler.ts` | `packages/producer/src/services/htmlCompiler.ts` 的 `embedLocalFontFaces()` 仍對每個出現處內嵌整份字型 | 不採用：issue 的重現環境是 Linux 桌面版，本線無回報；照抄要在 fork 改過的檔案上合併。觸發：#6395 合併，或本線有專案因重複字型宣告渲染逾時（CJK 專案的大量子集字型宣告是可能情境） |
+| #6399 `cc105ce`（open，外部） | 掛載場景的 `srcset` 候選圖依場景目錄改寫；11 檔 +120/-48，動到 `htmlCompiler.ts` | `packages/parsers/src/rewriteSubCompPaths.ts` 只改寫 `src`，不改寫 `srcset`，即 issue #6398 | 不採用；合併時帶入 |
+| #6402 `97076d0`（open，外部） | `play`／`present`／`preview` 的 `--port` 嚴格驗證；7 檔 +95/-14 | `play.ts`、`present.ts` 仍是 `parseInt(args.port ?? "3003", 10)`，`3003oops` 會被當成 3003 | 不採用；只影響 CLI 輸入驗證，無安全面 |
+| #6403 `8be76ee`（open，外部） | benchmark 輸出改用 `mkdtemp` 並清理；2 檔 +30/-6 | `benchmark.ts` 仍寫到 cwd 的 `renders/.benchmark` | 不採用 |
+| #6407、#6408、#6411（open，維護者的 metadata PR） | npm homepage 指向 hyperframes.heygen.com、官方 MCP registry 的 `server.json`、認領 context7 | 都是上游身分資訊 | **永不採用**：fork 不發佈，也不該替上游登錄或認領。無觸發條件 |
+| #6410 `7565caa`（open） | 工作者與 slot 數量讀 CPU quota（cgroup）；12 檔 +45/-29，動到 `videoFrameExtractor.ts` | cgroup 配額是 Linux 容器概念，Windows 原生不適用 | 不採用；觸發：fork 開始提供容器化 render 環境 |
+| #6415 `bb8dfce`（open，外部） | fonts gate 先載入尚未被排版用到的宣告字型；2 檔 +81/-2 | `packages/core/src/runtime/afterFonts.ts` 與上游一致 | 不採用；合併時帶入 |
+| #6417、#6418、#6419（open，維護者） | player 自動播放被擋時各 take 播自己的音訊；playbench 量測工具（`make-media.sh` 需要 bash，Windows 原生跑不了）；音訊 clip 準時加入與音量曲線 | 與已合併的 #6397 同一系列的預覽音訊修正 | 不採用；等合併。#6418 的 playbench 在本線也不會跑 |
+| #6424、#6425、#6426、#6427、#6428、#6429（open，維護者） | 影片超出媒體尾端仍跟動畫（5 檔 +155/-26）；snapshot 影片色彩與 render 一致（動到 `videoFrameExtractor.ts` 與 `engine/src/index.ts`）；`hyperframes <dir>` 開啟專案；兩筆 studio 捲動效能；studio 靜態組合移動後音訊持續 | 都是上游持續進行中的系列工作 | 不採用；等合併後隨 commit 軸帶入 |
+
+**issue 軸（8 筆，#6372–#6422）**：#6372、#6374、#6381、#6398 各對應上表的 #6373、#6375、#6395、#6399，處理同左；#6385（Desktop 匯出資料夾）、#6387（Desktop Codex Fast 模式）已 closed，是 Desktop app 功能，本 fork 沒有該產品；#6388 是第三方「AI 輔助報告」的宣傳貼文（已 closed），內含外部連結，未開啟、不處理；#6422（player 加移動與縮放模式，open，功能提案）不採用，觸發：上游實作合併。
+
+**驗證**：
+
+- 型別：core（含 `tsconfig.runtime.json`）、engine、parsers、lint、studio-server、producer、cli、studio、`scripts/tsconfig.json` 的 `tsc --noEmit` 全部 0 錯（cli 需先建 inspector）。
+- 測試（這次 delta 改到的測試檔，加上衝突與 fork 分歧檔相關的）：core 43 檔 1255 通過（`pageBuild.golden` 兩項在並行時 5 秒逾時，單獨以 `--testTimeout=120000` 重跑 4 通過）；producer `htmlCompiler`／`server` 系列依各檔的 runner 分類執行，全過（含 `htmlCompiler.scriptOrder` 修正後 7 通過）；engine 變更檔 391 通過；studio-server 變更的 6 檔 263 通過、19 跳過；cli 變更的 18 檔 427 通過、5 跳過；studio 9 檔中 8 檔通過；aws-lambda `handler.test.ts` 37 通過；`scripts/` 三個變更測試 17 通過；`skills/remotion-to-hyperframes` 4 通過。
+- 未過或未驗證，附原因：
+  - `studio` 的 `previewQualitySlice.test.ts`「keeps a person's pick over the app's」失敗：這台是 Node v26.12.1，內建實驗性 `localStorage` 在沒給 `--localstorage-file` 時回傳 `undefined`；用 `NODE_OPTIONS=--localstorage-file=...` 重跑 21 通過，所以是環境，不是程式。專案支援的是 Node 22，這台沒裝，未在 22 上實跑。
+  - `producer/src/services/renderOrchestrator.stall.test.ts`（上游 #6413 新增）：假時鐘加真實檔案 IO，每次失敗的項目不同。暫時把 `runFor` 的真實 IO 預算從 1 秒放寬到 30 秒並加 `--testTimeout=120000`，7 個全過，所以是這台主機 IO 較慢造成的時序問題，不是產品缺陷。放寬只是診斷，測試檔已還原，未提交。
+  - `producer/src/services/distributed/renderChunk.test.ts`（integration，需要 Chrome）：Chrome 在這台 30 秒內起不來，未驗證。
+  - `studio-server` 的 `src/history/*`、`hfIdPersist` 共 11 項失敗（符號連結 `EPERM` 等）：這些檔案這次合併都沒動，與前一次採用記錄的「studio-server 符號連結與 EPERM」同型，未逐一對照 `origin/main` 基準。
+  - `docs/catalog/` 重排與 Prompt Guide 等 mdx 只做了 `tools/check_links.py` 的相對連結檢查，沒有跑 Mintlify 建置。
+  - 這次提交以 `LEFTHOOK_EXCLUDE=fallow` 略過 `fallow` hook：`lefthook.yml` 的 `fallow audit --base origin/main` 對整樹採用結構性必然失敗（把上游既有發現全算成新增）；前兩次的 `--no-verify` 也是同一原因。其餘 hook 照常實跑（含 `typecheck`，`node_modules/.bin/tsc` 存在且指令 exit 0；先前紀錄說該路徑不存在是錯的，見上面兩處的更正註記）。型別、測試與 `dev_check` 另外手動跑過。

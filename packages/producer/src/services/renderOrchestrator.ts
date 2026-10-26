@@ -78,6 +78,7 @@ import {
   createVideoFrameInjector,
   getEncoderPreset,
   distributeFrames,
+  distributeFramesInterleaved,
   executeParallelCapture,
   mergeWorkerFrames,
   type ParallelProgress,
@@ -193,10 +194,13 @@ import {
   computeCompositionObservabilityHash,
   RenderObservabilityRecorder,
   observeRenderStage,
+  RenderStageStalledError,
   type RenderCaptureObservability,
   type RenderExtractionObservability,
   type RenderObservationData,
   type RenderObservabilitySummary,
+  type OpenStallAttempt,
+  type StageStallRule,
 } from "./render/observability.js";
 import { emitFallbackCaptureProfile } from "./render/fallbackCaptureProfile.js";
 import { type HdrPerfCollector, type HdrPerfSummary } from "./render/hdrPerf.js";
@@ -215,6 +219,7 @@ import { runAudioStage } from "./render/stages/audioStage.js";
 import { inspectDiskCaptureHeadroom, runCaptureStage } from "./render/stages/captureStage.js";
 import {
   type CaptureStreamingStageResult,
+  resolveCaptureStallTimeoutMs,
   runCaptureStreamingStage,
 } from "./render/stages/captureStreamingStage.js";
 import { runCaptureHdrStage } from "./render/stages/captureHdrStage.js";
@@ -959,9 +964,40 @@ export function buildMissingFrameRetryBatches(
   workDir: string,
   attempt: number,
   rangeStart: number = 0,
+  stride: number = 1,
 ): WorkerTask[][] {
   const workersPerBatch = Math.max(1, Math.floor(maxWorkers));
   const batches: WorkerTask[][] = [];
+  const outputDirFor = (batchIndex: number, workerId: number) =>
+    join(workDir, `retry-${attempt}-batch-${batchIndex}-worker-${workerId}`);
+
+  // A dead interleaved worker leaves every `stride`th frame missing: one stride task per
+  // residue class re-captures them in a single batch, not a one-frame batch per frame.
+  if (stride > 1) {
+    const spans = new Map<number, { first: number; last: number }>();
+    for (const range of ranges) {
+      for (let frame = range.startFrame; frame < range.endFrame; frame++) {
+        const span = spans.get(frame % stride);
+        if (span) span.last = frame;
+        else spans.set(frame % stride, { first: frame, last: frame });
+      }
+    }
+    const strided = [...spans.values()];
+    for (let i = 0; i < strided.length; i += workersPerBatch) {
+      const batchIndex = batches.length;
+      batches.push(
+        strided.slice(i, i + workersPerBatch).map(({ first, last }, workerId) => ({
+          workerId,
+          startFrame: rangeStart + first,
+          endFrame: rangeStart + last + 1,
+          frameStride: stride,
+          outputDir: outputDirFor(batchIndex, workerId),
+          outputFrameOffset: rangeStart,
+        })),
+      );
+    }
+    return batches;
+  }
 
   // `ranges` are 0-indexed within the chunk's frame range (or full timeline
   // when `rangeStart === 0`); translate to absolute composition indices so
@@ -974,7 +1010,7 @@ export function buildMissingFrameRetryBatches(
       workerId,
       startFrame: rangeStart + range.startFrame,
       endFrame: rangeStart + range.endFrame,
-      outputDir: join(workDir, `retry-${attempt}-batch-${batchIndex}-worker-${workerId}`),
+      outputDir: outputDirFor(batchIndex, workerId),
       outputFrameOffset: rangeStart,
     }));
     batches.push(batch);
@@ -1125,7 +1161,20 @@ export function resetCaptureAttemptProgress(job: { framesRendered?: number }): v
   job.framesRendered = 0;
 }
 
+const FIRST_FRAME_STALL_MS = 300_000;
+
+/** The no-progress rule for capture stages that have no watchdog of their own: disk, HDR, chunk. */
+export function frameStallRule(job: { framesRendered?: number }): StageStallRule {
+  const noProgressMs = resolveCaptureStallTimeoutMs();
+  return {
+    progress: () => job.framesRendered ?? 0,
+    noProgressMs,
+    firstProgressMs: Math.max(FIRST_FRAME_STALL_MS, noProgressMs),
+  };
+}
+
 export function isRecoverableParallelCaptureError(error: unknown): boolean {
+  if (error instanceof RenderStageStalledError) return true;
   const message = normalizeErrorMessage(error);
   if (!message.includes("[Parallel] Capture failed")) return false;
   const kind = classifyCaptureFailure(error).kind;
@@ -1189,6 +1238,8 @@ export async function executeDiskCaptureWithAdaptiveRetry(options: {
   createBeforeCaptureHook: () => BeforeCaptureHook | null;
   abortSignal?: AbortSignal;
   onProgress?: (progress: ParallelProgress) => void;
+  /** Workers take frames round-robin so an in-order consumer (the overlapped encoder) is never starved. */
+  interleaveFrames?: boolean;
   cfg: EngineConfig;
   log: ProducerLogger;
   /**
@@ -1201,6 +1252,7 @@ export async function executeDiskCaptureWithAdaptiveRetry(options: {
   dedupPerfs: CapturePerfSummary[];
   /** Mutated in place: the workers' page-error console lines, for the render's error count. */
   pageErrorLines?: string[];
+  openAttempt?: OpenStallAttempt;
 }): Promise<CaptureAttemptSummary[]> {
   const attempts: CaptureAttemptSummary[] = [];
   let currentWorkers = options.initialWorkerCount;
@@ -1232,16 +1284,26 @@ export async function executeDiskCaptureWithAdaptiveRetry(options: {
           attemptWorkDir,
           attempt,
           rangeStart,
+          options.interleaveFrames ? options.initialWorkerCount : 1,
         )
-      : [distributeFrames(options.totalFrames, currentWorkers, attemptWorkDir, rangeStart)];
+      : [
+          (options.interleaveFrames ? distributeFramesInterleaved : distributeFrames)(
+            options.totalFrames,
+            currentWorkers,
+            attemptWorkDir,
+            rangeStart,
+          ),
+        ];
 
     // Reset before each attempt so a retry REPLACES (not accumulates) worker perf —
     // otherwise a frame captured in attempt 0 AND re-captured on retry would be counted
     // twice, inflating reused/predicted past totalFrames. The common no-retry path keeps
     // exactly one attempt's perf; a retry reports only the final attempt's set.
     options.dedupPerfs.length = 0;
+    let attemptSignal = options.abortSignal;
     try {
       for (const tasks of batches) {
+        attemptSignal = options.openAttempt?.(options.abortSignal) ?? options.abortSignal;
         const capturedBeforeBatch = countCapturedFrames(
           options.totalFrames,
           options.framesDir,
@@ -1254,7 +1316,7 @@ export async function executeDiskCaptureWithAdaptiveRetry(options: {
             tasks,
             options.captureOptions,
             options.createBeforeCaptureHook,
-            options.abortSignal,
+            attemptSignal,
             options.onProgress
               ? (progress) => {
                   options.onProgress?.({
@@ -1306,7 +1368,10 @@ export async function executeDiskCaptureWithAdaptiveRetry(options: {
       currentWorkers = nextWorkers;
       missingRanges = remaining;
       attempt++;
-    } catch (error) {
+    } catch (caught) {
+      // A stalled attempt fails like the per-call protocol timeout it stands in for.
+      const error =
+        attemptSignal?.aborted && !options.abortSignal?.aborted ? attemptSignal.reason : caught;
       const failure = classifyCaptureFailure(error, { signal: options.abortSignal });
       // A cancelled render tears the browser down, which surfaces as a
       // transient-looking `Target closed`. Rethrow immediately so cancellation
@@ -4501,8 +4566,9 @@ async function executeRenderPipeline(input: {
         observability,
         "capture_hdr_layered",
         captureStageObservationData({ hasHdrContent }),
-        () =>
-          runCaptureHdrStage({
+        (openAttempt) => {
+          const attempt = openAttempt(executionSignal);
+          return runCaptureHdrStage({
             job,
             cfg,
             plan: layeredPlan,
@@ -4529,10 +4595,15 @@ async function executeRenderPipeline(input: {
             buildCaptureOptions,
             createRenderVideoFrameInjector,
             hdrDiagnostics,
-            abortSignal: executionSignal,
-            assertNotAborted,
+            abortSignal: attempt,
+            assertNotAborted: () => {
+              assertNotAborted();
+              attempt.throwIfAborted();
+            },
             onProgress,
-          }),
+          });
+        },
+        { stall: frameStallRule(job) },
       );
       lastBrowserConsole = hdrRes.lastBrowserConsole;
       layeredCaptureWarnings.push(...hdrRes.warnings);
@@ -5003,7 +5074,7 @@ async function executeRenderPipeline(input: {
             observability,
             "capture_disk",
             captureStageObservationData({ needsAlpha: diskPlan.needsAlpha }),
-            () =>
+            (openAttempt) =>
               runCaptureStage({
                 fileServer: activeFileServer,
                 workDir,
@@ -5022,7 +5093,10 @@ async function executeRenderPipeline(input: {
                 assertNotAborted,
                 onProgress,
                 onFrameLanded: (frame) => overlap?.onFrameLanded(frame),
+                interleaveFrames: overlap !== null,
+                openAttempt,
               }),
+            { stall: frameStallRule(job) },
           );
         let captureRes;
         try {

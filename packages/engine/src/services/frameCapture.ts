@@ -1410,7 +1410,6 @@ async function installMediaPageHooks(page: Page, options: CaptureOptions): Promi
   }
 }
 
-// fallow-ignore-next-line unit-size
 export async function createCaptureSession(
   serverUrl: string,
   outputDir: string,
@@ -2650,7 +2649,6 @@ export function classifyPageError(
   return urls.some(owned) ? `runtime-error:${firstLine}` : null;
 }
 
-// fallow-ignore-next-line unit-size
 export async function initializeSession(session: CaptureSession): Promise<void> {
   const { page, serverUrl } = session;
 
@@ -4629,6 +4627,13 @@ async function captureAccumulatedFrame(
   };
 }
 
+function framesAreStatic(staticFrames: ReadonlySet<number>, from: number, to: number): boolean {
+  for (let frame = from; frame <= to; frame++) {
+    if (!staticFrames.has(frame)) return false;
+  }
+  return true;
+}
+
 async function captureFrameCore(
   session: CaptureSession,
   frameIndex: number,
@@ -4655,7 +4660,8 @@ async function captureFrameCore(
   if (
     session.staticFrames?.has(absFrameIndex) &&
     session.lastFrameBuffer &&
-    session.lastFrameAbsoluteIndex === absFrameIndex - 1 &&
+    session.lastFrameAbsoluteIndex !== undefined &&
+    framesAreStatic(session.staticFrames, session.lastFrameAbsoluteIndex + 1, absFrameIndex) &&
     (!session.motionBlur ||
       motionBlurWindowIsStatic(session.motionBlur, absFrameIndex, session.staticFrames))
   ) {
@@ -4828,13 +4834,7 @@ export async function captureFrameToBufferPipelined(
     // same pixels. Sequential capture reduces to has(i) (gap = {i}); the
     // interleaved parallel stride makes the gap N frames wide.
     const lastIdx = session.lastEncodeResultFrame ?? frameIndex - 1;
-    let gapStatic = true;
-    for (let j = lastIdx + 1; j <= frameIndex; j++) {
-      if (!session.staticFrames.has(j)) {
-        gapStatic = false;
-        break;
-      }
-    }
+    const gapStatic = framesAreStatic(session.staticFrames, lastIdx + 1, frameIndex);
     if (gapStatic) {
       session.staticDedupCount = (session.staticDedupCount ?? 0) + 1;
       session.capturePerf.frames += 1;
@@ -5133,7 +5133,7 @@ export async function closeCaptureSession(session: CaptureSession): Promise<void
     session.chromeMemory.stop();
     // One last sample so the summary reflects the session's end state, not a
     // point up to `intervalMs` earlier. Best effort; the page may be gone.
-    await session.chromeMemory.sampleOnce();
+    await waitForCloseWithTimeout(session.chromeMemory.sampleOnce());
   }
   if (session.page && !session.pageReleased) {
     const blur = await describePageMotionBlurAtEnd(session.page);

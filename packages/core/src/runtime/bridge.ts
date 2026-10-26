@@ -33,6 +33,9 @@ type BridgeDeps = {
   onSetRuntimeData?: (channel: string, payload: unknown, requestId?: number) => void;
   onClearRuntimeData?: (channel: string, requestId?: number) => void;
   onSetDisplayScale?: (scale: number) => void;
+  onSetPreviewQuality?: (level: number) => void;
+  onRetryPreviewCopies?: () => void;
+  onRequestPreviewFacts?: () => void;
   getCanonicalFps: () => number;
 };
 
@@ -97,6 +100,15 @@ function dispatchControl(action: string, data: BridgeControlData, deps: BridgeDe
       return;
     case "set-display-scale":
       deps.onSetDisplayScale?.(Number(data.scale));
+      return;
+    case "set-preview-quality":
+      deps.onSetPreviewQuality?.(Number(data.level));
+      return;
+    case "retry-preview-copies":
+      deps.onRetryPreviewCopies?.();
+      return;
+    case "request-preview-facts":
+      deps.onRequestPreviewFacts?.();
       return;
     case "set-root-duration":
       deps.onSetRootDuration(Number(data.durationSeconds ?? 0));

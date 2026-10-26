@@ -767,8 +767,11 @@ describe("handler dispatch", () => {
     }
     const options = renderChunkMock.mock.calls.map((call) => (call as unknown[])[3]);
     expect(options).toEqual([
-      { maxCaptureWorkers: undefined },
-      { maxCaptureWorkers: Math.max(1, Math.min(5, availableParallelism() - 1)) },
+      { maxCaptureWorkers: undefined, interleaveCapture: true },
+      {
+        maxCaptureWorkers: Math.max(1, Math.min(5, availableParallelism() - 1)),
+        interleaveCapture: true,
+      },
     ]);
     const captures = logged
       .filter((line) => line.includes('"chunk_capture"'))
@@ -1267,7 +1270,7 @@ describe("handler dispatch", () => {
         ["-v", "error", "-show_entries", "stream=codec_type", "-of", "csv=p=0", "--", outputPath],
         { encoding: "utf-8" },
       );
-      expect(probe.stdout.trim().split("\n").sort()).toEqual(["audio", "video"]);
+      expect(probe.stdout.trim().split(/\r?\n/).sort()).toEqual(["audio", "video"]);
     },
   );
 

@@ -221,8 +221,10 @@ describe("compileForRender script order", () => {
     it("keeps a sub-composition script that does not parse apart, so the others still run", async () => {
       const document = await compileFilm(`<script>window.broken = {:</script>`);
       const broken = runnable(document).filter((el) => !parses(el));
-      expect(broken).toHaveLength(1);
-      expect(broken[0]!.textContent).toContain("window.broken");
+      // This fork passes authored inline code to Function() as a string literal, so a syntax
+      // error is raised and caught at run time instead of leaving an unparsable script behind.
+      expect(broken).toHaveLength(0);
+      expect(runnable(document).some((el) => el.textContent?.includes("window.broken"))).toBe(true);
       expect(timelinesThatRun(document)).toEqual(["main", "intro", "scene"]);
     });
   });
