@@ -592,3 +592,30 @@ fork 專有程式與這批 commit 重疊的只有 17 個檔（上面 5 個衝突
 - 已知環境問題，與本批無關：`scripts/package-subpaths.test.mjs` 在 Windows 失敗，斷言寫死 `/repo/packages/...` 而實際是 `C:\repo\...`（該檔與 `package-subpaths.json` 都不在本批的變更內）。
 - 提交：`LEFTHOOK_EXCLUDE=fallow`，其餘 hook 實跑；`fallow` 理由同前幾條。
 - 範圍說明：提交前再抓一次上游，`upstream/main` 又前進 3 個 commit（#6425、#6427、#6429）與 5 筆 PR（#6459–#6463），其中 #6459（Windows 的 Chrome 檢查）與 #6461（Windows 預覽記錄搬到 `LOCALAPPDATA`）與 Windows 直接相關。本批刻意停在 `ad4d3fad1`，那一段留給下一批，所以這個 commit 之後 `--strict` 會因新項目而不是綠的。
+
+## 2026-10-27（續）：`Windows render verification` run 40368383385 的紅燈不是三個上游合併造成的，不改程式
+
+**決定**：`74dcac16f`（`750f37bb6`、`3de9a09a1`、`74dcac16f` 三個上游合併，base `f3255f6af`）的 run 40368383385 第一次嘗試失敗，對同一個 SHA 重跑失敗的 job 後成功。這是 runner 抖動，不是合併帶入的回歸，所以不回退任何上游變更，也不改測試或設定；只記錄證據與觸發條件。
+
+**證據**（驗證對象是 CI 在同一個 SHA 上的兩次結果，不是本機）：
+
+| 項目 | 第 1 次嘗試（失敗） | 第 2 次嘗試（成功） | 上一次綠燈（`f3255f6af`，run 40254246556） |
+| --- | --- | --- | --- |
+| 失敗的 job | `Tests on windows-latest: engine-cli` | 全部成功 | 全部成功 |
+| engine | 2547 測試通過、0 個測試失敗，**1 個 suite 失敗** | 133 檔通過、4 跳過 | 133 檔通過、3 跳過 |
+| cli | 403 檔通過、15 跳過 | 403 檔通過、15 跳過 | 399 檔通過、14 跳過 |
+| 失敗點 | `videoFrameExtractor.remoteTail.test.ts` 的 `a deferred window inside local sources of other shapes`：`afterAll` 的 `rmSync(dir, { recursive: true, force: true })` 超過 vitest 預設的 10 秒 hook 逾時（`Hook timed out in 10000ms`） | 無 | 無 |
+| 同一個 suite 的 4 個測試耗時 | 10.2、10.9、15.8、8.0 秒 | 0.14–0.20 秒 | 0.14–0.19 秒 |
+| 同檔「`decodes the tail`」 | 31.6 秒 | 3.3 秒 | 3.3 秒 |
+| 同時間另一個 worker 的 `audioMixer.manyTracks` 200 clip 測試 | 58.3 秒 | 未取 | 22.8 秒 |
+
+- 同一個 SHA 一次紅一次綠，測試內容沒有變，所以不是確定性的回歸。紅的那次，只有這個檔案的磁碟與行程密集操作整體慢了約 60 倍，同時另一個 worker 的 ffmpeg 重測試也慢了 2.5 倍，符合 runner 在那段時間資源被壓住；失敗的是最後一個只做 `rmSync` 的 hook，因為 suite 的 `timeout: 120_000` 不適用於 hook，hook 仍是 10 秒。
+- 三個合併在 `packages/engine` 的變更與這個測試沒有關係：`videoFrameExtractor.ts` 只改了 macOS 分支（`isMacOS && ... isFfmpegHwaccelAvailable("videotoolbox")`，`win32` 在 `&&` 的第一項就短路）；`psnrFilterAvailability.ts` 只是多一份 `-hwaccels` 清單的快取，這個測試的路徑（延後範圍只數影格）不會呼叫；其餘是 `browserManager`／`frameCapture` 的瀏覽器啟動邏輯，這個測試不載入。
+- 本機重現不了：在 `74dcac16f` 上單跑 `videoFrameExtractor.remoteTail.test.ts` 6 項全過，測試總計 7.5 秒（四個本地來源測試各 0.14–0.47 秒）。所以沒有可寫的紅燈測試，這也是不改程式的理由之一：沒有失敗的性質可釘。
+
+**不做的事**：
+
+- 不在 `videoFrameExtractor.remoteTail.test.ts` 加 hook 逾時或改 `rmSync`：該檔是上游測試，改它會多一個分歧檔，而且下一次合併時要逐行處理。
+- 不回退 `750f37bb6`／`3de9a09a1`／`74dcac16f` 的任何部分。
+
+**重看條件**：同一個 suite 或任何只做清理的 hook 在 Windows run 再出現 `Hook timed out`，且重跑後同一個 SHA 變綠，累計到第二次，就在 `packages/engine/vitest.config.ts` 加 `hookTimeout`（fork 側一行，需附這兩次 run 的 ID）；如果重跑仍紅，才當成回歸，從這次記錄的耗時表開始二分。回貢上游要主人當次對話明確同意。
