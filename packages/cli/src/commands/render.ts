@@ -6,6 +6,7 @@ import type { Example } from "./_examples.js";
 import { mkdtempSync, readdirSync, readFileSync, statSync, writeFileSync, rmSync } from "node:fs";
 import { createRenderPlan, resolveBrowserGpuForCli, type RenderFormat } from "./render/plan.js";
 import { seedProjectAuthoringSkill } from "../utils/projectConfig.js";
+import { deliveryFlagArgs } from "../utils/deliveryFlags.js";
 import type { CatalogUsage } from "../utils/catalogUsage.js";
 import { presentRenderPlan } from "./render/present.js";
 import { executeRenderPlan, renderLintContinuationHint, runRenderLint } from "./render/execute.js";
@@ -127,7 +128,6 @@ import {
 import { chromeLaunchRemediation } from "../browser/linuxDeps.js";
 import { macosOldChromeCrashRemediation } from "../browser/macosOldChromeCrash.js";
 import { windowsChromeCrashRemediation } from "../browser/windowsCrash.js";
-import { sandboxDeniedRemediation } from "../browser/sandboxDenied.js";
 import { killOrphanedProcessesForRender } from "../utils/orphanCleanup.js";
 import { createRenderCancellationScope } from "../utils/renderCancellation.js";
 import {
@@ -136,7 +136,12 @@ import {
   runPostRenderStepAsync,
 } from "../utils/render-success-state.js";
 import type { ProducerLogger, RenderJob, RenderPerfSummary } from "@hyperframes/producer";
-import { EXTRACT_CACHE_DIR_DISABLED_ALIASES, type VideoFrameFormat } from "@hyperframes/engine";
+import {
+  EXTRACT_CACHE_DIR_DISABLED_ALIASES,
+  sandboxDeniedRemediation,
+  type ProresProfile,
+  type VideoFrameFormat,
+} from "@hyperframes/engine";
 import {
   checkOutputResolutionCompatibility,
   suggestMatchingPreset,
@@ -187,7 +192,7 @@ export default defineCommand({
       type: "string",
       alias: "q",
       description:
-        "Quality: draft, looks, delivery, or standard/high. looks is the default (CRF 16). delivery is high. MOV always uses the fixed alpha-preserving ProRes 4444 profile.",
+        "Quality: draft, looks, delivery, or standard/high. looks is the default (CRF 16). delivery is high. MOV uses ProRes 4444 with alpha unless --prores-profile picks a 422 profile.",
       default: "looks",
     },
     skill: {
@@ -261,6 +266,7 @@ export default defineCommand({
       description:
         "Target MP4/WebM video bitrate such as 10M. Mutually exclusive with --crf; unsupported for MOV.",
     },
+    ...deliveryFlagArgs,
     "vp9-cpu-used": {
       type: "string",
       description:
@@ -311,7 +317,7 @@ export default defineCommand({
     variables: {
       type: "string",
       description:
-        'JSON object of variable values, merged over the composition\'s data-composition-variables defaults. Example: --variables \'{"title":"Hello"}\'. Read inside the composition via window.__hyperframes.getVariables().',
+        'JSON object of variable values, merged over the composition\'s data-composition-variables defaults. Example: --variables \'{"title":"Hello"}\'. Also a JSON file path, or - for stdin. Read inside the composition via window.__hyperframes.getVariables().',
     },
     "variables-file": {
       type: "string",
@@ -516,6 +522,10 @@ export interface RenderOptions {
   crf?: number;
   vp9CpuUsed?: number;
   videoBitrate?: string;
+  keyframeIntervalSeconds?: number;
+  proresProfile?: ProresProfile;
+  maxBitrate?: string;
+  bufferSize?: string;
   videoFrameFormat?: VideoFrameFormat;
   pageMotionBlur?: "off";
   quiet: boolean;
@@ -846,6 +856,10 @@ async function renderDocker(
       crf: options.crf,
       vp9CpuUsed: options.vp9CpuUsed,
       videoBitrate: options.videoBitrate,
+      keyframeIntervalSeconds: options.keyframeIntervalSeconds,
+      proresProfile: options.proresProfile,
+      maxBitrate: options.maxBitrate,
+      bufferSize: options.bufferSize,
       videoFrameFormat: options.videoFrameFormat,
       pageMotionBlur: options.pageMotionBlur,
       quiet: options.quiet,
@@ -1125,6 +1139,10 @@ async function executeLocalRender(
       hdrMode: options.hdrMode,
       crf: options.crf,
       videoBitrate: options.videoBitrate,
+      keyframeIntervalSeconds: options.keyframeIntervalSeconds,
+      proresProfile: options.proresProfile,
+      maxBitrate: options.maxBitrate,
+      bufferSize: options.bufferSize,
       videoFrameFormat: options.videoFrameFormat,
       pageMotionBlur: options.pageMotionBlur,
       variables: options.variables,

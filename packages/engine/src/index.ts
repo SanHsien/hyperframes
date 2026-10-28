@@ -191,6 +191,12 @@ export {
   detectGpuEncoder,
   ENCODER_PRESETS,
   getEncoderPreset,
+  PRORES_PROFILES,
+  PRORES_PROFILE_NAMES,
+  isProresProfile,
+  type ProresProfile,
+  appendRateCapArgs,
+  keyframeIntervalToGopSize,
   HLS_MASTER_PLAYLIST,
   HLS_VIDEO_PLAYLIST,
   HLS_AUDIO_PLAYLIST,
@@ -310,6 +316,7 @@ export {
   type WorkerSizingBound,
   type LandedFrame,
   type ParallelProgress,
+  type ParallelWorkerPhaseDiagnostic,
 } from "./services/parallelCoordinator.js";
 
 // ── File server ────────────────────────────────────────────────────────────────
@@ -333,6 +340,12 @@ export {
   SwiftShaderAssertionError,
   BROWSER_GPU_NOT_SOFTWARE,
 } from "./utils/assertSwiftShader.js";
+
+export {
+  isBrowserSafePort,
+  listenOnBrowserSafePort,
+  settleOnBrowserSafePort,
+} from "./utils/browserSafePort.js";
 
 export { readWebGlVendorInfoFromCanvas } from "./utils/readWebGlVendorInfoFromCanvas.js";
 
@@ -399,7 +412,8 @@ export {
 } from "./utils/ffmpegBinaries.js";
 
 export { trackChildProcess, killTrackedProcesses } from "./utils/processTracker.js";
-export { renameWithRetry, renameWithRetryAsync } from "./utils/renameWithRetry.js";
+export { renameWithRetry, renameWithRetryAsync } from "@hyperframes/core/rename-retry";
+export { removeScratch, collectScratchLeftovers } from "@hyperframes/core/remove-scratch";
 
 // drawElement self-verify comparison — shared by the streaming drain
 // (producer) and the parallel disk-path verify (parallelCoordinator).
@@ -495,3 +509,12 @@ export {
   DrawElementCaptureError,
   isDrawElementCaptureError,
 } from "./services/drawElementCaptureError.js";
+
+export {
+  inAgentSandbox,
+  isOneProcessOverPipe,
+  machServiceDenied,
+  oneProcessOverPipe,
+  pipeLaunchClosedOnMac,
+  sandboxDeniedRemediation,
+} from "./services/sandboxLaunch.js";

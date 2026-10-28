@@ -128,6 +128,91 @@ describe("registerPreviewRoutes", () => {
     expect(authored).not.toContain('<base href="/api/projects/demo/preview/">');
   });
 
+  it("maps root module paths to the project on the page and in a sub-composition, as render serves them", async () => {
+    const projectDir = createProjectDir();
+    mkdirSync(join(projectDir, "compositions"), { recursive: true });
+    writeFileSync(
+      join(projectDir, "index.html"),
+      `<!doctype html><html><head></head><body><script type="module">await import("/assets/scene.js");</script></body></html>`,
+    );
+    writeFileSync(
+      join(projectDir, "compositions/scene.html"),
+      `<template><section data-composition-id="scene" data-width="1280" data-height="720"></section></template>`,
+    );
+    const app = new Hono();
+    registerPreviewRoutes(app, createAdapter(projectDir));
+    const base = "/api/projects/demo/preview/";
+    for (const path of ["", "/comp/compositions/scene.html"]) {
+      const html = await (
+        await app.request(`http://localhost/projects/demo/preview${path}`)
+      ).text();
+      const maps = [...html.matchAll(/<script type="importmap">([^<]*)<\/script>/g)];
+      expect(maps.map((map) => JSON.parse(map[1] ?? ""))).toEqual([
+        { imports: { "/": base, [base]: base } },
+      ]);
+    }
+  });
+
+  it("serves the composition's root-path media and CSS from the project, as render does, and keeps the server's own", async () => {
+    const projectDir = createProjectDir();
+    mkdirSync(join(projectDir, "compositions"), { recursive: true });
+    writeFileSync(
+      join(projectDir, "index.html"),
+      `<!doctype html><html><head><style>h1 { background: url(/bg.png) }</style></head><body><div data-composition-id="main">
+        <audio id="vo-1" class="clip" src="/assets/vo-1.mp3" data-start="0" data-duration="2"></audio></div></body></html>`,
+    );
+    writeFileSync(
+      join(projectDir, "compositions/scene.html"),
+      `<template><section data-composition-id="scene"><img src="/assets/still.png"></section></template>`,
+    );
+    const app = new Hono();
+    registerPreviewRoutes(app, createAdapter(projectDir));
+    const page = await (await app.request("http://localhost/projects/demo/preview")).text();
+    expect(page).toContain('src="assets/vo-1.mp3"');
+    expect(page).toContain("url(bg.png)");
+    expect(page).toContain('src="/api/runtime.js"');
+    const scene = await (
+      await app.request("http://localhost/projects/demo/preview/comp/compositions/scene.html")
+    ).text();
+    expect(scene).toContain('src="assets/still.png"');
+    expect(scene).toContain('src="/api/runtime.js"');
+  });
+
+  it("adds no module import of its own, so the root-path map reaches only the composition's", async () => {
+    const projectDir = createProjectDir();
+    writeFileSync(
+      join(projectDir, "index.html"),
+      `<!doctype html><html><head>
+        <script data-authored src="https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js"></script>
+      </head><body><div id="card" class="clip"></div>
+        <script data-authored>
+          const tl = gsap.timeline({ paused: true });
+          tl.to("#card", { motionPath: { path: [{ x: 0, y: 0 }, { x: 100, y: 50 }] }, duration: 1 }, 0);
+          window.__timelines = { index: tl };
+        </script>
+      </body></html>`,
+    );
+    mkdirSync(join(projectDir, ".hyperframes"), { recursive: true });
+    writeFileSync(
+      join(projectDir, ".hyperframes/studio-motion.json"),
+      `{"version":1,"motions":[{"kind":"gsap-motion","target":{"sourceFile":"index.html","id":"card"},"start":0,"duration":1,"ease":"power2.out","from":{"y":32},"to":{"y":0}}]}`,
+    );
+    const app = new Hono();
+    registerPreviewRoutes(app, createAdapter(projectDir));
+    const html = await (await app.request("http://localhost/projects/demo/preview")).text();
+    const added = [...parseHTML(html).document.querySelectorAll("script")].filter(
+      (script) =>
+        !script.hasAttribute("data-authored") && script.getAttribute("type") !== "importmap",
+    );
+    expect(added.map((script) => script.getAttribute("src") ?? "inline")).toEqual(
+      expect.arrayContaining(["/api/runtime.js", expect.stringContaining("MotionPathPlugin")]),
+    );
+    for (const script of added) {
+      expect(script.getAttribute("type")).not.toBe("module");
+      expect(script.textContent).not.toMatch(/\bimport\s*\(|^\s*import[\s{*"']/m);
+    }
+  });
+
   it("encodes the project name in <base>, so a '#' or '\"' in it keeps assets in its own folder", async () => {
     const projectDir = createProjectDir();
     writeFileSync(join(projectDir, "scene.html"), "<template><section></section></template>");
@@ -1495,6 +1580,7 @@ describe("hf-proxy negotiation and media codec map injection (U3)", () => {
         join(projectDir, "clip.mp4"),
         "h264",
         undefined,
+        { priority: false },
       );
 
       const ranged = await app.request(
@@ -1506,6 +1592,32 @@ describe("hf-proxy negotiation and media codec map injection (U3)", () => {
       expect(ranged.status).toBe(206);
       expect(await ranged.text()).toBe("0123456789");
       expect(ranged.headers.get("Content-Range")).toBe("bytes 0-9/20");
+    });
+
+    it("puts the copy ahead of the queue when the request says the video is at the playhead", async () => {
+      const projectDir = createProjectDir();
+      writeFileSync(join(projectDir, "clip.mp4"), "original-hevc-bytes");
+      const resolveProxyMock = vi.fn(async () => {
+        const proxyPath = join(projectDir, "proxy.mp4");
+        writeFileSync(proxyPath, "proxybytes");
+        return proxyPath;
+      });
+      const { registerPreviewRoutes: register } = await loadPreviewModule({
+        resolveProxyImpl: resolveProxyMock,
+      });
+      const app = new Hono();
+      register(app, createAdapter(projectDir));
+
+      await app.request("http://localhost/projects/demo/preview/clip.mp4?hf-proxy=h264", {
+        headers: { "X-HF-Proxy-Priority": "1" },
+      });
+      expect(resolveProxyMock).toHaveBeenCalledWith(
+        projectDir,
+        join(projectDir, "clip.mp4"),
+        "h264",
+        undefined,
+        { priority: true },
+      );
     });
 
     it("honors If-None-Match on a repeat request with a 304, without re-invoking resolveProxy", async () => {
@@ -1565,6 +1677,7 @@ describe("hf-proxy negotiation and media codec map injection (U3)", () => {
         join(projectDir, "clip.mp4"),
         "h264",
         { width: 1448, height: 2048 },
+        { priority: false },
       );
       const full = await app.request(
         "http://localhost/projects/demo/preview/clip.mp4?hf-proxy=h264",
@@ -1574,6 +1687,7 @@ describe("hf-proxy negotiation and media codec map injection (U3)", () => {
         join(projectDir, "clip.mp4"),
         "h264",
         undefined,
+        { priority: false },
       );
       expect(sized.headers.get("ETag")).toBeTruthy();
       expect(sized.headers.get("ETag")).not.toBe(full.headers.get("ETag"));
@@ -1614,6 +1728,7 @@ describe("hf-proxy negotiation and media codec map injection (U3)", () => {
           join(projectDir, "clip.mp4"),
           "h264",
           { width: 724, height: 362 },
+          { priority: false },
         );
       });
 
@@ -1768,6 +1883,7 @@ describe("hf-proxy negotiation and media codec map injection (U3)", () => {
         join(projectDir, "clip.mov"),
         "vp8",
         undefined,
+        { priority: false },
       );
     });
 
@@ -2051,6 +2167,7 @@ describe("hf-proxy negotiation and media codec map injection (U3)", () => {
         join(projectDir, "assets", "shared", "clip.mov"),
         "h264",
         undefined,
+        { priority: false },
       );
     });
 

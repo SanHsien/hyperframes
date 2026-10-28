@@ -10,6 +10,7 @@
 
 import { Hono } from "hono";
 import { serve } from "@hono/node-server";
+import { settleOnBrowserSafePort } from "@hyperframes/engine";
 import type { IncomingMessage } from "node:http";
 import {
   existsSync,
@@ -914,7 +915,7 @@ export function createFileServer(options: FileServerOptions): Promise<FileServer
     }
   });
 
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     // Track open connections so we can force-destroy them on close.
     // Without this, server.close() waits for keep-alive connections to
     // drain, holding the Node.js event loop open indefinitely.
@@ -929,24 +930,30 @@ export function createFileServer(options: FileServerOptions): Promise<FileServer
     // it must not listen on 0.0.0.0 where an IDE's port auto-forward surfaces
     // it as a transient, breakage-prone "preview".
     const server = serve({ fetch: app.fetch, port, hostname: "127.0.0.1" }, (info) => {
-      resolve({
-        url: `http://localhost:${info.port}`,
-        port: info.port,
-        addPreHeadScript: (script: string) => {
-          preHeadScripts.push(script);
-        },
-        close: () => {
-          for (const socket of connections) socket.destroy();
-          connections.clear();
-          server.close();
-        },
-      });
+      // An OS-picked port (0) must be one Chromium will load from; a caller-chosen one is theirs.
+      const bound =
+        port === 0 ? settleOnBrowserSafePort(server, "127.0.0.1") : Promise.resolve(info.port);
+      bound.then((boundPort) => {
+        resolve({
+          url: `http://localhost:${boundPort}`,
+          port: boundPort,
+          addPreHeadScript: (script: string) => {
+            preHeadScripts.push(script);
+          },
+          close: () => {
+            for (const socket of connections) socket.destroy();
+            connections.clear();
+            server.close();
+          },
+        });
+      }, reject);
     });
 
     server.on("connection", (socket: IncomingMessage["socket"]) => {
       connections.add(socket);
       socket.on("close", () => connections.delete(socket));
     });
+    server.on("error", reject);
   });
 }
 

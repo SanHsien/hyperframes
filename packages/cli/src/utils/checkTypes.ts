@@ -237,6 +237,7 @@ export interface CraftFrame {
   /** A data-hold element is on screen: stillness here is deliberate. */
   held: boolean;
   painted: boolean;
+  coveredBy?: string;
   signature: string;
 }
 
@@ -313,6 +314,9 @@ export interface CheckTimings {
   launchSettleMs: number;
   seekLoopMs: number;
   contrastMs: number;
+  gridMs: number;
+  craftMs: number;
+  overlapMs: number;
 }
 
 export interface CheckBrowserResult {
@@ -331,6 +335,7 @@ export interface CheckBrowserResult {
   craft: CraftResult;
   screenshots: CheckScreenshot[];
   timings: CheckTimings;
+  renderReadyTimedOut: boolean;
   skipped: boolean;
 }
 

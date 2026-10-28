@@ -129,15 +129,36 @@ async function shouldCopyAacSidecar(
   }
 }
 
+/** ProRes profile names in the order users are told about them. */
+export const PRORES_PROFILE_NAMES = ["4444", "hq", "422", "lt", "proxy"] as const;
+export type ProresProfile = (typeof PRORES_PROFILE_NAMES)[number];
+
+/** The one table for `-profile:v` and pixel format; all but 4444 are 4:2:2 without alpha. */
+export const PRORES_PROFILES: Record<
+  ProresProfile,
+  { profile: string; pixelFormat: string; alpha: boolean }
+> = {
+  "4444": { profile: "4444", pixelFormat: "yuva444p10le", alpha: true },
+  hq: { profile: "3", pixelFormat: "yuv422p10le", alpha: false },
+  "422": { profile: "2", pixelFormat: "yuv422p10le", alpha: false },
+  lt: { profile: "1", pixelFormat: "yuv422p10le", alpha: false },
+  proxy: { profile: "0", pixelFormat: "yuv422p10le", alpha: false },
+};
+
+export function isProresProfile(value: unknown): value is ProresProfile {
+  return typeof value === "string" && (PRORES_PROFILE_NAMES as readonly string[]).includes(value);
+}
+
 /**
  * Get encoder preset for a given quality and output format.
  * WebM uses VP9 with alpha-capable pixel format; MP4 uses h264 (or h265 for HDR);
- * MOV uses ProRes 4444 with alpha for editor-compatible transparency.
+ * MOV uses ProRes 4444 with alpha for editor-compatible transparency, or a 422 profile without alpha.
  */
 export function getEncoderPreset(
   quality: "draft" | "standard" | "high",
   format: "mp4" | "webm" | "mov" = "mp4",
   hdr?: { transfer: HdrTransfer },
+  proresProfile: ProresProfile = "4444",
 ): EncoderPreset {
   const base = ENCODER_PRESETS[quality];
   if (format === "webm") {
@@ -149,12 +170,8 @@ export function getEncoderPreset(
     };
   }
   if (format === "mov") {
-    return {
-      preset: "4444",
-      quality: base.quality,
-      codec: "prores",
-      pixelFormat: "yuva444p10le",
-    };
+    const { profile, pixelFormat } = PRORES_PROFILES[proresProfile];
+    return { preset: profile, quality: base.quality, codec: "prores", pixelFormat };
   }
   if (hdr) {
     return {
@@ -225,6 +242,43 @@ export function lockedGopCodecParams(codec: "h264" | "h265", gopSize: number): s
   return codec === "h264" ? shared : `keyint=${gopSize}:min-keyint=${gopSize}:${shared}`;
 }
 
+/** Frames per keyframe interval: the nearest whole frame, never below one. */
+export function keyframeIntervalToGopSize(fps: Fps, seconds: number): number {
+  return Math.max(1, Math.round(fpsToNumber(fps) * seconds));
+}
+
+const BITRATE_PATTERN = /^(\d+(?:\.\d+)?)([kKmMgG]?)$/;
+
+function bitrateToBitsPerSecond(value: string): number {
+  const match = BITRATE_PATTERN.exec(value);
+  if (!match) throw new Error(`[chunkEncoder] invalid bitrate ${JSON.stringify(value)}`);
+  const unit = match[2]!.toLowerCase();
+  const scale = { g: 1_000_000_000, m: 1_000_000, k: 1_000 }[unit] ?? 1;
+  return Number(match[1]) * scale;
+}
+
+/** `-maxrate` / `-bufsize` for the VBV cap, written once for both arg builders. Buffer defaults to 2x. */
+export function appendRateCapArgs(
+  args: string[],
+  options: { codec?: string; maxBitrate?: string; bufferSize?: string },
+): void {
+  const { maxBitrate, bufferSize } = options;
+  if (maxBitrate === undefined) {
+    if (bufferSize !== undefined) throw new Error("[chunkEncoder] bufferSize requires maxBitrate");
+    return;
+  }
+  const codec = options.codec ?? "h264";
+  if (codec !== "h264" && codec !== "h265") {
+    throw new Error(`[chunkEncoder] maxBitrate is not supported for codec ${codec}`);
+  }
+  const cap = bitrateToBitsPerSecond(maxBitrate);
+  const buffer = bufferSize !== undefined ? bitrateToBitsPerSecond(bufferSize) : cap * 2;
+  if (cap <= 0 || buffer <= 0) {
+    throw new Error("[chunkEncoder] maxBitrate and bufferSize must be positive");
+  }
+  args.push("-maxrate", String(Math.round(cap)), "-bufsize", String(Math.round(buffer)));
+}
+
 export function buildEncoderArgs(
   options: EncoderOptions,
   inputArgs: string[],
@@ -257,6 +311,7 @@ export function buildEncoderArgs(
   // Without -xerror, ffmpeg ends the video at the first frame file it cannot read and still exits 0.
   const args: string[] = ["-xerror", ...inputArgs, "-r", fpsToFfmpegArg(fps)];
   const shouldUseGpu = useGpu && gpuEncoder !== null;
+  appendRateCapArgs(args, options);
 
   if (codec === "h264" || codec === "h265") {
     if (shouldUseGpu) {
@@ -819,8 +874,9 @@ export async function muxVideoWithAudio(
   const outputDir = dirname(outputPath);
   if (!existsSync(outputDir)) mkdirSync(outputDir, { recursive: true });
 
-  const isWebm = outputPath.endsWith(".webm");
-  const isMov = outputPath.endsWith(".mov");
+  const outputExtension = extname(outputPath).toLowerCase();
+  const isWebm = outputExtension === ".webm";
+  const isMov = outputExtension === ".mov";
   const shouldCopyAudio = isWebm ? false : await shouldCopyAacSidecar(audioPath, config);
   const args = [...(config?.videoInputArgs ?? ["-i", videoPath]), "-i", audioPath, "-c:v", "copy"];
 
