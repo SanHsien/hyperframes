@@ -620,7 +620,7 @@ fork 專有程式與這批 commit 重疊的只有 17 個檔（上面 5 個衝突
 - 不在 `videoFrameExtractor.remoteTail.test.ts` 加 hook 逾時或改 `rmSync`：該檔是上游測試，改它會多一個分歧檔，而且下一次合併時要逐行處理。
 - 不回退 `750f37bb6`／`3de9a09a1`／`74dcac16f` 的任何部分。
 
-**重看條件**：同一個 suite 或任何只做清理的 hook 在 Windows run 再出現 `Hook timed out`，且重跑後同一個 SHA 變綠，累計到第二次，就在 `packages/engine/vitest.config.ts` 加 `hookTimeout`（fork 側一行，需附這兩次 run 的 ID）；如果重跑仍紅，才當成回歸，從這次記錄的耗時表開始二分。回貢上游要主人當次對話明確同意。
+**重看條件**：同一個 suite 或任何只做清理的 hook 在 Windows run 再出現 `Hook timed out`，且重跑後同一個 SHA 變綠，累計到第二次，就在 `packages/engine/vitest.config.ts` 加 `hookTimeout`（fork 側一行，需附這兩次 run 的 ID）；如果重跑仍紅，才當成回歸，從這次記錄的耗時表開始二分。回貢上游要維護者當次對話明確同意。
 
 ## 2026-10-27（再續）：上游追到 `8f618c5ff`（v0.8.206），commit 水位推進，PR 水位只到 #6459，issue 水位不動
 
@@ -721,7 +721,7 @@ fork 專有程式與這批 commit 重疊的只有 17 個檔（上面 5 個衝突
 
 | 範圍 | 本 fork 的狀態 | 結論 |
 | --- | --- | --- |
-| 衝突：`.github/workflows/ci.yml` | fork 的 `ci.yml` 只跑 Windows（`tools/tests/test_fork_docs.py` 釘住）；上游加的 `test-reachability` job 與 `.github/actions/fetch-history`、`release-only-diff`（#6524、#6577）是上游 Linux CI 的 | 取 fork（不加 `test-reachability`）。兩個 composite action 隨 merge 進來，被其他自動合併的 workflow 使用：`release-only-diff` 在 player-perf、player-safari、preview-regression、regression、windows-render、lambda-arm64-image，`fetch-history` 在其中三個；新增的步驟只檢出程式碼並跑 `node scripts/ci/release-only-diff.mjs`，不用 secrets、不推送、沒有 `pull_request_target`，插值只有 `${{ github.event_name }}`。觸發：fork 把 Linux CI 接回時再考慮 `test-reachability` |
+| 衝突：`.github/workflows/ci.yml` | fork 的 `ci.yml` 只跑 Windows（`tools/tests/test_fork_docs.py` 釘住）；上游加的 `test-reachability` job 與 `.github/actions/fetch-history`、`release-only-diff`（#6524、#6577）是上游 Linux CI 的 | 取 fork（不加 `test-reachability`）。兩個 composite action 隨 merge 進來，被其他自動合併的 workflow 使用：`release-only-diff` 在 player-perf、player-safari、preview-regression、regression、windows-render、lambda-arm64-image，`fetch-history` 在其中三個；新增的步驟只檢出程式碼、`fetch-history` 從 origin 跑唯讀的 `git fetch --unshallow`、再跑 `node scripts/ci/release-only-diff.mjs`，不用 secrets、不推送、沒有 `pull_request_target`，插值只有 `${{ github.event_name }}`。觸發：fork 把 Linux CI 接回時再考慮 `test-reachability` |
 | 衝突：`README.md` | fork 繁中主檔 | 取 fork；上游的變更（`hyperframes.dev` → `hyperframes.studio` 網域與表格對齊，#6585）用 patch 併進 `README.en.md`。繁中 `README.md` 沒有這些連結，沒有內容要翻 |
 | 衝突：`scripts/check-studio-copy-dashes.mjs` | fork 自己修過 Windows 反斜線（`replaceAll("\\", "/")`） | 取上游（#6619 的 `split(sep).join("/")`，等效）；`node scripts/check-studio-copy-dashes.mjs` 通過 |
 | 衝突：`skills-manifest.json` | 雜湊 | 用 `bun packages/cli/scripts/gen-skills-manifest.ts` 重產 |
@@ -760,7 +760,7 @@ fork 專有程式與這批 commit 重疊的只有 17 個檔（上面 5 個衝突
 | 關閉未合併：#6554 | `25903ada0` | 「release v0.8.999 proof, do not merge」 | 上游的發布演練 | 不採用 |
 | 關閉未合併：#6607 | `6ad2b7f32`（外部） | lint 規則的測試補強 | 只有測試；上游沒有收 | 不採用 |
 
-**審查後換版**：提交前重查，#6613（→ `7728b3131`）、#6616、#6617、#6621、#6622 的 head 已在表中記錄的版本之後更新；都不採用，下一輪重掃。
+**審查後換版**：提交前重查，#6613、#6616、#6617、#6621、#6622 的 head 在表中記錄的版本之後仍持續更新（審查中途就換過一次以上，所以這裡不釘新 SHA）；都不採用，下一輪重掃。
 
 **前一輪仍 open 的 PR**：#6434、#6437、#6438、#6440、#6441、#6444、#6452、#6460、#6471、#6472、#6474–#6479 已合併，經 commit 軸抵達；#6462 關閉（#6440 合併後取代）、#6473 關閉（移除 `page_motion_blur` 的型別重產沒有被收；合併後 `typecheck` hook 通過）。仍 open：#6428 `781935309`、#6456 `eabf072d8`、#6466 `5a20b67dd`（head 都沒變，結論不變）；#6433 換版 `85748ef02` → `534bc7562`，重掃只命中測試的 `page.$eval`，結論不變。
 
