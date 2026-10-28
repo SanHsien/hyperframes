@@ -710,3 +710,88 @@ fork 專有程式與這批 commit 重疊的只有 17 個檔（上面 5 個衝突
 - 測試：見上表各列；另外 cli 的 `projectLock` 與 `previewLifecycle` 等前一批的檔案這次沒有重跑。
 - 未驗證：`layout-audit.chromium.test.ts`（Chrome 起不來）；producer 的整合測試（`deliveryRender.integration`、`wrappedMountTiming.integration` 等）沒有執行。
 - 提交：`LEFTHOOK_EXCLUDE=fallow`，其餘 hook 實跑（`tracked-artifacts`、`lint`、`format`、`largefiles`、`cli-process-ownership`、`typecheck`、`commitlint`）；`fallow` 理由同前幾條。
+
+## 2026-10-28：上游追到 `bf7ebe961`（v0.8.210），三個水位推進到 commit `bf7ebe961`、PR #6629、issue #6610；Dependabot 安全更新改由 override 處理
+
+**決定**：`933ae3eb5..bf7ebe961` 的 114 個 commit 以一個 merge 帶入（`2fa845282`，可單獨還原；衝突只有 4 檔，沒有拆批的必要）。open 的上游 PR #6512 先行移植（`554dbb7f0`）。PR 與 issue 軸逐筆審完，水位推到審查時上游最大的 PR #6629 與 issue #6610（#6625–#6629 是審查期間新開的，一併審完）。之後上游再前進，`--strict` 會是紅的，這是預期。
+
+**判準八掃描**：commit 軸 16,092 行新增行，掃空白夾內容（`\S\s{40,}\S`）、`eval(`／`new Function(`／`global(This).require`／`atob(`／`fromCharCode`、120 字元以上的 base64、240 字元以上的 hex、零寬與雙向控制字元、400 字元以上單行。命中都是良性：Markdown 表格對齊、測試的 puppeteer `page.$eval`、`.claude/settings.json` 既有的 pre-commit hook（`node -e` 單行腳本，改成在 Windows `cmd.exe` 下不靠 shell pipe 過濾型別錯誤，#6619）、producer fixture 的長描述。PR 軸對 47 筆未合併 PR 的目前 head diff 掃同一組：只有 #6433 測試的 `page.$eval`（3 次）與 #6502 一行文件段落，0 隱藏內容。
+
+**commit 軸**：
+
+| 範圍 | 本 fork 的狀態 | 結論 |
+| --- | --- | --- |
+| 衝突：`.github/workflows/ci.yml` | fork 的 `ci.yml` 只跑 Windows（`tools/tests/test_fork_docs.py` 釘住）；上游加的 `test-reachability` job 與 `.github/actions/fetch-history`、`release-only-diff`（#6524、#6577）是上游 Linux CI 的 | 取 fork；兩個 composite action 隨 merge 進來但沒有 workflow 使用。觸發：fork 把 Linux CI 接回時再用 |
+| 衝突：`README.md` | fork 繁中主檔 | 取 fork；上游的變更（`hyperframes.dev` → `hyperframes.studio` 網域與表格對齊，#6585）用 patch 併進 `README.en.md`。繁中 `README.md` 沒有這些連結，沒有內容要翻 |
+| 衝突：`scripts/check-studio-copy-dashes.mjs` | fork 自己修過 Windows 反斜線（`replaceAll("\\", "/")`） | 取上游（#6619 的 `split(sep).join("/")`，等效）；`node scripts/check-studio-copy-dashes.mjs` 通過 |
+| 衝突：`skills-manifest.json` | 雜湊 | 用 `bun packages/cli/scripts/gen-skills-manifest.ts` 重產 |
+| 動 fork 分歧檔、自動合併 | `compositionScoping.ts` 與兩份 golden（#6543）：fork 的 `Function()` 字面值與 `AUTHORED_SOURCE_BEGIN`／`END` 標記保留（`compositionScoping.ts:378-379`）；`videoFrameExtractor.ts`（#6488、#6527、#6583、#6597）：`assertPrivateCacheRoot` 保留（`:79`、`:2221`）；`fileServer.ts`（#6561、#6620）：`0o600` 保留（`:736`）；另有 `extractionCache.ts`、`engine/src/index.ts`、`producer/src/server.ts`、`htmlCompiler.ts`、`layout-audit.browser.js`、`init.ts`、`capture/video.ts` | 合併；測試見「驗證」 |
+| Windows 相關 | #6474（音訊暫存刪不掉不再讓 render 失敗）、#6475（`history show --diff` 不需要 git）、#6484（`hyperframes open` 在 Windows 交給 app）、#6505（Chrome profile 刪不掉不再讓 capture 失敗）、#6507（Kokoro 的 espeak 路徑超過 260 字元）、#6518（JSON 旗標可從檔案或 stdin 讀，PowerShell 可用）、#6559（undo／redo 等待 Windows 短暫鎖住的檔案）、#6576（`hyperframes add` 在檔案被鎖時繼續）、#6619（lint 與 Claude pre-commit hook 在 Windows 可用）、#5834（`isPathInside` 接受 `..` 開頭的子項名） | 合併；都是本線需要的修正 |
+| 版本發布 | v0.8.207–v0.8.210（#6510、#6529、#6562、#6600） | 合併；fork 不發佈 |
+| 其餘 | producer／engine／core／cli／studio 的一般修正、文件、測試 | 合併 |
+
+身分資訊：前一條「永不採用」的 `server.json`、`context7.json` 的 `url`／`public_key`、cli `homepage` 這一批沒有被上游再動，合併後仍是 fork 的狀態。
+
+**PR 軸（#6480–#6629，136 筆：93 筆已合併、35 筆 open、8 筆關閉未合併）**：93 筆已合併的全部可在 `upstream/main` 的 commit 主旨找到 `(#N)`，經 commit 軸抵達。未合併的：
+
+| PR | 審查時 head | 內容 | 本 fork 對應檔案的實際狀態 | 結論與觸發 |
+| --- | --- | --- | --- | --- |
+| #6512 | `35309340f`（外部，3 檔 +66/-1，CI 全綠） | studio 數字欄位：IME 確認組字的 Enter（`isComposing`，或舊 WebKit 的 `keyCode 229`）不再直接提交數值 | **缺陷在本 fork 存在**：`NumberField.tsx:102` 只判斷 `event.key !== "Enter"`。繁中輸入法是本線的主要情境 | **採用**（`554dbb7f0`，照抄，含測試與 `docs/studio/canvas.mdx` 一段）；拿掉修正時新測試 2 項失敗，放回後通過 |
+| #6492 | `cc16106ff`（20 檔，CHANGES_REQUESTED） | **Windows**：專案路徑旁的暫存資料夾改用統一的 `createStagingDir`，避免長路徑下 `mkdtemp` 的 ENOENT | 缺陷在本 fork 存在（`capture/captureFile.ts:21` 在專案旁 `mkdtempSync`，非測試檔還有 49 個用到 `mkdtempSync`）；對合併後的樹套不上 | 不採用：審查要求修改。觸發：合併，或本線 Windows 出現長路徑 `snapshot` 的 `ENOENT … mkdtemp` |
+| #6506 | `1ec084759`（APPROVED） | undo／redo 的放回等待 Windows 鎖檔 | **已被 #6559 取代**：`studio-server/src/history/blobStore.ts:57` 已是 `renameWithRetry`；本 PR 對合併後的樹套不上 | 不採用；無觸發（上游若仍合併會經 commit 軸抵達） |
+| #6580 | `7d9bbce39`（9 檔，APPROVED） | **Windows**：PowerShell 5.1 寫出的 UTF-16 頁面依 BOM 解碼 | 缺陷在本 fork 存在（`producer/src/services/htmlCompiler.ts:2047` 固定 `"utf-8"`）；動 fork 分歧檔 `htmlCompiler.ts`、`htmlBundler.test.ts`，可套用 | 不採用：已核准、應會很快合併。觸發：合併，或本線出現 PowerShell 存的頁面預覽全黑 |
+| #6605（issue #6604） | `1145a3f7c`（4 檔） | **Windows**：`--batch` 讀 UTF-8 BOM 與 UTF-16LE 的 JSON | 缺陷在本 fork 存在（`cli/src/commands/batchRender.ts:95` 直接丟 `Invalid JSON in --batch`） | 不採用：open、等審查。觸發：合併，或本線用 PowerShell 產生 batch 檔時報錯 |
+| #6611（issue #6610） | `a0ff08799`（4 檔） | studio 備份檔名超過 200 字元時改用雜湊 | 非分歧檔；長路徑在 Windows 較常見 | 不採用；觸發：合併，或本線 studio 存檔報 `backup failed: ENAMETOOLONG` |
+| #6613 | `a98796069`（20 檔） | **Windows CI**：渲染時偵測有沒有開出可見視窗 | 與本線「測試不得開視窗」的規則同方向；只動上游 CI | 不採用；觸發：合併後評估把同一個探測加進 fork 的 `Windows render verification` |
+| #6571 | `e5856f0b6`（17 檔，CHANGES_REQUESTED） | 下載前解析主機，拒絕私有位址（SSRF） | 動 fork 分歧檔 `bun.lock`、cli `package.json`、`urlDownloader.test.ts`，套不上 | 不採用：審查要求修改。觸發：合併 |
+| #6565 | `0a9654fec`（6 檔） | 專案 `.env` 只能設定 CLI 自己的變數（白名單） | 非分歧檔，可套用 | 不採用；觸發：合併 |
+| #6497 | `3fded16d4`（外部） | `.env` 空值後的註解視為無值 | 非分歧檔 | 不採用；觸發：合併 |
+| #6486、#6587、#6589、#6592（draft）、#6596、#6599、#6618 | `187cddbd2`、`7915eb233`、`87493be9d`、`e300c3c22`、`ce1d96b0e`、`4b5ba8423`、`ae117ac2f` | producer 分段擷取、長 GOP 擷取、預覽代理、系統字型、seek 逾時、PNG 序列、snapshot 進度 | #6587 動 `videoFrameExtractor.ts`（分歧檔，套不上）、#6592 動 `htmlCompiler.ts`、#6599 動 `fileServer.ts`（皆可套用） | 不採用；觸發：合併。#6587／#6599 合併時重看 fork 的 `assertPrivateCacheRoot` 與 `0o600` |
+| #6514（issue #6513）、#6593（issue #6590）、#6602（issue #6601）、#6612（issue #6609）、#6591 | `8a73ab451`、`f531291e9`、`32fcba8e7`、`a47a6f360`、`3c6118866` | 投影片時間界線、base64 媒體 lint、2 GiB 以上匯出、音量自動化、`--variables-file` | 非 Windows 專屬；#6602 動分歧檔 `studio-server/src/routes/render.ts`（套不上） | 不採用；觸發：合併 |
+| #6548 | `99bb3b10a`（外部，578 行） | registry 新增一個 CTA block | 新增內容 | 不採用；觸發：合併 |
+| #6594 | `4002cce32` | 桌面卡片文字指向 `hyperframes.studio` | 上游品牌文字 | 不採用；觸發：合併 |
+| #6616、#6617、#6621、#6622 | `625bd9cf1`、`6e43f2d71`、`aeb5991ab`、`21814c39e` | CLI 指令工廠化與 agent 模式（後三筆疊在 `fix/cli-agent-mode*` 分支上，不能獨立合併） | 動 fork 分歧檔 `init.ts`、`catalog.ts`、`clean.ts`；套不上 | 不採用；觸發：合併。`init.ts` 合併時要重對 fork 的差異 |
+| #6623、#6624 | `8720f4176`、`bd7f0a5f1` | v0.8.211 發布、雲端客戶端型別重產 | 版本號／產生碼 | 不採用；觸發：合併 |
+| #6625、#6626 | `335b1a856`、`7b930aace`（外部，各 2 檔） | 把 `tar` 7.5.21、`@modelcontextprotocol/server` 2.3.0 加成根 `dependencies` 以處理 CVE；內文自述沒有驗證 | 做法無效：`@mcp-b/*` 5.0.1 精確釘 `@modelcontextprotocol/server` 2.0.0，加根依賴不會換掉那份；本 fork 改用 `overrides`（見下方 Dependabot 一節）。`tar` 在本 fork 是 7.5.15，本 fork 沒有對應的 Dependabot alert；#6625 內文寫 7.5.19、`package.json` 寫 7.5.21，前後不一 | 不採用。觸發：本 fork 出現 `tar` 的 alert 時用 `overrides` 處理 |
+| #6628 | `0c8c4b23d`（6 檔 +185/-14） | **Windows**：undo／redo 還原的檔案被開著時也能還原：還原前先結束預覽自己對該檔的讀取串流（新增 `helpers/servedFiles.ts`），Windows 上重試用盡後改成就地寫入 | 非分歧檔；本 fork 的 `blobStore.ts:57` 已有 #6559 的重試，這筆處理重試用盡的情況；可套用 | 不採用；觸發：合併，或本線 Windows 的 undo 仍報 `EPERM`／`EBUSY` |
+| #6627、#6629 | `d2aacd2e5`、`4cd77d316` | check 的 craft pass 跳過隱藏的 clip；studio 時間軸縮圖共用影片來源 | #6627 動分歧檔 `layout-audit.browser.js`，可套用 | 不採用；觸發：合併 |
+| 關閉未合併：#6485、#6540、#6573、#6595 | codegen bot | 雲端客戶端型別重產 | 已被合併的 #6608 取代 | 不採用 |
+| 關閉未合併：#6496、#6502 | `1f8ed98f3`、`ca38d5c51` | chunk worker 開機與 BeginFrame 探測並行；capture 代理與本機 `--file` | 已分別由合併的 #6500、#6499＋#6498 取代 | 不採用 |
+| 關閉未合併：#6554 | `25903ada0` | 「release v0.8.999 proof, do not merge」 | 上游的發布演練 | 不採用 |
+| 關閉未合併：#6607 | `6ad2b7f32`（外部） | lint 規則的測試補強 | 只有測試；上游沒有收 | 不採用 |
+
+**前一輪仍 open 的 PR**：#6434、#6437、#6438、#6440、#6441、#6444、#6452、#6460、#6471、#6472、#6474–#6479 已合併，經 commit 軸抵達；#6462 關閉（#6440 合併後取代）、#6473 關閉（移除 `page_motion_blur` 的型別重產沒有被收；合併後 `typecheck` hook 通過）。仍 open：#6428 `781935309`、#6456 `eabf072d8`、#6466 `5a20b67dd`（head 都沒變，結論不變）；#6433 換版 `85748ef02` → `534bc7562`，重掃只命中測試的 `page.$eval`，結論不變。
+
+**issue 軸（#6481–#6610，14 筆）**：
+
+| issue | 內容 | 結論與觸發 |
+| --- | --- | --- |
+| #6519、#6556、#6578 | 已關閉 completed：雲端 render 變數驗證、HLG 重複畫格、大寫 `.WEBM` 混音 | 修正 #6520、#6575、#6579 經 commit 軸抵達 |
+| #6513、#6590、#6601、#6604、#6609、#6610 | 各有 open PR（#6514、#6593、#6602、#6605、#6612、#6611） | 隨對應 PR，見上表 |
+| #6481 | 分段擷取搭 `--format mov` 必失敗（回報者在 Windows 11 重現，程式路徑與平台無關） | 沒有修正 PR。觸發：上游修正合併，或本線用 `HF_SEGMENTED_CAPTURE` 輸出 MOV |
+| #6482 | 功能需求：CLI 指定畫格範圍／重用分段 | 不採用；產品方向 |
+| #6530 | macOS XProtect 擋下 render | 不適用（本線是 Windows） |
+| #6584 | 「Error exporting」，沒有環境與重現資訊 | 不採用；觸發：上游補出可重現的原因 |
+| #6606 | producer 下載遠端媒體失敗時靜默丟掉該元素 | 沒有 PR；觸發：上游修正合併 |
+
+**Dependabot 安全更新（`@modelcontextprotocol/server`、`esbuild`、`tinypool`、`uuid` 四個 job 失敗）**：
+
+- 原因一：`f4175462a` 換上游檢查器時，誤把 `pnpm-lock.yaml`（9,596 行）與 `pnpm-workspace.yaml` 一起提交（本 repo 用 bun，上游沒有這兩檔；`AGENTS.md` 寫明「不建 `pnpm-lock.yaml`」）。Dependabot 的 7 個 alert 都掛在這份鎖檔上。本次刪除。
+- 原因二：`bun.lock` 本身也是受影響版本，而且都是被上游套件精確釘住的間接依賴，Dependabot 無法自動升（`security_update_not_possible`）。只刪 pnpm 鎖檔會讓 alert 假性消失，所以在根 `package.json` 的 `overrides` 修：
+  - `@modelcontextprotocol/server` 與 `@modelcontextprotocol/core` → `2.3.1`（`@mcp-b/*` 5.0.1 精確釘 2.0.0；server 2.3.1 精確依賴 core 2.3.1，兩個一起覆蓋才不會分裂成兩份 core）。studio `src/webmcp` 15 檔 183 項通過。
+  - `tinypool` → `2.1.2`（`oxfmt` 0.41 精確釘 2.1.0；升 oxfmt 會重排整個 repo 的格式，不做）。`oxfmt --check` 正常。
+  - `uuid` → `^11.1.1`（`@google-cloud/storage` 7、`gaxios` 6、`teeny-request` 9 要求 8.x／9.x；這三個只用 `v4()`，uuid 11 仍提供 CJS 的 `v4`）。實測三個套件解析到的 uuid 都是 11.1.1、`v4()` 可用，`Storage` 可建構；gcp-cloud-run `bun test` 104 通過，1 失敗是 Windows 無權建立符號連結（`EPERM`）。
+  - tsx 鎖檔在原本的 `^4.21.0` 範圍內升到 4.23.15（依賴 `esbuild ~0.28.0`），宣告不變。
+- **延後：`esbuild` 0.27.7（GHSA-g7r4-m6w7-qqqr，low）**。剩下的唯一來源是 `tsup` 8.5.1（8.x 最新版，要求 `esbuild ^0.27.0`）；bun 不支援巢狀 override，全域覆蓋會連帶改動 `vite` 用的 0.25.12，修好要升 tsup 9（大版本）。風險：漏洞只在 `esbuild serve` 用 `servedir` 提供檔案時成立（Windows 的反斜線路徑穿越）；tsup 的 dist 沒有 `.serve(` 呼叫，本 repo 也沒有用 esbuild 的開發伺服器。**重看條件**：tsup 出 8.x 修正版或本線決定升 tsup 9；或本 repo 開始使用 `esbuild serve`。
+
+**驗證**（Windows 11 本機，Node 26.12.1、bun 1.4.4；`NODE_OPTIONS=--no-experimental-webstorage --disable-warning=DEP0205`）：
+
+- `bun install --frozen-lockfile`、`bun run build` 通過。
+- core `src/compiler`＋`src/runtime/timeline` 740 項：739 通過；`pageBuild.golden` 的 preview 一項在預設 5 秒逾時，`--testTimeout=60000` 單獨重跑 4 項通過。
+- engine `videoFrameExtractor*`、`extractionCache*`、`frameCapture-authorScan*` 312 通過、27 跳過。
+- producer `fileServer`＋`htmlCompiler`（`bun test`）227 通過，2 失敗是 `EPERM` 符號連結。
+- cli `layout-audit.browser`、`commands/init*`、`commands/capture*`、`tts/synthesize.cache`、`src/browser` 544 通過、21 跳過；失敗的是 `chromeOrphans.process`（check 的 Chrome 起不來，前幾條同一個環境問題）與 `colorGradingShaderStages.browser`（`The browser is already running for …`）。
+- studio-server `history`＋`proxyTranscoder`＋`waveform.file-race`：7 項失敗，5 項是 `EPERM` 符號連結，`snapshotRuns` 一項在 mock 內建符號連結，`undoUncopied` 一項靠 `chmod 0o111`（Windows 無效）；這兩個測試檔與它們的產品檔都不在本次 merge 的改動中。POSIX 版本由 `POSIX security tests` workflow 在 Linux 上跑。
+- aws-lambda `handler.test` 37 通過；`tools/tests` 39 通過；`node scripts/check-studio-copy-dashes.mjs` 通過。
+- 未驗證：producer 整合測試、需要 Chrome 的 `*.chromium.test.ts`。
+- 提交：`LEFTHOOK_EXCLUDE=fallow`，其餘 hook 實跑（`filesize`、`tracked-artifacts`、`lint`、`cli-process-ownership`、`format`、`skills-manifest`、`largefiles`、`typecheck`、`commitlint`）；`fallow` 理由同前幾條。
