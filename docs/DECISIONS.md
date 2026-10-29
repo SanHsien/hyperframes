@@ -797,3 +797,19 @@ fork 專有程式與這批 commit 重疊的只有 17 個檔（上面 5 個衝突
 - aws-lambda `handler.test` 37 通過；`tools/tests` 39 通過；`node scripts/check-studio-copy-dashes.mjs` 通過。
 - 未驗證：producer 整合測試、需要 Chrome 的 `*.chromium.test.ts`。
 - 提交：`LEFTHOOK_EXCLUDE=fallow`，其餘 hook 實跑（`filesize`、`tracked-artifacts`、`lint`、`cli-process-ownership`、`format`、`skills-manifest`、`largefiles`、`typecheck`、`commitlint`）；`fallow` 理由同前幾條。
+
+## 2026-10-29：水位後內容審查與指定 5 個 PR 重掃（不採用產品變更）
+
+**決定**：依 [完整清冊](UPSTREAM_REVIEW_2026-10-29.md) 對 `bf7ebe961..17ffe479d` 的 105 個 commit、PR #6630–#6751 間的 120 筆（91 merged／21 open／8 closed）與 issue #6708、#6721 作出採用／略過裁決；本輪不引進產品，水位代表已審查，不代表已合併。
+
+#6613、#6616、#6617、#6621、#6622 都已 merged，已按目前完整 head 重掃並核對 main commit。#6613 已新增 child_process 全域包裝與 Puppeteer 更新，舊「只動 CI」裁決失效；其餘 CLI 工廠、unattended、help、JSON 契約須成組處理。5 份 patch 對本線的唯讀套用檢查全部失敗，均延後移植，不以此代替產品回歸。
+
+21 筆 open PR 的 head／狀態寫入 baseline `monitored`，避免推進編號水位後漏掉再次換版；清冊保留 105 筆完整 commit SHA、分歧交集與逐項理由。#6721 的 archive key 碰撞在本線存在相同靜態程式路徑，尚未本機重現；#6722 的修正與測試、Windows #6732、已合併的 #6613 另在 ROADMAP 記錄驗收，沒有宣稱已修。
+
+保留本線所有產品／安全／Windows／發布分歧；不修改 npm／ClawHub guard、不操作帳戶、不對任何遠端寫入。三個水位在本機維護 gate 通過後推到 commit `17ffe479dc4283444b6874030a3ccf5a7eb3ea3e`、PR #6751、issue #6721；產品採用另按 ROADMAP 驗收。
+
+## 2026-10-30：接續上游審查，補齊增量與驗收
+
+保留上一輪半成品；指定 5 筆 PR head 均未變。補審新增 2 個 commit（#6750、#6751）、PR #6752／#6754／#6755 與 issue #6753，均不採用產品，完整 SHA、理由與驗收邊界見 [清冊續記](UPSTREAM_REVIEW_2026-10-29.md)。#6696 關閉未合併，#6750／#6751 已合併，追蹤狀態依檢查器契約記 closed；加上新增 3 筆後 monitored 共 24 筆。
+
+水位更新至 commit `4e2a1c215a42c6d262b8c635df9d5edff80e8830`、PR #6755、issue #6753；累計已審 107 個 commit、123 筆 PR、3 筆 issue，產品仍未同步。#6754 的 OAuth／付費生成與 #6753 的非整格起始畫格問題均另待適用條件，不擴張本次實作；保留 Windows、安全、雙語文件與發布 guard。
