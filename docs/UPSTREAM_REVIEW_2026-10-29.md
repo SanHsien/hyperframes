@@ -86,7 +86,7 @@
 | Commit（完整 SHA） | PR／主旨 | 檔數 | 本線分歧交集 | 裁決 |
 | --- | --- | --- | --- | --- |
 | `815ff9ec8d755b52c050943765bf15c9c9b1e88e` | perf(cli): check's craft pass skips clips the runtime has hidden (#6627) | 3 | `packages/cli/src/commands/layout-audit.browser.js` | B：延後／本輪不採用 |
-| `22e6da0233e905c39efc7a522e3a245f38decc2c` | feat(cli): define every command through one factory and test them all as an agent (#6616) | 77 | `packages/cli/src/commands/catalog.ts`<br>`packages/cli/src/commands/clean.ts`<br>`packages/cli/src/commands/init.test.ts`<br>`packages/cli/src/commands/init.ts` | A：延後／本輪不採用 |
+| `22e6da0233e905c39efc7a522e3a245f38decc2c` | feat(cli): define every command through one factory and test them all as an agent (#6616) | 77 | `packages/cli/src/commands/catalog.ts`<br />`packages/cli/src/commands/clean.ts`<br />`packages/cli/src/commands/init.test.ts`<br />`packages/cli/src/commands/init.ts` | A：延後／本輪不採用 |
 | `a54921e0f6c5115b38e83884fc0de21ca6916032` | perf(studio): share video sources and keep frames for timeline thumbnails (#6629) | 13 | 無 | B：延後／本輪不採用 |
 | `b288ce01870a2b4cbae40706b5a04e55e6a2fb71` | fix(cli): snapshot prints a progress line as each frame starts (#6618) | 3 | 無 | B：延後／本輪不採用 |
 | `dd7290ae8383a4161a7271b5702a8f65171ed4ab` | fix(studio): the desktop card says the download opens hyperframes.studio (#6594) | 1 | 無 | E：延後／本輪不採用 |
@@ -95,7 +95,7 @@
 | `3cc296845a5d02500c7e5f5f3b695e5d2e2b9b56` | feat(core): name why a choppy preview window dropped frames (#6634) | 5 | 無 | B：延後／本輪不採用 |
 | `1d97ed24c647553cefb251c59b1bccc48ff4f09c` | perf(producer): the audio mix runs while capture starts its browsers (#6632) | 3 | 無 | B：延後／本輪不採用 |
 | `6cf4b5669703d9416d2ec276accff638d4a89ec6` | fix(engine): a render on Windows opens no console windows (#6613) | 22 | `bun.lock` | B：延後／本輪不採用 |
-| `0bdc128cb589c99147c76a2e9a5eb4a66f4b1be2` | fix(cli): never prompt or auto-install when nobody is at the terminal (#6617) | 31 | `packages/cli/src/commands/catalog.test.ts`<br>`packages/cli/src/commands/catalog.ts`<br>`packages/cli/src/commands/init.ts` | A：延後／本輪不採用 |
+| `0bdc128cb589c99147c76a2e9a5eb4a66f4b1be2` | fix(cli): never prompt or auto-install when nobody is at the terminal (#6617) | 31 | `packages/cli/src/commands/catalog.test.ts`<br />`packages/cli/src/commands/catalog.ts`<br />`packages/cli/src/commands/init.ts` | A：延後／本輪不採用 |
 | `2ddf41eb7d0b3aa7a8ee7d267b5090e852bc215e` | perf(producer): download a remote video once per render (#6637) | 2 | `packages/producer/src/services/htmlCompiler.ts` | B：延後／本輪不採用 |
 | `e6476c2cd57d8e605ca4d25f6c8b4fef6fdb322e` | perf(engine): Macs with a hardware GPU render with more capture workers (#6636) | 6 | `packages/engine/src/index.ts` | B：延後／本輪不採用 |
 | `8e63faf8462d677661fccd9f1f1661ba07575729` | perf(engine): a --gpu render probes the GPU encoders once, not twice (#6638) | 6 | `packages/engine/src/index.ts` | B：延後／本輪不採用 |
@@ -103,12 +103,12 @@
 | `30df5a48af7bc263aa6d09ba19d44a3339338b07` | fix(studio-server): undo and redo on Windows restore a file something holds open (#6628) | 6 | 無 | B：延後／本輪不採用 |
 | `fa137cdfef07943033931c2a27cb8d788e650fc3` | fix(studio): a slow thumbnail job keeps a reader that other clips still decode from (#6643) | 3 | 無 | B：延後／本輪不採用 |
 | `6553b1f6ba75582c0a2d0830cf74a84c434548a0` | perf(producer): --gpu renders encode while frames are captured (#6631) | 3 | 無 | B：延後／本輪不採用 |
-| `5ed694264e9a48aebca0a0f29b94dbd30c2e29d0` | chore: release v0.8.211 (#6623) | 21 | `packages/cli/package.json`<br>`packages/sdk/package.json`<br>`packages/shader-transitions/package.json` | E：延後／本輪不採用 |
+| `5ed694264e9a48aebca0a0f29b94dbd30c2e29d0` | chore: release v0.8.211 (#6623) | 21 | `packages/cli/package.json`<br />`packages/sdk/package.json`<br />`packages/shader-transitions/package.json` | E：延後／本輪不採用 |
 | `3d1c0764a018c5c0412c6273a54c87b6ce532ef7` | fix(cli): check prints a progress line as each pass after overlap begins (#6646) | 3 | 無 | B：延後／本輪不採用 |
 | `e2c91513203ec9be1833840bcfb35183a3dcee8d` | fix(cli): add help [cmd], suggest the closest command or flag, and quiet the nags (#6621) | 11 | 無 | A：延後／本輪不採用 |
 | `7758d9b8fd507384573eb56ba84cc62fb20444c6` | fix(engine): a Windows browser that will not start says where and why (#6647) | 2 | 無 | B：延後／本輪不採用 |
 | `5a0179b88eb3da0e10797288b0c3ce2435e33d66` | fix(studio-server): the render route passes a MOV ProRes profile to the render (#6644) | 4 | 無 | B：延後／本輪不採用 |
-| `0e32ee9b56bd0815c0dc23a1c3fbb81aa8c43a87` | ci: keep the bun cache warm and skip binary downloads in preflight (#6648) | 4 | `.github/workflows/ci.yml`<br>`package.json` | D：延後／本輪不採用 |
+| `0e32ee9b56bd0815c0dc23a1c3fbb81aa8c43a87` | ci: keep the bun cache warm and skip binary downloads in preflight (#6648) | 4 | `.github/workflows/ci.yml`<br />`package.json` | D：延後／本輪不採用 |
 | `a88751d9d68475c84542c2cbc3621742ddfccd76` | fix(studio): a thumbnail reader forgets a start's failures after a minute (#6642) | 2 | 無 | B：延後／本輪不採用 |
 | `7112e4b6bff935dcdcfc475e20b3719d7585251d` | test(studio): wait for the first undo press before the edit that should block the second (#6652) | 1 | 無 | E：延後／本輪不採用 |
 | `ecad35a2254c98b84c9410072908c902eb3f7241` | fix(cli): resume a model download that stalls partway instead of failing (#6649) | 2 | 無 | B：延後／本輪不採用 |
@@ -116,10 +116,10 @@
 | `b6eaed7cae2a92e80955c1b8d40db129cb74230b` | fix(cli): a check page forces a WebGL drawing buffer but keeps no list of 2d canvases (#6650) | 5 | `packages/engine/src/index.ts` | B：延後／本輪不採用 |
 | `85efaece7e11a3e420fb4d93b85230781e805942` | fix(cli): every --json failure answers with one envelope, and --json only where supported (#6622) | 47 | 無 | A：延後／本輪不採用 |
 | `b84762230f03dd182e950df93eb6849b86a12aec` | fix(cli): snapshot warns when a video on screen has no source to read a frame from (#6656) | 2 | 無 | B：延後／本輪不採用 |
-| `2d3033c719bc82ea4a82fe4d7141e0669ab9a14d` | fix(cli): exit 2 for remaining flag validation errors (#6639) | 36 | `packages/cli/src/commands/init.test.ts`<br>`packages/cli/src/commands/init.ts` | A：延後／本輪不採用 |
-| `eba596d026347d2e25a95692d77bd0ca2b830fe3` | chore: release v0.8.212 (#6660) | 22 | `packages/cli/package.json`<br>`packages/sdk/package.json`<br>`packages/shader-transitions/package.json` | E：延後／本輪不採用 |
+| `2d3033c719bc82ea4a82fe4d7141e0669ab9a14d` | fix(cli): exit 2 for remaining flag validation errors (#6639) | 36 | `packages/cli/src/commands/init.test.ts`<br />`packages/cli/src/commands/init.ts` | A：延後／本輪不採用 |
+| `eba596d026347d2e25a95692d77bd0ca2b830fe3` | chore: release v0.8.212 (#6660) | 22 | `packages/cli/package.json`<br />`packages/sdk/package.json`<br />`packages/shader-transitions/package.json` | E：延後／本輪不採用 |
 | `1df31d8717578e31d4c80c194410bbc65783ff6f` | fix(audio): a sound is voice only with a voice-range pitch, judged on the whole clip (#6653) | 15 | 無 | B：延後／本輪不採用 |
-| `437784038b10ef9dc1563a25865acae93cce3b2a` | fix(engine): late-starting MP4 and WebM videos render every frame the preview shows (#6664) | 12 | `packages/engine/src/index.ts`<br>`packages/engine/src/services/videoFrameExtractor.ts` | B：延後／本輪不採用 |
+| `437784038b10ef9dc1563a25865acae93cce3b2a` | fix(engine): late-starting MP4 and WebM videos render every frame the preview shows (#6664) | 12 | `packages/engine/src/index.ts`<br />`packages/engine/src/services/videoFrameExtractor.ts` | B：延後／本輪不採用 |
 | `5a9fdd524b3303c23182176910a28201821819c9` | fix(cli): a late teardown error no longer turns a finished command into exit 1 (#6659) | 3 | 無 | A：延後／本輪不採用 |
 | `4db1214e7df8bb56328da5db75e60eac3f57020c` | test(engine): the multi-chunk encode test gets the 30 s the other ffmpeg tests have (#6663) | 1 | 無 | E：延後／本輪不採用 |
 | `6486d580218a57838b8bd37ab66e200c127acfe4` | test(producer): stall test no longer waits a real second for the progress flush (#6658) | 1 | 無 | E：延後／本輪不採用 |
@@ -131,11 +131,11 @@
 | `5b5633fbbc2e77ee689dfe121c11c4adc4b31777` | fix(cli): website capture ends with what it has instead of running until it is killed (#6662) | 6 | `packages/cli/src/capture/coreExtractionPhase.ts` | B：延後／本輪不採用 |
 | `67c7ec27d9978076137459d471be936a993e22df` | fix(core): bundled fonts in a linked stylesheet or a font shorthand are seen by the bundler (#6665) | 15 | `packages/core/src/compiler/htmlBundler.test.ts` | B：延後／本輪不採用 |
 | `e38585ef5f5ccc831d804020d3014e2899dda204` | perf(studio): timeline thumbnails come back from disk in the next session (#6676) | 6 | 無 | B：延後／本輪不採用 |
-| `c6af88d2e6566a3cc53d7cac8270b903da817606` | chore: release v0.8.213 (#6673) | 21 | `packages/cli/package.json`<br>`packages/sdk/package.json`<br>`packages/shader-transitions/package.json` | E：延後／本輪不採用 |
+| `c6af88d2e6566a3cc53d7cac8270b903da817606` | chore: release v0.8.213 (#6673) | 21 | `packages/cli/package.json`<br />`packages/sdk/package.json`<br />`packages/shader-transitions/package.json` | E：延後／本輪不採用 |
 | `c9017f45f4b8c38e11396a70a3d05d3432c58b48` | feat(core): bake a colour grade into a 3D LUT (.cube) (#6679) | 4 | 無 | B：延後／本輪不採用 |
 | `09b12904748b71ab1777d335f20026d45d6944ca` | feat(core): grade groups grade a whole lane from one hf-color-group (#6678) | 14 | 無 | B：延後／本輪不採用 |
 | `348971c22285421a062ab5df45ad94bb4680bf9c` | fix(studio): a tab's save keeps the newer video version another tab recorded (#6682) | 2 | 無 | B：延後／本輪不採用 |
-| `4719543e972548a261b8354f0a8dada479ae5d93` | chore: release v0.8.214 (#6684) | 21 | `packages/cli/package.json`<br>`packages/sdk/package.json`<br>`packages/shader-transitions/package.json` | E：延後／本輪不採用 |
+| `4719543e972548a261b8354f0a8dada479ae5d93` | chore: release v0.8.214 (#6684) | 21 | `packages/cli/package.json`<br />`packages/sdk/package.json`<br />`packages/shader-transitions/package.json` | E：延後／本輪不採用 |
 | `c569760a7a7c96df6540d53bbfe4670225ae140e` | fix(core): grade groups resolve per composition; freeze frames keep their lane (#6685) | 5 | 無 | B：延後／本輪不採用 |
 | `203a08dd7c1d4856e04e6a1288915a4b6f5fa2f6` | fix(cli): check no longer treats a transparent canvas as covering the frame (#6681) | 2 | `packages/cli/src/commands/layout-audit.browser.js` | B：延後／本輪不採用 |
 | `c2cde2fb624ba5a311615574dff822a41f61ea96` | perf(producer): the audio true-peak check seeks to each segment instead of decoding up to it (#6672) | 4 | 無 | B：延後／本輪不採用 |
@@ -148,7 +148,7 @@
 | `ec10aae54fd3bcadaebb7e935a2b53d788fee074` | fix(cli): beats --json answers with no track when the composition has no music (#6690) | 2 | 無 | B：延後／本輪不採用 |
 | `9f65efb19c3f435ef58f6fc81c6909d2a3920f8a` | fix(cli): check no longer reports outline text as not painted (#6693) | 2 | `packages/cli/src/commands/layout-audit.browser.js` | B：延後／本輪不採用 |
 | `3ca1005a81e76565a69d5874371c857321b66d59` | feat(producer): report which element set the film length (#6689) | 11 | `packages/engine/src/index.ts` | B：延後／本輪不採用 |
-| `9830059bdb08adbab473d059d1b6db2230a5bb15` | fix(engine): downloads refuse hosts that resolve to private addresses (#6571) | 22 | `.github/workflows/ci.yml`<br>`bun.lock`<br>`packages/cli/package.json`<br>`packages/engine/src/index.ts`<br>`packages/engine/src/utils/urlDownloader.test.ts`<br>`packages/producer/src/server.test.ts`<br>`packages/producer/src/services/htmlCompiler.test.ts` | C：延後／本輪不採用 |
+| `9830059bdb08adbab473d059d1b6db2230a5bb15` | fix(engine): downloads refuse hosts that resolve to private addresses (#6571) | 22 | `.github/workflows/ci.yml`<br />`bun.lock`<br />`packages/cli/package.json`<br />`packages/engine/src/index.ts`<br />`packages/engine/src/utils/urlDownloader.test.ts`<br />`packages/producer/src/server.test.ts`<br />`packages/producer/src/services/htmlCompiler.test.ts` | C：延後／本輪不採用 |
 | `2c3d1e07fe63d4a2d67d63a3e29d4ad73e291d8e` | fix(cli): media-treatment finds an area by the name its overview prints (#6675) | 2 | 無 | B：延後／本輪不採用 |
 | `81959201f0acb2e265e4d8c30daa89ffc1c9607d` | fix(cli): a stopped model download resumes on the next run instead of starting over (#6694) | 4 | 無 | B：延後／本輪不採用 |
 | `0620067eb096fee9b6748efb9421d852d540cbf6` | fix(cli): snapshot reads https video in the Desktop app instead of failing at ffprobe (#6699) | 14 | `packages/producer/tests/vignelli-stacking/output/compiled.html` | B：延後／本輪不採用 |
@@ -156,7 +156,7 @@
 | `cfa653af4d0f95d751286fb25c8d38bdb56ef663` | fix(cli): media-treatment --capability preset finds the presets area (#6700) | 2 | 無 | B：延後／本輪不採用 |
 | `a5496b1887950777b78ed5ac2bff3505961cb5fe` | fix(producer): a BeginFrame capture that draws no first frame in 20 s switches to screenshot (#6701) | 6 | 無 | B：延後／本輪不採用 |
 | `4fa5f54519150566b8ef706f60c05ff13c903423` | fix(cli): audio windows read beats off the whole clip; beats snap to the signal and mark silence (#6692) | 7 | 無 | B：延後／本輪不採用 |
-| `1c3fcf4d237d031107baa6a5646b5bb1ee82cc2a` | feat(telemetry): identify signed-in CLI users by their HyperFrames user id, and say signed-in usage is not anonymous (#6703) | 27 | `.github/workflows/ci.yml`<br>`packages/cli/src/commands/init.ts`<br>`skills-manifest.json` | C：延後／本輪不採用 |
+| `1c3fcf4d237d031107baa6a5646b5bb1ee82cc2a` | feat(telemetry): identify signed-in CLI users by their HyperFrames user id, and say signed-in usage is not anonymous (#6703) | 27 | `.github/workflows/ci.yml`<br />`packages/cli/src/commands/init.ts`<br />`skills-manifest.json` | C：延後／本輪不採用 |
 | `6c17659337d50b578c5c54ae716308a13eb2c822` | fix(cli): check waits as long as the --timeout it was given before it counts as idle (#6705) | 4 | 無 | B：延後／本輪不採用 |
 | `f0c5db6ea266a5a96907e66ef762e0f6dd85d623` | fix(cli): capture names the network's proxy when it refuses the connection to the site (#6706) | 2 | 無 | B：延後／本輪不採用 |
 | `11312b359b18c07911615656b95f48c7d8d82fea` | fix(cli): check says a lint error is why the browser pass was skipped (#6709) | 2 | 無 | B：延後／本輪不採用 |
@@ -165,7 +165,7 @@
 | `bb4deb8014a8457425c2e6e4a8619969514824ea` | fix(cli): an unknown command like search says which command does that (#6710) | 3 | 無 | B：延後／本輪不採用 |
 | `49e0312300d6c049b19eb8435930f980621a993f` | fix(ci): skills sync steps past the five hidden ClawHub versions blocking it (#6713) | 2 | 無 | D：延後／本輪不採用 |
 | `cd003e201051317234598bcf1c70cfed4770613f` | perf(engine): size render workers from measured heap and the container's CPU quota (#6641) | 4 | 無 | B：延後／本輪不採用 |
-| `17f5d67643ce4a1c5d0d3249dc91f7a19a4e9c0b` | chore: release v0.8.215 (#6719) | 21 | `packages/cli/package.json`<br>`packages/sdk/package.json`<br>`packages/shader-transitions/package.json` | E：延後／本輪不採用 |
+| `17f5d67643ce4a1c5d0d3249dc91f7a19a4e9c0b` | chore: release v0.8.215 (#6719) | 21 | `packages/cli/package.json`<br />`packages/sdk/package.json`<br />`packages/shader-transitions/package.json` | E：延後／本輪不採用 |
 | `be05c86932be215ec70621dc568af96415555fa0` | perf(engine): encode high quality with the x264 fast preset (#6640) | 3 | 無 | B：延後／本輪不採用 |
 | `98a28cc4b2919f1c8418d2cb61bafc66ec9ccb31` | fix(cli): the lint summary points at hyperframes lint, not a flag only render takes (#6723) | 2 | 無 | B：延後／本輪不採用 |
 | `cf15892425245da96dc43d858a7478031533d2f1` | fix(cli): a snapshot still shows what playback shows, whatever other times are asked for (#6720) | 5 | 無 | B：延後／本輪不採用 |
@@ -176,18 +176,18 @@
 | `74f3234736ad87568831ed51c34a7e289dc668e6` | ci: one regression shard writes the test image cache (#6729) | 3 | 無 | D：延後／本輪不採用 |
 | `48ba0e5b2bf91fc816adc0a7769d7344091aa5d7` | fix(player): iPhone Safari keeps every take's sound after the first seconds of an edit (#6724) | 8 | 無 | B：延後／本輪不採用 |
 | `5d437d5eecd65f05daa4ff451ebb85b71f88fdb9` | docs(cli): say which audio probes run once per file (#6731) | 3 | `skills-manifest.json` | E：延後／本輪不採用 |
-| `6df754fbf3289ee0dc19e123e0628cc69218e518` | chore: release v0.8.216 (#6735) | 21 | `packages/cli/package.json`<br>`packages/sdk/package.json`<br>`packages/shader-transitions/package.json` | E：延後／本輪不採用 |
+| `6df754fbf3289ee0dc19e123e0628cc69218e518` | chore: release v0.8.216 (#6735) | 21 | `packages/cli/package.json`<br />`packages/sdk/package.json`<br />`packages/shader-transitions/package.json` | E：延後／本輪不採用 |
 | `eab6541f5ba017aa7b8bb53263a40105ace6168e` | feat(cli): a feedback report names why the last check failed (#6717) | 6 | 無 | B：延後／本輪不採用 |
 | `94203ad431678f85e20a2de17852f7f9c5e1ba04` | fix(cli): snapshot says FFmpeg was stopped when it exits 255 with no output (#6718) | 2 | 無 | B：延後／本輪不採用 |
 | `71f716a91bc625e9243c5f25c194a114bb555668` | fix(core): telemetry redaction covers folders with spaces in any script (#6734) | 2 | 無 | C：延後／本輪不採用 |
 | `0da46832ef9ddaa0e4f6941b02f066ae7c0b53dc` | fix(cli): a failed render's code comes only from the producer's list of safe codes (#6737) | 5 | `packages/producer/src/server.ts` | B：延後／本輪不採用 |
 | `e1a8c7f1730149a81d5aa5863b963487a2e3955e` | fix(engine): long films show progress during the effect check and never wait minutes on it (#6697) | 5 | 無 | B：延後／本輪不採用 |
-| `1a80b5407d6383be0922245389d93d94a3de86a0` | fix(cli): allow-occlusion on the covering element silences text_occluded (#6741) | 2 | `packages/cli/src/commands/layout-audit.browser.js`<br>`packages/cli/src/commands/layout-audit.browser.test.ts` | B：延後／本輪不採用 |
+| `1a80b5407d6383be0922245389d93d94a3de86a0` | fix(cli): allow-occlusion on the covering element silences text_occluded (#6741) | 2 | `packages/cli/src/commands/layout-audit.browser.js`<br />`packages/cli/src/commands/layout-audit.browser.test.ts` | B：延後／本輪不採用 |
 | `943849025a4d44d740ef94414cc8f422dbad2a52` | feat(cli): a render that finds a file missing says which kind of file, never its path (#6742) | 4 | 無 | B：延後／本輪不採用 |
 | `93f3d3dcbbcc1820b7827d2bd688d61eb334c693` | fix(core): the preview's scene window settles when a scene can't unmount instead of hanging the page (#6740) | 2 | 無 | B：延後／本輪不採用 |
-| `22b53c011505a4b22fcfa603a1037ebd942087cf` | fix(engine): late-starting videos play to their last frame (#6736) | 4 | `packages/engine/src/services/videoFrameExtractor.test.ts`<br>`packages/engine/src/services/videoFrameExtractor.ts` | B：延後／本輪不採用 |
+| `22b53c011505a4b22fcfa603a1037ebd942087cf` | fix(engine): late-starting videos play to their last frame (#6736) | 4 | `packages/engine/src/services/videoFrameExtractor.test.ts`<br />`packages/engine/src/services/videoFrameExtractor.ts` | B：延後／本輪不採用 |
 | `838f8782c4a96913d1627cd344be8431e7c44019` | fix(cli): a project .env only sets the CLI's own settings (#6565) | 6 | 無 | C：延後／本輪不採用 |
-| `a3ff1c490204b25d9e89bd2774e4c479a53c48c8` | revert(engine): late-starting videos play to their last frame (#6746) | 4 | `packages/engine/src/services/videoFrameExtractor.test.ts`<br>`packages/engine/src/services/videoFrameExtractor.ts` | B：延後／本輪不採用 |
+| `a3ff1c490204b25d9e89bd2774e4c479a53c48c8` | revert(engine): late-starting videos play to their last frame (#6746) | 4 | `packages/engine/src/services/videoFrameExtractor.test.ts`<br />`packages/engine/src/services/videoFrameExtractor.ts` | B：延後／本輪不採用 |
 | `558097ed70002ce63d0966dbd99f4ed7725e855e` | fix(cli): check no longer calls a redrawn WebGL canvas a dead stretch (#6749) | 5 | 無 | B：延後／本輪不採用 |
 | `17ffe479dc4283444b6874030a3ccf5a7eb3ea3e` | feat(studio): a preview reload that gives up on the runtime says how far the page got (#6747) | 2 | 無 | B：延後／本輪不採用 |
 
