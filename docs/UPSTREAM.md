@@ -120,7 +120,7 @@ Baseline 代表「已審查」，不代表「全部已合併」。
 
 - commit 審查水位：`17ffe479dc4283444b6874030a3ccf5a7eb3ea3e`（水位後 105 筆）；PR 水位 #6751（新增 120 筆）；issue 水位 #6721（新增 2 筆）。
 - #6613、#6616、#6617、#6621、#6622 目前都已合併，依完整 head 重掃，裁決與主線 commit 見 [本輪清冊](UPSTREAM_REVIEW_2026-10-29.md)。本輪所有產品變更均未採用，不以審查水位冒充同步版本。
-- 21 筆 open PR 使用 baseline `monitored` 記錄 head 與 open／draft 狀態，後續換版或合併會再報；本線需要的實作與驗收只列於 [ROADMAP](../ROADMAP.md)。
+- 21 筆 open PR 使用 baseline `monitored` 記錄 head 與 open／draft 狀態，後續換版或合併會再報；本線需要的實作與驗收只列於 [ROADMAP](https://github.com/SanHsien/hyperframes/blob/main/ROADMAP.md)。
 
 ## 2026-10-30：接續半成品並補審最新增量
 
