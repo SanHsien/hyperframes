@@ -813,3 +813,11 @@ fork 專有程式與這批 commit 重疊的只有 17 個檔（上面 5 個衝突
 保留上一輪半成品；指定 5 筆 PR head 均未變。補審新增 2 個 commit（#6750、#6751）、PR #6752／#6754／#6755 與 issue #6753，均不採用產品，完整 SHA、理由與驗收邊界見 [清冊續記](UPSTREAM_REVIEW_2026-10-29.md)。#6696 關閉未合併，#6750／#6751 已合併，追蹤狀態依檢查器契約記 closed；加上新增 3 筆後 monitored 共 24 筆。
 
 水位更新至 commit `4e2a1c215a42c6d262b8c635df9d5edff80e8830`、PR #6755、issue #6753；累計已審 107 個 commit、123 筆 PR、3 筆 issue，產品仍未同步。#6754 的 OAuth／付費生成與 #6753 的非整格起始畫格問題均另待適用條件，不擴張本次實作；保留 Windows、安全、雙語文件與發布 guard。
+
+## 2026-10-30：最小移植上游 #6722／#6732（推翻同日清冊的「延後」裁決）
+
+**決定**：採用上游 open PR [#6722](https://github.com/heygen-com/hyperframes/pull/6722)（head `9b849c06709226bb69b2e47ad32c8be8b260a11e`）與 [#6732](https://github.com/heygen-com/hyperframes/pull/6732)（head `a07b25ea9214f89ab2f6ce566d63257feaa5509d`）的修正，程式改動與上游 `gh pr diff` 逐行相同。[清冊](UPSTREAM_REVIEW_2026-10-29.md) 對這兩筆的「延後」裁決以本段為準。
+
+- #6722：`packages/cli/src/utils/publishProject.ts` 的 `usedArchivePaths` 改由 `fileContents.keys()` 初始化，外部檔案不再覆蓋 `_ext/` 內既有同名檔；新測試 `publishProject.collision.test.ts` 涵蓋記憶體／磁碟 staging、重複引用與既有 `_N` 檔保留。
+- #6732：`packages/cli/src/capture/contactSheet.ts` 改用 `node:path` 的 `basename` 取檔名，修 Windows 反斜線路徑被整條當成標籤；`contactSheet.test.ts` 補 Windows 路徑案例。`docs/guides/export-and-share.mdx` 同步上游 4 行說明。
+- 驗證：`npx vitest run src/utils/publishProject src/capture/contactSheet` 90 通過、3 跳過；`tools/dev_check.ps1` 綠。上游兩筆仍 open，合併後隨 commit 軸審查時視為已等價。
