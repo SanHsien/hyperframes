@@ -5,13 +5,11 @@
 
 ## 現況
 
-HyperFrames 將 HTML、CSS 與動畫渲染為影片，本線保留 Windows 渲染驗收與已登記安全強化（[README](README.md)、[FORK](FORK.md)）。2026-10-29 `gh` 查詢顯示 CI、Windows render verification、POSIX security tests、CodeQL 最近成功，Dependabot 為 0，但 Code scanning 仍有 2 筆，嚴重度為 high 與 medium，#194 `js/insecure-temporary-file`（`packages/core/src/atomicFile.ts`）、#195 `js/file-access-to-http`（`packages/cli/src/capture/publicNetwork.ts`）尚無裁決（2026-10-29 `gh` 查詢）。截至 2026-10-30 已審水位後 107 個 commit、123 筆 PR、3 筆 issue，並重掃 #6613、#6616、#6617、#6621、#6622；已移植 #6722（封裝外部素材撞名保護）與 #6732（Windows SVG contact sheet basename）兩筆最小修正，其餘未採用產品變更。24 筆 PR 已釘住 head／狀態（21 open／draft、3 closed），詳見 [審查清冊](docs/UPSTREAM_REVIEW_2026-10-29.md)；舊報告的掃描歸零不代表目前狀態。
+HyperFrames 將 HTML、CSS 與動畫渲染為影片，本線保留 Windows 渲染驗收與已登記安全強化（[README](README.md)、[FORK](FORK.md)）。2026-10-31 查詢顯示 CI、Windows render verification、POSIX security tests、CodeQL 最近成功，Dependabot 為 0；Code scanning 2 筆 open 告警（#194 `js/insecure-temporary-file`、#195 `js/file-access-to-http`）已於 2026-10-31 完成逐筆資料流辨識，確認均屬測試常數與素材下載之誤報，裁決詳見 [維護決策](docs/DECISIONS.md)。截至 2026-10-30 已審水位後 107 個 commit、123 筆 PR、3 筆 issue，並重掃 #6613、#6616、#6617、#6621、#6622；已移植 #6722（封裝外部素材撞名保護）與 #6732（Windows SVG contact sheet basename）兩筆最小修正，其餘未採用產品變更。24 筆 PR 已釘住 head／狀態（21 open／draft、3 closed），詳見 [審查清冊](docs/UPSTREAM_REVIEW_2026-10-29.md)；舊報告的掃描歸零不代表目前狀態。
 
 ## 近期：可以直接動手
 
-| 項目                          | 為什麼                                     | 驗收方式                                                                                                                                                                                    | 建議執行者  | 證據                                                     |
-| ----------------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | -------------------------------------------------------- |
-| 逐筆辨識新 Code scanning 告警 | 最新快照有未分類的告警，舊裁決不能直接套用 | 查 `gh api repos/SanHsien/hyperframes/code-scanning/alerts?state=open --paginate`，取規則、檔案、位置、分析 SHA；真缺陷須有修前失敗／修後通過案例，誤報須有逐筆資料流證據，不能批次 dismiss | Claude Opus | 2026-10-29 `gh` 查詢；docs/DECISIONS.md 既有 CodeQL 裁決 |
+（目前無。待條件成立後自中期待辦移入，或於每週上游審查時新增。）
 
 ## 中期：等條件成立再做
 

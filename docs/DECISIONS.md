@@ -821,3 +821,15 @@ fork 專有程式與這批 commit 重疊的只有 17 個檔（上面 5 個衝突
 - #6722：`packages/cli/src/utils/publishProject.ts` 的 `usedArchivePaths` 改由 `fileContents.keys()` 初始化，外部檔案不再覆蓋 `_ext/` 內既有同名檔；新測試 `publishProject.collision.test.ts` 涵蓋記憶體／磁碟 staging、重複引用與既有 `_N` 檔保留。
 - #6732：`packages/cli/src/capture/contactSheet.ts` 改用 `node:path` 的 `basename` 取檔名，修 Windows 反斜線路徑被整條當成標籤；`contactSheet.test.ts` 補 Windows 路徑案例。`docs/guides/export-and-share.mdx` 同步上游 4 行說明。
 - 驗證：`npx vitest run src/utils/publishProject src/capture/contactSheet` 90 通過、3 跳過；`tools/dev_check.ps1` 綠。上游兩筆仍 open，合併後隨 commit 軸審查時視為已等價。
+
+## 2026-10-31：逐筆辨識 Code scanning 告警 #194 與 #195
+
+**決定**：依 2026-10-31 `gh api repos/SanHsien/hyperframes/code-scanning/alerts?state=open --paginate` 查詢結果，本 fork 僅存之 2 筆 open Code scanning 告警（嚴重度為 high 與 medium，分析 commit `8320c0a7ae7ac6ccebd5c1c7cc3791276548ea97`）完成逐筆資料流辨識，兩筆皆為誤報（false positive），不修改產品與測試程式。
+
+### 告警逐筆資料流辨識與裁決
+
+| 警示 | 規則 | 嚴重度 | 檔案與位置 | 分析 SHA | 裁決 | 資料流證據與理由 |
+| --- | --- | --- | --- | --- | --- | --- |
+| #194 | `js/insecure-temporary-file` | high (warning) | `packages/core/src/atomicFile.ts:84` | `8320c0a7ae7ac6ccebd5c1c7cc3791276548ea97` | **誤報（False Positive）** | **Taint Source** 為單元測試 `packages/cli/src/capture/index.watchdog.test.ts:84` 中寫死之測試目錄字串 `outputDir: "/tmp/hf-capture-test-no-webgl"`。<br><br>**Dataflow Sink** 為 `packages/core/src/atomicFile.ts:84` 的 `createDirectly` 中的 `operations.openSync(filePath, "wx")`。<br><br>**判定理由**：<br>1. CodeQL 跨檔案污點分析追蹤了測試檔中的字串常數 `"/tmp/..."` 流入 `captureWebsite(options)`，一路傳遞至核心工具函式 `createFileAtomically`。<br>2. 該測試檔本身透過 `vi.mock("./captureAttempt.js", ...)` 完全 mock 了實際擷取作業，在測試執行期根本未曾接觸磁碟或呼叫 `createFileAtomically`。<br>3. `createFileAtomically` 為專案檔案原子建立工具，使用 Node.js 的 `"wx"` 旗標（POSIX `O_CREAT \| O_EXCL`）進行排他性建立，若檔案已存在則直接拋出 `EEXIST`，且產品呼叫端皆建立於專案工作區目錄內，絕非在作業系統共用暫存目錄建立不安全檔案。<br>4. 此警示純屬靜態分析跨越測試邊界所產生的虛假資料流，裁決為誤報。 |
+| #195 | `js/file-access-to-http` | medium (warning) | `packages/cli/src/capture/publicNetwork.ts:260-267` | `8320c0a7ae7ac6ccebd5c1c7cc3791276548ea97` | **誤報（False Positive）** | **Taint Source** 為 `packages/cli/src/commands/capture/video.ts:166` 的 `manifest = JSON.parse(readFileSync(manifestPath, "utf-8"))`。<br><br>**Dataflow Sink** 為 `packages/cli/src/capture/publicNetwork.ts:260-267` 中以 `http.request` / `https.request` 發起的對外網路連線。<br><br>**判定理由**：<br>1. `hyperframes capture video --project <dir>` 指令之目的為依據先前 capture 產生的本機資訊檔 `video-manifest.json`，下載頁面中所參照之影片素材至本機。<br>2. 程式讀取本機清單檔案僅為解析影片之遠端目標 URL（`entry.url`），並將其傳入 `streamToFile` -> `safeFetch` -> `publicRequest` 下載。<br>3. `publicRequest` 具有嚴格邊界保護：明確限制僅允許 `GET` 與 `HEAD` 請求，且禁止攜帶任何 body（`if (!["GET", "HEAD"].includes(method) \|\| init.body != null) throw ...`），標頭亦重置過濾。<br>4. 連線過程完全未將任何本機檔案內容或敏感資料作為 payload 送出，讀取檔案僅作為下載目標 URL 來源，屬於刻意設計之素材下載功能，裁決為誤報。 |
+
