@@ -1,31 +1,16 @@
 {
   "repo": "https://github.com/heygen-com/hyperframes.git",
   "branch": "main",
-  "reviewed_through": "4e2a1c215a42c6d262b8c635df9d5edff80e8830",
-  "reviewed_date": "2026-10-30",
-  "reviewed_pr_through": 6755,
-  "reviewed_issue_through": 6753,
+  "reviewed_through": "036e41fa09e6670f155fa3f2c361b58b8ed77e02",
+  "reviewed_date": "2026-11-02",
+  "reviewed_pr_through": 7014,
+  "reviewed_issue_through": 6995,
   "decision_log": "docs/DECISIONS.md",
   "monitored": [
     {
-      "item": "pr#6670",
-      "head": "8fe0584bde1ba5853462a49452fbb5341c3b4cc1",
-      "state": "open"
-    },
-    {
-      "item": "pr#6671",
-      "head": "919df04fc067f98ece0cc3b7b1057cf3bf1d054f",
-      "state": "open"
-    },
-    {
-      "item": "pr#6687",
-      "head": "752f5308009fbf1af008d422201ca5d25c1b952f",
-      "state": "open"
-    },
-    {
       "item": "pr#6688",
       "head": "5a84b804ce11473fb3f861b7c23828392fbb8d95",
-      "state": "open"
+      "state": "closed"
     },
     {
       "item": "pr#6695",
@@ -38,33 +23,13 @@
       "state": "closed"
     },
     {
-      "item": "pr#6702",
-      "head": "b9d040c73b15a7bc90a2c14748d5cc7b7e663cca",
-      "state": "open"
-    },
-    {
       "item": "pr#6704",
       "head": "f3d895e450f1cb15dba73298ed92a4a339b65cfb",
       "state": "open"
     },
     {
-      "item": "pr#6711",
-      "head": "7e90b50392c38c373a063a0679d43ba8f7bb750c",
-      "state": "open"
-    },
-    {
       "item": "pr#6714",
       "head": "6c09af3980ed84a27f0493aec10c283769a26758",
-      "state": "open"
-    },
-    {
-      "item": "pr#6715",
-      "head": "df71defeda793f833a9d372b2ea95b163a445389",
-      "state": "open"
-    },
-    {
-      "item": "pr#6716",
-      "head": "411eb179be7a3623c9b68410eb5441264b3131d1",
       "state": "open"
     },
     {
@@ -85,12 +50,12 @@
     {
       "item": "pr#6738",
       "head": "cc982826ea7e0c92657bc4e79221e591cdc15adc",
-      "state": "draft"
+      "state": "closed"
     },
     {
       "item": "pr#6739",
       "head": "444b9b92be2f373774de12ad8eac4d0ff420243e",
-      "state": "open"
+      "state": "closed"
     },
     {
       "item": "pr#6745",
@@ -99,32 +64,307 @@
     },
     {
       "item": "pr#6748",
-      "head": "313225ca54fdd7561852c322df1d624a87a16172",
+      "head": "83fe9bc76239f360bfa745489fbb39e278bf5376",
       "state": "open"
-    },
-    {
-      "item": "pr#6750",
-      "head": "d68e91133e5af02ef4df95349c8964f458db3b6e",
-      "state": "closed"
-    },
-    {
-      "item": "pr#6751",
-      "head": "556008794903a3ab198d858338d28d3a0a2514f1",
-      "state": "closed"
     },
     {
       "item": "pr#6752",
       "head": "fe31500eec770fa06030831a877735ab43ecd71a",
+      "state": "closed"
+    },
+    {
+      "item": "pr#6761",
+      "head": "6929fdaaea4e669f3abc69420f6f08f3064c21cc",
       "state": "open"
     },
     {
-      "item": "pr#6754",
-      "head": "56903e395795258e3df2835a4befcfed2e06bc4c",
+      "item": "pr#6765",
+      "head": "9052b7d6e3510dd3bf1d8cb00f8d79e48c474475",
+      "state": "closed"
+    },
+    {
+      "item": "pr#6778",
+      "head": "cb20514ce9166c45903bf27a9a8d6c1df00c0a20",
+      "state": "closed"
+    },
+    {
+      "item": "pr#6786",
+      "head": "e0c1e238362a995ee1bdd5f828a51cc1d87ab4a0",
+      "state": "closed"
+    },
+    {
+      "item": "pr#6787",
+      "head": "93d52593d13c1ac624a807ff4c8c8c5e7daa0ad6",
+      "state": "closed"
+    },
+    {
+      "item": "pr#6788",
+      "head": "e1f6f0172663a74985e53a0b67b845c5aaf65a89",
+      "state": "closed"
+    },
+    {
+      "item": "pr#6789",
+      "head": "a9de586cfb5ef16a930364ba1c62c65a7db9a25a",
+      "state": "closed"
+    },
+    {
+      "item": "pr#6806",
+      "head": "750b464ab6ecdde9faf07ad74f5ad4566d4eec63",
+      "state": "open"
+    },
+    {
+      "item": "pr#6810",
+      "head": "82696b7c37e5c2bc87b6c918ea94b3dcd70c7752",
+      "state": "open"
+    },
+    {
+      "item": "pr#6813",
+      "head": "cb7ac39dc8653ec45490e0ee4e0204e9bb4643ed",
+      "state": "closed"
+    },
+    {
+      "item": "pr#6816",
+      "head": "224dba41b1b1200f2934d1f2798850b6f0315d4c",
+      "state": "open"
+    },
+    {
+      "item": "pr#6842",
+      "head": "60264653a7082d1d6f228596ce3aebb1f6fc51ef",
       "state": "draft"
     },
     {
-      "item": "pr#6755",
-      "head": "f6c09ce86c447c6337e54b79cb509799f42d77b2",
+      "item": "pr#6857",
+      "head": "0ef576e57ae4a9a6e9ac0ceb5646fe3b80252a42",
+      "state": "open"
+    },
+    {
+      "item": "pr#6858",
+      "head": "853620027b9df50aeb7453be8bf4b61430e20931",
+      "state": "open"
+    },
+    {
+      "item": "pr#6861",
+      "head": "070e6b9134a43e1ea6a39a9e33085b6110aca56e",
+      "state": "draft"
+    },
+    {
+      "item": "pr#6863",
+      "head": "bd1e27efcabd4584c02798629e05d1b3e1ec1fda",
+      "state": "open"
+    },
+    {
+      "item": "pr#6868",
+      "head": "1edbcdefdb602e72acf5b9994fdb90686601b476",
+      "state": "open"
+    },
+    {
+      "item": "pr#6872",
+      "head": "a4771eea870567a19eca100679860804813ffa19",
+      "state": "open"
+    },
+    {
+      "item": "pr#6873",
+      "head": "b5ab72f5e48b56781731b269fdfaa1f21900eea4",
+      "state": "closed"
+    },
+    {
+      "item": "pr#6875",
+      "head": "9bf2f73301626c79dafe6ead2f2a336fa29c87ce",
+      "state": "open"
+    },
+    {
+      "item": "pr#6877",
+      "head": "a5d4158cbad52b14d20183039eab5a30495e68cb",
+      "state": "closed"
+    },
+    {
+      "item": "pr#6878",
+      "head": "173e9033da514a31a4717714f060e78adfd0e3c2",
+      "state": "open"
+    },
+    {
+      "item": "pr#6880",
+      "head": "eb05ea3799499b5cff10e45843d95f8258a163dc",
+      "state": "open"
+    },
+    {
+      "item": "pr#6883",
+      "head": "e429b50966943635b289cda062f52fcd67f883b0",
+      "state": "open"
+    },
+    {
+      "item": "pr#6890",
+      "head": "e4bdfa3a45c38bcec354cc869813a8d4c8b20672",
+      "state": "open"
+    },
+    {
+      "item": "pr#6896",
+      "head": "2e921c6938ddafa591cfe13d37d3068d919d5883",
+      "state": "open"
+    },
+    {
+      "item": "pr#6900",
+      "head": "004ba4763187d351da64087a7f1a8a00202c49d4",
+      "state": "open"
+    },
+    {
+      "item": "pr#6904",
+      "head": "843a29d0aa44bed346fbf425e25339dbeec9beb3",
+      "state": "open"
+    },
+    {
+      "item": "pr#6913",
+      "head": "357ef9fc037f6100e5b1eb506ab48f9500ee0d0d",
+      "state": "open"
+    },
+    {
+      "item": "pr#6919",
+      "head": "8d5201ba9d603b95ee7ae6d9b08da38773ea8f4d",
+      "state": "open"
+    },
+    {
+      "item": "pr#6928",
+      "head": "e9c0b30f28ed635fee61db2d0099d4e67d514bb0",
+      "state": "open"
+    },
+    {
+      "item": "pr#6934",
+      "head": "a53b81375a8f3b1261da06add1840013109ffcd2",
+      "state": "open"
+    },
+    {
+      "item": "pr#6935",
+      "head": "b90c658d21a57cab1df939f5614aa8a9861ecd3d",
+      "state": "open"
+    },
+    {
+      "item": "pr#6939",
+      "head": "d60b48292bba10c9f4987e74a253c5a305703d07",
+      "state": "closed"
+    },
+    {
+      "item": "pr#6945",
+      "head": "60c4bfbff8bf4a0f26cc660d53f812fdbe7c4ee3",
+      "state": "open"
+    },
+    {
+      "item": "pr#6947",
+      "head": "8bf6fd3684484a39a09462bdf03ce6a2869b889e",
+      "state": "open"
+    },
+    {
+      "item": "pr#6949",
+      "head": "6811e3167de17777d0cb2acb4c5b27dc58168414",
+      "state": "open"
+    },
+    {
+      "item": "pr#6955",
+      "head": "2f42de39e0962ce50aed8d337a5ec44f4e616e2f",
+      "state": "open"
+    },
+    {
+      "item": "pr#6963",
+      "head": "f9418f549f92ae3dc314487ac10e7ed4e40f7a2c",
+      "state": "open"
+    },
+    {
+      "item": "pr#6965",
+      "head": "252d9ef4da7bc43e23d6a75cbd42fa3da845b518",
+      "state": "closed"
+    },
+    {
+      "item": "pr#6967",
+      "head": "8829228be61d899bfc6e7331cfc5bdb8ce1778d6",
+      "state": "open"
+    },
+    {
+      "item": "pr#6968",
+      "head": "d4bd4f45303052da3c1896832de6fffdce4ea6da",
+      "state": "open"
+    },
+    {
+      "item": "pr#6972",
+      "head": "dcc3da710cb6c7d0e9098813be2e4c911f44afce",
+      "state": "open"
+    },
+    {
+      "item": "pr#6975",
+      "head": "c0468ee7ae5d07969c80cd8b271079b2c80c8c4f",
+      "state": "open"
+    },
+    {
+      "item": "pr#6983",
+      "head": "51da80f814398acff1ab3cf8345ffa8d0be99870",
+      "state": "open"
+    },
+    {
+      "item": "pr#6988",
+      "head": "af4f85471b1690c33f5208d2b95d2eea8f284bf4",
+      "state": "open"
+    },
+    {
+      "item": "pr#6990",
+      "head": "cdb503eb3d964edb6dae6bf38b20506d26ddd707",
+      "state": "open"
+    },
+    {
+      "item": "pr#6991",
+      "head": "c1b5a2beb7342567e4ce71fc459b30d79df3f000",
+      "state": "open"
+    },
+    {
+      "item": "pr#6992",
+      "head": "8301df1492a89fae448f28c8402ab7fdd2d6fb7d",
+      "state": "open"
+    },
+    {
+      "item": "pr#6993",
+      "head": "eb28cfc25bfd8b76b7740ac82d9bd7580bf27c1d",
+      "state": "draft"
+    },
+    {
+      "item": "pr#7000",
+      "head": "bf74cbbbebeeb77c8c0f6aa9da2bb2f22af20b99",
+      "state": "open"
+    },
+    {
+      "item": "pr#7001",
+      "head": "393b80aee57285427cf7e5d6e27556a08f6b7be2",
+      "state": "closed"
+    },
+    {
+      "item": "pr#7003",
+      "head": "c15936cabcde65cbefec460ef7d2e29b23da974d",
+      "state": "open"
+    },
+    {
+      "item": "pr#7007",
+      "head": "39aeaaa9f530f2ba7182e5a3852c2f94e17f8447",
+      "state": "open"
+    },
+    {
+      "item": "pr#7008",
+      "head": "86188c1bb023c413ee67d20ac8b5d987f2393f05",
+      "state": "draft"
+    },
+    {
+      "item": "pr#7009",
+      "head": "384a823df9192bae03c6fdc66ce4b882926f7a30",
+      "state": "open"
+    },
+    {
+      "item": "pr#7011",
+      "head": "184448a715ca24c76ba3c59fc1d59e6cb2c0023d",
+      "state": "open"
+    },
+    {
+      "item": "pr#7013",
+      "head": "7e1587f1a5f67f701fa72ede95a9bf2d083865ef",
+      "state": "draft"
+    },
+    {
+      "item": "pr#7014",
+      "head": "2987c132791bebda62cef5e5dd3303be02b698dd",
       "state": "open"
     }
   ]

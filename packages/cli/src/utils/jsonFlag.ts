@@ -8,15 +8,15 @@ export interface JsonFlagIO {
 }
 
 // PowerShell 5.1 writes redirected files as UTF-16LE with a BOM and pipes UTF-8 with one.
-function decode(bytes: Buffer): string {
+export function decodeJsonText(bytes: Buffer): string {
   if (bytes[0] === 0xff && bytes[1] === 0xfe)
     return bytes.toString("utf16le").replace(/^\uFEFF/, "");
   return bytes.toString("utf8").replace(/^\uFEFF/, "");
 }
 
 const defaultIO: JsonFlagIO = {
-  readFile: (path) => decode(readFileSync(resolve(path))),
-  readStdin: () => decode(readFileSync(0)),
+  readFile: (path) => decodeJsonText(readFileSync(resolve(path))),
+  readStdin: () => decodeJsonText(readFileSync(0)),
 };
 
 export class JsonFlagReadError extends Error {
@@ -40,7 +40,10 @@ function isJsonScalar(text: string): boolean {
 const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
 export function readJsonFlagText(value: string, partialIo: Partial<JsonFlagIO> = {}): string {
-  const io = { ...defaultIO, ...partialIo };
+  const io: JsonFlagIO = {
+    readFile: partialIo.readFile ?? defaultIO.readFile,
+    readStdin: partialIo.readStdin ?? defaultIO.readStdin,
+  };
   const trimmed = value.trim();
   if (trimmed.startsWith("{") || trimmed.startsWith("[") || isJsonScalar(trimmed)) return value;
   const source = trimmed === "-" ? "stdin" : value;

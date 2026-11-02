@@ -126,3 +126,8 @@ Baseline 代表「已審查」，不代表「全部已合併」。
 
 - 三軸水位為 commit `4e2a1c215a42c6d262b8c635df9d5edff80e8830`、PR #6755、issue #6753。累計 107 個 commit、123 筆 PR、3 筆 issue 均有裁決，本輪仍未採用產品。
 - 指定 5 筆 PR head 不變；#6696／#6750／#6751 狀態更新，另新增 3 筆追蹤，baseline monitored 共 24 筆。續查證據與完整 SHA 見 [清冊續記](UPSTREAM_REVIEW_2026-10-29.md)。
+
+## 2026-11-02：追到 `cd5984261`，移植五筆小修正
+
+- 三軸水位為 commit `036e41fa09e6670f155fa3f2c361b58b8ed77e02`、PR #7014、issue #6995。累計本輪 195 個 commit、246 筆 PR、13 筆 issue 均有裁決，裁決與完整 SHA 見 [2026-11-02 清冊](UPSTREAM_REVIEW_2026-11-02.md)。
+- 採用 #6771、#6605、#6611、#6831、#6800；其餘產品延後，baseline monitored 共 72 筆。
