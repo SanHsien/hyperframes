@@ -844,3 +844,9 @@ fork 專有程式與這批 commit 重疊的只有 17 個檔（上面 5 個衝突
 **monitored**：11 筆已 merged 的舊項移除（內容在 commit 軸），其餘舊項重釘現況，新增 open／draft 與非機械的 closed 未合併 PR，共 72 筆；機器重生的 `chore(codegen)` 與版號 PR 不釘。46 筆 open／draft 與 22 筆 closed 的目前 head 已掃隱藏內容（判準八），commit 範圍的 26649 個新增行同樣掃描，無命中。
 
 **驗收邊界**：`npx vitest run` 於 `packages/cli`、`packages/studio-server`、`packages/core/src/figma` 的受影響檔全綠；未跑完整產品測試或渲染回歸。水位代表已審查，不代表已同步；其餘延後項由 [ROADMAP](https://github.com/SanHsien/hyperframes/blob/main/ROADMAP.md) 的「分批採用」承接。
+
+## 2026-11-03：`lefthook` 的 `typecheck` 改用根目錄 TypeScript（取代 2026-10-27 的更正註記）
+
+**決定**：`lefthook.yml` 的 `typecheck` 由 `cd packages/core && node_modules/.bin/tsc …` 改為 `node node_modules/typescript/bin/tsc --noEmit -p packages/core/tsconfig.json`，studio 與 `scripts/tsconfig.json` 同樣寫法。
+
+**為什麼**：目前的 hoisted 安裝下，`packages/core/node_modules/.bin/tsc` 不存在，hook 的第一步 `cd packages/core && node_modules/.bin/tsc` 就失敗。上面約 351、400、467 行的 2026-10-27 更正註記檢查的是根目錄的 `node_modules/.bin/tsc`（它存在，但是 bun 產生的 `tsc.exe` shim），不是 hook 實際呼叫的路徑，所以「`typecheck` 實跑 exit 0」的結論在現況下不成立；那三處的原文與註記都不改，以本條為準：原本「hook 本身因路徑失敗」的說法對現在的安裝是正確的。改用 `node node_modules/typescript/bin/tsc` 是為了不依賴套件管理器產生的 shim。回歸測試 `scripts/lefthook-order.test.mjs` 鎖住這個寫法；只在本機以 `node --test` 執行，`dev_check.ps1` 與 `ci.yml` 沒有 Node 依賴所以沒有納入。
