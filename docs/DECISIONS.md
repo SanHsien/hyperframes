@@ -862,3 +862,11 @@ fork 專有程式與這批 commit 重疊的只有 17 個檔（上面 5 個衝突
 **證據**：先在舊碼上跑新測試，4 個失敗、96 個通過；套用後 100 個全部通過。`tools/dev_check.ps1` 綠。驗收範圍是 `packages/cli` 受影響測試與維護 gate，未跑完整產品測試。
 
 **不採**：同批的 #7016（reverse start 記錄 reverse run）與 #7017（Free 帳號被伺服器擋下時停止）屬 HeyGen 雲端與帳戶導流，同 2026-11-02 的邊界，不採。
+
+## 2026-11-03：`sharp` 下限提高到 `^0.35.5`（GHSA-wq5f-xc86-pv6w）
+
+**決定**：`packages/cli` 與 `packages/studio-server` 的 `sharp` 由 `^0.35.0` 改為 `^0.35.5`，`bun.lock` 由 0.35.3 更新為 0.35.5。
+
+**理由**：sharp 官方 advisory GHSA-wq5f-xc86-pv6w（CVE-2026-96889，嚴重度 high）指出內附的 librsvg 有記憶體漏洞，glibc Linux 上特定條件下可能遠端執行程式碼；受影響範圍 `< 0.35.5`，0.35.5 內附 librsvg 2.63.2。
+
+**與上游的差異**：上游仍是 `^0.35.0`，這是 fork 獨有差異，已列入 `FORK.md`；上游把下限提高到 0.35.5 以上時移除。

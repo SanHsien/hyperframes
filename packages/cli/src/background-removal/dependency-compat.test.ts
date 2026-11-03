@@ -23,7 +23,7 @@ describe("background-removal native dependency compatibility", () => {
         readFileSync(fileURLToPath(new URL(manifest, import.meta.url)), "utf8"),
       ) as { dependencies?: Record<string, string>; optionalDependencies?: Record<string, string> };
       expect(packageJson.dependencies, manifest).not.toHaveProperty("sharp");
-      expect(packageJson.optionalDependencies?.["sharp"], manifest).toBe("^0.35.0");
+      expect(packageJson.optionalDependencies?.["sharp"], manifest).toBe("^0.35.5");
     }
   });
 
