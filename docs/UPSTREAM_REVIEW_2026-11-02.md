@@ -94,7 +94,7 @@
 | `8142d6d59f84d83dd91dc15e34e92bd753e6b296` | 2026-10-30 | #6828 | 乾淨 | test(cli): capture watchdog tests use a fake output folder outside the temp dir (#6828) | 跳過：只動測試；隨對應產品修正一起移植 |
 | `bf47178937d210c269ac8e737f5f5d7f24b74d82` | 2026-10-30 | #6827 | 乾淨 | fix(lint): a font the project's root stylesheet declares counts for its sub-compositions (#6827) | 延後：產品同步批次；補丁可乾淨套用但依賴上游其他變更未驗證 |
 | `cb2389cf35aedbe88fa634fb0a6af27242e93660` | 2026-10-30 | #6754 | 衝突 | feat(skills): reverse any video on the HyperFrames plan (#6754) | 不採：依賴 HeyGen 付費方案／雲端／帳戶，本線不操作帳戶也不發佈 |
-| `6f2b072275b6107c253fd61edebe107cbd3c8275` | 2026-10-30 | #6831 | 已採 | fix(cli): --variables-file and --variables <path> read the file again (#6831) | 採（移植）：`readJsonFlagText` 的展開讓 `readFile: undefined` 蓋掉預設，`--variables-file` 必炸；本線實測重現（還原修正後新測試 1 failed），修後綠 |
+| `6f2b072275b6107c253fd61edebe107cbd3c8275` | 2026-10-30 | #6831 | 已採 | fix(cli): `--variables-file` and `--variables <path>` read the file again (#6831) | 採（移植）：`readJsonFlagText` 的展開讓 `readFile: undefined` 蓋掉預設，`--variables-file` 必炸；本線實測重現（還原修正後新測試 1 failed），修後綠 |
 | `6a8c064fb96e68e365b91063f511a3cd934794f7` | 2026-10-30 | #6835 | 衝突 | fix(producer): render telemetry names content gates instead of calling them disabled (#6835) | 延後：遙測邊界（ROADMAP 既有項），本線保留遙測分歧；先決定遙測政策再移植 |
 | `3ebf888fb69bcf462c177d2042ed33b5d6501b1e` | 2026-10-30 | #6838 | 乾淨 | fix(cli): point a brace-stripped JSON flag value at the file and stdin forms (#6838) | 延後：產品同步批次；補丁可乾淨套用但依賴上游其他變更未驗證 |
 | `4ba01be1519a27c6363d2afca088924de99a895d` | 2026-10-30 | #6836 | 衝突 | fix(cli): history show --diff names a changed video or audio file instead of refusing (#6836) | 延後：產品同步批次；與現行檔案衝突 |
