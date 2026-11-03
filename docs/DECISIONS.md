@@ -865,7 +865,7 @@ fork 專有程式與這批 commit 重疊的只有 17 個檔（上面 5 個衝突
 
 ## 2026-11-03：`sharp` 下限提高到 `^0.35.5`（GHSA-wq5f-xc86-pv6w）
 
-**決定**：`packages/cli` 與 `packages/studio-server` 的 `sharp` 由 `^0.35.0` 改為 `^0.35.5`，`bun.lock` 由 0.35.3 更新為 0.35.5。
+**決定**：`packages/cli` 與 `packages/studio-server` 的 `sharp` 由 `^0.35.0` 改為 `^0.35.5`，`bun.lock` 由 0.35.3 更新為 0.35.5。CLI 在宿主沒有附帶 sharp 時首次使用才安裝的版本（`packages/cli/src/utils/optionalPackages.ts` 的 `SHARP_VERSION`）同樣由 0.35.3 改為 0.35.5；`optionalPackages.test.ts` 的「installs a version the CLI's own dependency range accepts」會擋下兩者不一致。
 
 **理由**：sharp 官方 advisory GHSA-wq5f-xc86-pv6w（CVE-2026-96889，嚴重度 high）指出內附的 librsvg 有記憶體漏洞，glibc Linux 上特定條件下可能遠端執行程式碼；受影響範圍 `< 0.35.5`，0.35.5 內附 librsvg 2.63.2。
 
