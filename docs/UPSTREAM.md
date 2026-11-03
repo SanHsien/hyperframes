@@ -131,3 +131,8 @@ Baseline 代表「已審查」，不代表「全部已合併」。
 
 - 三軸水位為 commit `036e41fa09e6670f155fa3f2c361b58b8ed77e02`、PR #7014、issue #6995。累計本輪 195 個 commit、246 筆 PR、13 筆 issue 均有裁決，裁決與完整 SHA 見 [2026-11-02 清冊](UPSTREAM_REVIEW_2026-11-02.md)。
 - 採用 #6771、#6605、#6611、#6831、#6800；其餘產品延後，baseline monitored 共 72 筆。
+
+## 2026-11-03：採用 #7015，水位不動
+
+- 採用 #7015（`5a07ea2`：`catalog` 讀不到 registry 時 exit 1 並說原因），細節見 [`DECISIONS.md`](DECISIONS.md) 2026-11-03 條目。
+- 三軸水位仍為 commit `036e41fa09e6670f155fa3f2c361b58b8ed77e02`、PR #7014、issue #6995；其餘新進項目尚未審查，不推進水位。

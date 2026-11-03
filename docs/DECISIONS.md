@@ -850,3 +850,15 @@ fork 專有程式與這批 commit 重疊的只有 17 個檔（上面 5 個衝突
 **決定**：`lefthook.yml` 的 `typecheck` 由 `cd packages/core && node_modules/.bin/tsc …` 改為 `node node_modules/typescript/bin/tsc --noEmit -p packages/core/tsconfig.json`，studio 與 `scripts/tsconfig.json` 同樣寫法。
 
 **為什麼**：目前的 hoisted 安裝下，`packages/core/node_modules/.bin/tsc` 不存在，hook 的第一步 `cd packages/core && node_modules/.bin/tsc` 就失敗。上面約 351、400、467 行的 2026-10-27 更正註記檢查的是根目錄的 `node_modules/.bin/tsc`（它存在，但是 bun 產生的 `tsc.exe` shim），不是 hook 實際呼叫的路徑，所以「`typecheck` 實跑 exit 0」的結論在現況下不成立；那三處的原文與註記都不改，以本條為準：原本「hook 本身因路徑失敗」的說法對現在的安裝是正確的。改用 `node node_modules/typescript/bin/tsc` 是為了不依賴套件管理器產生的 shim。回歸測試 `scripts/lefthook-order.test.mjs` 鎖住這個寫法；只在本機以 `node --test` 執行，`dev_check.ps1` 與 `ci.yml` 沒有 Node 依賴所以沒有納入。
+
+## 2026-11-03：採用上游 #7015（`5a07ea2`）：`catalog` 讀不到 registry 時 exit 1 並說原因
+
+**決定**：採用上游 PR #7015（commit `5a07ea2`，作者 Miguel Ángel，`fix(cli): catalog says the registry could not be read instead of listing nothing`）。三個水位不動，因為其餘 2026-11-02 之後的上游項目尚未審查。
+
+**改了什麼**：`packages/cli/src/registry/remote.ts` 在 registry 讀不到時回報原因，`packages/cli/src/commands/catalog.ts` 據此 exit 1 並印出原因，不再把讀不到當成「目錄是空的」而列出零筆；`docs/packages/cli.mdx` 同步寫明這個行為。
+
+**移植方式**：`remote.ts`、`catalog.ts` 的補丁對現行檔案乾淨套用；`catalog.test.ts` 與現行測試衝突，逐段手動移植；`remote.test.ts` 同步加入對應案例。
+
+**證據**：先在舊碼上跑新測試，4 個失敗、96 個通過；套用後 100 個全部通過。`tools/dev_check.ps1` 綠。驗收範圍是 `packages/cli` 受影響測試與維護 gate，未跑完整產品測試。
+
+**不採**：同批的 #7016（reverse start 記錄 reverse run）與 #7017（Free 帳號被伺服器擋下時停止）屬 HeyGen 雲端與帳戶導流，同 2026-11-02 的邊界，不採。
