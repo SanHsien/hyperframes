@@ -439,3 +439,29 @@ commit 連續區段 `2daedcdaf..183614bda`（兩端含）共 28 個 commit，其
 ### 水位與剩餘範圍
 
 commit 連續區段 `19be35a46..1ff4cefd4`（10 個，兩端含）逐筆有證據，水位推進到 `1ff4cefd40c8dad98127fc78e8761c1ac62053dd`；PR 水位推進到 #7157（#7078–#7157 每筆有證據）；issue 維持 #7113。monitored 共 88 筆，19 筆重釘、8 筆新增（含已合併的 #7154 重釘為 closed）。收尾的 `python tools/check_upstream_updates.py --strict` exit 0：水位以上 0 個 commit、0 筆 PR、0 筆新 issue，88 筆釘選皆在審過的 head 與狀態。上游仍會繼續前進，下一次從 `1ff4cefd4`、PR #7157 接續；審查不代表整版同步或完整產品驗收。
+
+## 2026-11-04：接續至 PR #7160，三筆新開 PR 全數釘選
+
+起點為 fork `36d5dbc75`（`origin/main`），baseline 為 commit `1ff4cefd4`、PR #7157、issue #7113。起始 `python tools/check_upstream_updates.py --strict` exit 1：commit 與 issue 皆無新增，水位以上 3 筆新 PR（#7158、#7159、#7160），88 筆釘選皆在審過的 head 與狀態。三筆都是 open，沒有 merged 的獨立修正可移植，故本輪不改程式碼、不加測試；依前幾輪慣例釘在 monitored 並給條件式裁決。
+
+`SHA:檔案:行號` 指 PR head 補丁（`gh pr diff --repo heygen-com/hyperframes`，唯讀）的 hunk 起始行；「本線」指 `36d5dbc75`。
+
+### PR 裁決（PR 水位 #7157 → #7160）
+
+| PR | Head | 作者 | 裁決與證據 |
+| --- | --- | --- | --- |
+| #7158 | `15f04db69abbc269face07ffce2e2812e2d0a0e3`（open，`cli.ts`、`cli.lifecycle.test.ts`） | Miguel Ángel | 同類缺陷在本線存在：`15f04db69:packages/cli/src/cli.ts:461` 把 `handleStreamEpipe` 的 `process.exit(0)` 改成依是否已交付決定 0 或 1；本線 `packages/cli/src/cli.ts:448-451` 仍是 `if (!isRenderSucceeded()) commandFailed = true; process.exit(0)`，被拒絕的 render 在 `\| head` 下回 exit 0。**條件式：合併後採用**，需手工適配本線的 `isRenderSucceeded()`（上游為 `isRunDelivered()`），並沿用其測試改法（`cli.lifecycle.test.ts:366-380`，EPIPE 在交付前預期 exit 1 且 `success:false`），先在舊碼紅燈再轉綠。未合併不移植。 |
+| #7159 | `692f0e3c4f9df866bc6c5c2fd0ae1502da5b24aa`（open，8 檔 core runtime 與 studio store） | Miguel Ángel | 新功能：預覽健康訊息帶出卡住播放的媒體元素（`692f0e3c4:packages/core/src/runtime/playbackHealth.ts:18,43`、`init.ts:5900`、`types.ts:294`、`studio/.../previewQualitySlice.ts:148`）。本線 `playbackHealth.ts:12,87` 與 `previewQualitySlice.ts:15` 沒有對應欄位，也沒有使用者回報此缺口。**延後；條件式**：合併且本線出現預覽卡頓診斷需求時，再與 runtime 訊息型別一併評估。 |
+| #7160 | `f543e3b9a91f2acb45db9231e5a8b5a1af860913`（open，15 檔，作者 Vitozhu04） | Vitozhu04 | 文案：skills 安裝與更新提示改為對人說（`f543e3b9a:packages/cli/src/commands/skills.ts:380,550,577`、`utils/skillsUpdateCheck.ts:113`、`commands/init.ts:690,977`、`commands/update.ts:153`）。本線沒有 `commands/update.ts`（`update` 指令與 skills 政策成組，已於 #7094、#7102 延後）；`skillsUpdateCheck.ts:107`、`init.ts:693,984` 的提示仍是原句，不影響行為。**延後；條件式**：#7094／#7102 的決定改為採用時一併審，合併後再看。 |
+
+### 新增 PR head 快照
+
+| PR | Head | State |
+| --- | --- | --- |
+| #7158 | `15f04db69abbc269face07ffce2e2812e2d0a0e3` | open |
+| #7159 | `692f0e3c4f9df866bc6c5c2fd0ae1502da5b24aa` | open |
+| #7160 | `f543e3b9a91f2acb45db9231e5a8b5a1af860913` | open |
+
+### 水位與剩餘範圍
+
+PR 水位推進到 #7160（#7158–#7160 每筆有證據）；commit 維持 `1ff4cefd40c8dad98127fc78e8761c1ac62053dd`，issue 維持 #7113。monitored 由 88 筆增為 91 筆（新增 #7158、#7159、#7160，既有項目未重釘）。審查不代表整版同步或完整產品驗收。

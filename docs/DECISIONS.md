@@ -994,3 +994,9 @@ commit 水位連續推進到 `183614bda`；PR 水位仍為 #7077、issue 維持 
 不適用：#7144／#7145（HyperFrames 帳戶媒體服務與 credit-limit 鏈，拒絕訊息會導向本線不存在的 `media-use generate`）、#7152／#7156（版本與發行說明含未採功能）、billing／reverse／measure／share 等本線沒有的模組。延後：#7094（`update --check`、每日通知與 skills release-tag，依賴 #7013 skills 部分與 #7120）、#7102（agent 不安裝技能的政策，與 #7094 成組並需重生 manifest 雜湊）、generated schema 重生（與 #7062／#7058 成組）、Safari preload #7091（與 #7082 成組）；open 的 #7098、#7110、#7142、#7150 是獨立可採的修正，等合併後採用並已加入 monitored。
 
 commit 水位連續推進到 `1ff4cefd4`，PR 水位到 #7157，issue 維持 #7113，monitored 19 筆重釘並新增 8 筆。已知本機環境失敗（ffmpeg 覆寫詢問、Chrome 啟動逾時、symlink EPERM、`media.test.ts:99` 含 `?` 檔名、`renderOrchestrator.stall.test.ts` 時序）已在舊碼重現並寫入清冊，不宣稱完整產品驗收通過。
+
+## 2026-11-04：接續至 PR #7160，三筆新開 PR 釘選
+
+審查 #7158、#7159、#7160，皆為 open，故不移植。#7158 條件式採用：本線 `packages/cli/src/cli.ts:448-451` 的 `handleStreamEpipe` 仍無條件 exit 0；上游 head `15f04db69` 改為依交付與否 exit 0／1，合併後手工適配 `isRenderSucceeded()` 並先在舊碼紅燈。#7159、#7160 延後（本線無對應診斷欄位；`update` 指令與 skills 政策成組延後）。逐筆證據見 [同日接續清冊](UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-04接續至-pr-7160三筆新開-pr-全數釘選)。
+
+PR 水位推進到 #7160，commit 維持 `1ff4cefd4`，issue 維持 #7113，monitored 88 筆增為 91 筆。
