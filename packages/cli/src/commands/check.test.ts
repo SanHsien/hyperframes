@@ -3,6 +3,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { DEFAULT_CONFIG } from "@hyperframes/engine";
 
 const trackCheckReport = vi.fn();
 vi.mock("../telemetry/events.js", () => ({
@@ -490,6 +491,24 @@ describe("skip contrast in motion", () => {
       expect(call).toEqual([expect.any(Number), undefined, true]);
     }
   });
+});
+
+it("waits for the composition as long as snapshot and render do unless --timeout says otherwise", async () => {
+  const { report } = await runScenario(fakeDriver());
+  const runPipeline = vi.fn(async (_project: ProjectDir, _options: CheckOptions) => report);
+  vi.spyOn(console, "log").mockImplementation(() => undefined);
+  const command = createCheckCommand({
+    resolveProject: () => PROJECT,
+    runPipeline,
+    prepareMedia: vi.fn(async () => []),
+    withMeta: (value) => value,
+  });
+
+  await runCommand(command, { rawArgs: ["--json"] });
+  await runCommand(command, { rawArgs: ["--json", "--timeout", "20s"] });
+
+  expect(runPipeline.mock.calls[0]?.[1].timeout).toBe(DEFAULT_CONFIG.playerReadyTimeout);
+  expect(runPipeline.mock.calls[1]?.[1].timeout).toBe(20_000);
 });
 
 it("parses the caption-zone grammar and enables the frame gate", async () => {
@@ -2193,6 +2212,44 @@ describe("check pipeline", () => {
         "check_runtime_failure",
       );
       expect(collectLayout.mock.calls.length * 30).toBeGreaterThan(120);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("slow analysis calls that each finish keep the check alive past 120 s", async () => {
+    vi.useFakeTimers();
+    try {
+      let analysing = false;
+      const slowWhenAnalysing = async () => {
+        if (analysing) await new Promise((resolve) => setTimeout(resolve, 100_000));
+      };
+      const hasNoTimelineDeclaration = vi.fn(async () => {
+        await slowWhenAnalysing();
+        return false;
+      });
+      const getCanvas = vi.fn(async () => {
+        await slowWhenAnalysing();
+        return { width: 1920, height: 1080 };
+      });
+      const driver = fakeDriver({ hasNoTimelineDeclaration, getCanvas });
+      const { deps } = dependencies(driver);
+      deps.runBrowserCheck = async (_project, options, motion, deadline) => {
+        deadline!.start();
+        // The analysis starts once the overlap pass hands back to "samples".
+        let overlapSeen = false;
+        const enter: typeof deadline.enter = (phase, detail) => {
+          if (phase === "overlap") overlapSeen = true;
+          if (phase === "samples" && overlapSeen) analysing = true;
+          deadline!.enter(phase, detail);
+        };
+        return runAuditGrid(driver, options, motion, undefined, enter);
+      };
+      const pending = runCheckPipeline(PROJECT, DEFAULT_CHECK_OPTIONS, deps);
+      await vi.advanceTimersByTimeAsync(2_000_000);
+      const codes = (await pending).runtime.findings.map((finding) => finding.code);
+      expect(codes).not.toContain("check_runtime_failure");
+      expect(hasNoTimelineDeclaration).toHaveBeenCalled();
     } finally {
       vi.useRealTimers();
     }

@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { createStallClock } from "./stallClock.js";
 import { redactTelemetryString } from "@hyperframes/core";
 import { CaptureFailure } from "@hyperframes/engine";
 import type { ProducerLogger } from "../../logger.js";
@@ -639,30 +640,28 @@ const STALL_POLL_MS = 5_000;
 function watchStall(phase: string, rule: StageStallRule) {
   let last = rule.progress();
   let budgetMs = rule.firstProgressMs;
-  let lastChangeAt = Date.now();
+  const silence = createStallClock();
+  const pollMs = Math.min(STALL_POLL_MS, rule.noProgressMs, rule.firstProgressMs);
   let attempt: AbortController | undefined;
   let timer: ReturnType<typeof setInterval> | undefined;
   const restartWindow = (ms: number) => {
     last = rule.progress();
     budgetMs = ms;
-    lastChangeAt = Date.now();
+    silence.reset();
   };
   const tripped = new Promise<never>((_, reject) => {
-    timer = setInterval(
-      () => {
-        const current = rule.progress();
-        if (current !== last) return restartWindow(rule.noProgressMs);
-        if (Date.now() - lastChangeAt < budgetMs) return;
-        const error = new RenderStageStalledError(phase, budgetMs, current);
-        if (attempt && !attempt.signal.aborted) {
-          attempt.abort(error);
-          return restartWindow(rule.noProgressMs);
-        }
-        clearInterval(timer);
-        reject(error);
-      },
-      Math.min(STALL_POLL_MS, rule.noProgressMs, rule.firstProgressMs),
-    );
+    timer = setInterval(() => {
+      const current = rule.progress();
+      if (current !== last) return restartWindow(rule.noProgressMs);
+      if (silence.idle(pollMs) < budgetMs) return;
+      const error = new RenderStageStalledError(phase, budgetMs, current);
+      if (attempt && !attempt.signal.aborted) {
+        attempt.abort(error);
+        return restartWindow(rule.noProgressMs);
+      }
+      clearInterval(timer);
+      reject(error);
+    }, pollMs);
   });
   const openAttempt: OpenStallAttempt = (parent) => {
     attempt = new AbortController();

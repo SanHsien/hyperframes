@@ -161,3 +161,9 @@ commit 水位只推進連續 14 筆至 `79b6af9b484280706da5d1af8e981305f4e1a13d
 新增逐筆審查 12 個 commit、15 筆 PR、3 筆 monitored 變動；檔案行號、完整 PR head、裁決與重訪條件見 [同日接續清冊](UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-04接續至-3f42dc1c7-與完成任務-ttl)。採用 #7087 的最小完成任務 TTL 修正，兩例回歸先紅後綠，受影響 render／renderDeletion 96 passed／1 skipped，studio-server ESM／DTS build 成功。
 
 commit 水位只推進連續 11 筆至 `3f42dc1c73b0c9915b311e48bd0099b39a0865a9`，其中 #7041／#7063／#7057 沿用已有逐筆證據；額外審 #7068／#7069／#7082／#7087 不跨下一筆 `2daedcdaf`。PR 水位至 #7077，不跨 #7078；issue 保持 #7113。重釘 #6945／#6963／#7003 的 closed head，新增 open #7079，monitored 共 80 筆；上游固定 `183614bda`。剩餘計畫只在 ROADMAP.md 近期列維護，審查不代表整版同步或完整產品驗收。
+
+## 2026-11-04：追到 `183614bda`，移植 10 筆獨立修正
+
+逐筆審查 22 個新 commit（連續區段 `2daedcdaf..183614bda` 共 28 個，其中 6 個沿用既有證據），檔案行號、PR head、紅綠證據與重訪條件見 [同日接續清冊](UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-04接續至-183614bda移植-10-筆獨立修正)。採用 #6842 的 `<template>` 媒體 offload、#7013 的 0.x minor 與 Homebrew 不背景升級、#7088／#7093 的腳本載入診斷與取消判定、#7097 的社群邀請連結、#6745 的媒體時長單檔寫入、#6919 的 check 分析閒置視窗、#6947 的 check 預設等待、#6928 的取消判定、#7096 的睡眠不計入擷取停滯；#7092／#7104／#7120 與 #7013 的 skills 安裝延後，billing、templates、reverse 與版本宣告不適用。
+
+三軸水位為 commit `183614bda3df15812d9f18fd4a71ee77a7da6387`、PR #7077、issue #7113。PR 水位不動：#7078 起仍有未審項目，隨 commit 讀過補丁的 16 筆 PR 只作額外證據；baseline monitored 未重釘，共 80 筆。剩餘範圍只在 ROADMAP.md 近期列維護，審查不代表整版同步或完整產品驗收。

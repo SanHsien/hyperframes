@@ -179,3 +179,97 @@ Merged PR 以 GitHub merge SHA 核對實際 `git show` 補丁；未合併 PR 讀
 擴大測試 `bun run --cwd packages/studio-server test -- src/routes/finishedJobs.test.ts src/routes/render.test.ts src/routes/renderDeletion.test.ts src/routes/media.test.ts` exit 1：109 passed／1 failed／2 skipped；失敗在 `media.test.ts:99` 寫入含 `?` 的 Windows 檔名前置 fixture 時 ENOENT，尚未呼叫路由。該測試檔與起點 HEAD 位元組一致，不屬此次 TTL 修改造成的斷言退化；沒有調整權限、skip 或 timeout。
 
 連續區段 `9a2cd9e61..3f42dc1c7`（兩端含）共 11 筆，新增審 8 筆，另外 #7041／#7063／#7057 沿用前文與接續清冊的既有逐檔證據。額外審 #7068／#7069／#7082／#7087 四個 commit，不跨下一筆 `2daedcdaf`。commit 水位只至 `3f42dc1c7`；PR 連續至 #7077，不跨 #7078；issue 維持 #7113（起始掃描無新項目）。新增 open #7079 與重釘上述三筆 monitored，其他釘選保持原值。真正未審範圍由 ROADMAP.md 近期列追蹤。
+
+## 2026-11-04：接續至 `183614bda`，移植 10 筆獨立修正
+
+起點為 fork `397e937f8`，baseline 為 commit `3f42dc1c7`、PR #7077、issue #7113。起始 `python tools/check_upstream_updates.py --strict` exit 1，固定上游 `183614bda3df15812d9f18fd4a71ee77a7da6387`：水位以上 28 個 commit、68 筆 PR、0 筆新 issue、16 筆 monitored 變動。扣除已有證據的 #7031／#7068／#7069／#7082／#7087／#7115 六個 commit，本輪逐筆審 **22 個 commit**（`2daedcdaf..183614bda` 連續，另 6 筆沿用前文證據）；PR 軸不連續，只列隨 commit 讀過補丁的 16 筆，PR 水位不動。各軸重疊，不相加為修正數。
+
+`SHA:檔案:行號` 指該提交內容；「本線」指起點工作樹，採用項標明移植後行號。逐筆讀實際補丁，不以 `--stat` 或主旨判斷。
+
+### Commit 裁決（28 筆，其中 22 筆新審）
+
+| Commit／PR | 檔案行號證據與本線差異 | 裁決與重訪條件 |
+| --- | --- | --- |
+| `2daedcdaf` #6842 | 44 檔的付費樣式範本功能：`skills/style-sampling/SKILL.md:2`、`packages/cli/src/heygen/generate.ts:39`（lipsync／cutout）、`commands/templates.ts`、`pricing.ts`。其中 `packages/cli/src/cloud/offload.ts:841` 的 `namesFile` 與 `:950` 的 `TEMPLATE_SCENE_RE` 是獨立修正（`<template>` 內媒體未被改寫、同名他資料夾檔誤判為仍被提及）。本線 `offload.ts:490` 只掃 `document`、`:762` 以裸檔名比對、`:861` 無 template 處理；`core/src/fonts/deterministicFonts.ts:271` 的巢狀括號 font 簡寫，本線沒有 `fontShorthandFamilies`。 | **採用 offload 修正**（本線 `offload.ts:762`、`:871`、`:893`），5 個回歸，4 例先紅後綠。其餘不適用：本線無 `heygen/`、`templates`、`style-sampling`、media-use 的 HeyGen provider 鏈，也沒有字型簡寫解析器。引入 HyperFrames 計畫工作流時成組重訪（含 `adopt.mjs` 範本資料夾排除、cutout 的 request_id 重試去重）。 |
+| `47dddedd6` #7082 | 沿用前文清冊。 | 延後，條件見前文。 |
+| `35753f382` #7069 | 沿用前文清冊。 | 延後，條件見前文。 |
+| `b2acef586` #7013 | `packages/cli/src/utils/autoUpdate.ts:57` 以 `0.<minor>` 當破壞線、`:259` 新增 Homebrew 不背景升級；本線 `autoUpdate.ts:54` 的 `majorOf` 只比第一個數字，`:262` 起 brew 仍會背景 `brew upgrade`。另 `skillsManifest.ts:643` 的 `cliReleaseTag`、`commands/skills.ts` 固定 `skills@1.5.13` 並以 release tag 安裝；本線 `skills.ts:137` 仍用未釘版 `npx skills`、`skillsManifest.ts:711` 無 ref。 | **採用 autoUpdate 部分**（本線 `autoUpdate.ts:54`、`:256`；文件 `docs/packages/cli.mdx:74`）：0.x minor 不背景安裝、Homebrew 只顯示通知；2 例先紅後綠。**延後 skills 的 release-tag 安裝**：改動 `npx skills` 版本釘選與遠端 ref，需與 #7120 成組。同步 skills 安裝時，驗 tag 404 才退回 main、逾時不退回、check 與 install 同 ref。 |
+| `dec465949` #7088 | `packages/engine/src/services/frameCapture.ts:2734` 新增 `classifyScriptLoadCause`，警告尾端附 `[script_load: origin/code]`，不含 URL；本線 `frameCapture.ts:2661` 的 `recordScriptLoadFailure` 無 cause。 | **採用**（本線 `frameCapture.ts:2687`），新增 `frameCapture-scriptLoadCause.test.ts`（8 例）。`scripts/package-size-budgets.json` 上游加 632 位元組，落在本線預算 1% 容差內，未動；打包檢查若紅再依實測調整。 |
+| `fc006f713` #7087 | 沿用前文清冊。 | 已採用，條件見前文。 |
+| `4ceec0171` #7092 | `studio-server/src/helpers/lazyPreviewImages.ts:19` 先掃 tag、`subComposition.ts:383` 改 `findStartTags`、`core/.../scenePartsManifest.ts` 加早退；測試要求單次 parse。本線 `lazyPreviewImages.ts:18`、`subComposition.ts:383` 都先 parse。 | **延後（試移植後還原）**：本線把測試跑出 3 次 parse 而非 1 次（`helpers/previewReads.ts:107` 與 `@hyperframes/parsers` 的 `hfIds.js:99` 仍各 parse，後者是延後的 #7069），舊碼為 5 次。單搬只做到 5→3，不滿足測試性質。與 #7069 同批；量到 stamped preview 的 parse 瓶頸或同步 hfIds 時成組採用。 |
+| `67d11c0a5` #7093 | `frameCapture.ts:2759` 對 `net::ERR_ABORTED` 的 script 不算載入失敗，抽出 `recordFailedRequest`（`:2761`）；本線 `frameCapture.ts:2778` 的 requestfailed 處理一律記失敗。 | **採用**（本線 `frameCapture.ts:2711`、`:2713`），依賴 #7088 的 cause 分類；2 例，被頁面取消的 script 舊碼被誤記（`['http://localhost/other.js']` 而非 `[]`）。 |
+| `1071ff35a` #7097 | `README.md:14`／`:26`、`ADOPTERS.md:15`、`docs/community/adopters.mdx:17` 改新社群邀請。本線 `README.en.md:24`／`:36`／`:331`、`ADOPTERS.md:15`、`docs/community/adopters.mdx:17` 是舊連結；繁中 `README.md` 無 Discord 連結。 | **採用**：5 處改為官方新邀請碼（以 Discord 公開邀請端點唯讀查詢，新舊碼目前都有效，新碼由 HeyGen-Community 帳號發出）；保留上游官方連結。 |
+| `12ce8c2ff` #7095 | 各 package.json／plugin.json 升 0.9.9，`releases/v0.9.9.md:5` 宣告未採功能。本線 `packages/cli/package.json:3` 為 0.8.210。 | 不適用：不以版本與發行說明宣稱未採功能；整版同步並驗收後重訪。 |
+| `faae6017d` #7084 | `packages/cli/src/commands/templates.ts` 改 tar 由 stdin 讀。本線 tracked tree 沒有 `commands/templates.ts`。 | 不適用：同 #6842，引入 templates 時與 #7116 一併重訪。 |
+| `a5a612133` #7031 | 沿用前文清冊。 | 見前文。 |
+| `3a28ef41a` #6745 | `packages/studio/src/player/lib/mediaProbe.ts:134` 改為每檔一次 `apply(Map)`，`hooks/useTimelinePlayer.ts` 一次寫 store。本線舊 `probeMissingSourceDurations` 逐 clip 呼叫，hook 於 `useTimelinePlayer.ts:131` 以 `return {}` 仍觸發 store 通知。 | **採用**（本線 `mediaProbe.ts:134`、`useTimelinePlayer.ts:131`）。2 例先紅（apply 被呼叫 4 次而非 2 次）後綠。上游 `useTimelinePlayer.metadata.test.ts` 本線無此檔，store 層寫入次數未另釘，由 apply 層測試承擔。 |
+| `3aaed65ef` #6919 | `packages/cli/src/utils/checkPipeline.ts:1509` 新增 `reportingProgress`，分析階段每個 driver 呼叫都重啟閒置視窗；`checkDeadline.ts` 加 `analysis` 階段。本線 `runAuditGrid` 分析區段（`checkPipeline.ts:1537` 起）直接用 driver。 | **採用**（本線 `checkPipeline.ts:1509`、`checkDeadline.ts` 新階段）。本線 `CheckDeadline` 閒置視窗固定 120 s、沒有 `analyze` progress 事件，上游測試改寫為以 `overlap` 後回到 `samples` 判定進入分析，並加無 wrapper 對照組；先紅後綠。 |
+| `341fdd353` #7101 | `skills/reverse-any-video/SKILL.md:12`、`references/start.md` 付款與登入流程。本線 `skills/` 無 reverse-any-video（`git ls-files` 0 筆）。 | 不適用：引入該付費技能時連同認證、費用揭露與付款授權重訪。 |
+| `9304d73ec` #7114 | `scripts/check-core-skills.test.mjs:20`、`:40` 對齊 reverse start 字句。本線同檔沒有 reverse 斷言。 | 不適用：隨 #7101 技能。 |
+| `3dc82f18e` #7104 | `packages/producer/src/services/render/stages/captureStreamingStage.ts:659` 起，sequential 擷取停滯後重建 session 從第一個未寫入畫格續跑，最多三次。本線 `captureStreamingStage.ts:767` 只有 parallel BeginFrame 單次 resume，sequential 直接拋錯。 | 延後：改變整次渲染的失敗恢復，且 screenshot 模式畫格可否跨 session 銜接要渲染證據。本線重現 sequential 停滯，或安排 capture fallback 同步（連 #7070）時，驗畫格連續與 hash、三次後退回、取消不重試，並跑 Windows render verification 與 regression。 |
+| `e2edc93f5` #7096 | `packages/producer/src/services/render/stallClock.ts:11` 新增 `createStallClock`，睡眠造成的時間跳躍不算停滯；用於 `observability.ts` 的 `watchStall`、`captureStreamingStage.ts` 的 `raceAgainstStall` 與 parallel／worker-encode 監看。本線以 `Date.now() - lastProgressAt`（`captureStreamingStage.ts:502`、`:512`、`:806`、`:1043`）與 `lastChangeAt`（`observability.ts:642`）計時，筆電睡眠醒來即判停滯。 | **採用**（本線 `stallClock.ts`、`captureStreamingStage.ts:82`／`:211`／`:520`／`:814`、`observability.ts` 的 `silence`）。另有超出上游的改動：本線 sequential 分支（`captureStreamingStage.ts:1049`，上游 `e2edc93f5` 該處仍用 `Date.now() - lastProgressAt`）也改用 `createStallClock`；`quiet.reset()` 與下一輪 `quiet.idle(0)` 之間只有同步程式碼，行為與原本一致，統一時間來源以免該分支仍受睡眠跳躍影響。本線 `watchStall` 無 `complete`／`tail` 分支，補丁無法直接套用，故手工移植；4 個行為先紅後綠。 |
+| `d88d2cce4` #7116 | `packages/cli/src/commands/templates.ts`、`templates.test.ts`。本線無該檔。 | 不適用：同 #7084。 |
+| `87a42e747` #7068 | 沿用前文清冊。 | 見前文。 |
+| `482bcd73e` #7115 | 沿用前文清冊。 | 已採用。 |
+| `3adc9f130` #7112 | `packages/cli/src/heygen/generate.ts`、`generate.test.ts` 在無 ffmpeg 機器送圖。本線沒有 `packages/cli/src/heygen/`。 | 不適用：未採 HeyGen 媒體服務鏈。 |
+| `f487a20b2` #6947 | `packages/cli/src/utils/checkPipeline.ts:124` 預設 timeout 改 `DEFAULT_CONFIG.playerReadyTimeout`（45 s）、`checkBrowser.ts:96` 抽出 `RENDER_READY_WARNING_SUFFIX`、`commands/check.ts` 預設值同步。本線 `checkPipeline.ts:122` 為 10_000、`check.ts:211` 描述與預設為 10000。 | **採用**（本線 `checkPipeline.ts:123`、`checkBrowser.ts:94`、`check.ts:211`；文件 `docs/packages/cli.mdx:1169`；本線額外同步 `skills/hyperframes-cli/references/lint-validate-inspect.md:39` 的預設值 10000 為 45000）。這是公開預設值變更：check 與 snapshot／render 等待一致，慢場景不再以 10 s 誤報；`--timeout` 仍可覆寫。2 例先紅後綠。 |
+| `e46ecd850` #6928 | `packages/cli/src/commands/validate.ts:79` image 資源被取消不忽略，`MEDIA_EXTENSIONS` 擴到 mkv／m4v／avi 等；本線 `validate.ts:53` 副檔名清單較窄、無 image 例外。 | **採用**（本線 `validate.ts:78`）。3 例先紅後綠。 |
+| `d21877eb2` #7121 | `packages/cli/src/commands/billing.ts:72` 的 add-credits 改名。本線無 `commands/billing.ts`。 | 不適用：未採 billing。 |
+| `c5a5e0882` #7103 | `commands/billing.ts:48`、`heygen/plan.ts`、`heygen/reverse.ts`、`commands/auth/status.ts` 讓付款連結帶 workspace。本線無 billing／plan／reverse。 | 不適用：未採 billing；未登入、未建立 checkout。 |
+| `b02fe6506` #7120 | `packages/cli/src/utils/skillsManifest.ts:395` 的 `globalInstallRoot`、`commands/skills.ts` 的 `installTarget`；文件 `docs/guides/skills.mdx`。本線 `skillsManifest.ts:711` 仍 `locateInstall`，補丁依賴 #7013 的 `ref`／`cliVersion` 前置，`git apply --check` 在 `skills.ts:346`、`skillsManifest.ts:757` 失敗。 | 延後：與 #7013 skills 部分成組。同步 skills 安裝時驗 Claude 全域目錄為安裝目標、其他 agent 目錄不誤判已安裝、他人發行者的同名 skill 在離線與線上都不覆寫。 |
+| `183614bda` #7128 | `.codex-plugin/plugin.json:4` 等升 0.9.10，`releases/v0.9.10.md`。本線 `packages/cli/package.json:3` 為 0.8.210。 | 不適用：同 #7095。 |
+
+### 隨 commit 讀過補丁的 PR（16 筆，PR 水位不動）
+
+下列 PR 皆為 merged，已核對 merge SHA 與上表補丁；它們都在 #7077 以上，而 #7078 起仍有未審項目，所以只作額外證據，不推進 PR 水位。
+
+| PR | merge SHA 與結論 |
+| --- | --- |
+| #7084 | `faae6017d`；不適用，見 commit 表。 |
+| #7088 | `dec465949`；採用，head `f09de208471b428d4ca227009659dff5c3f2589b`。 |
+| #7092 | `4ceec0171`；延後，head `5a5007836575cb5e7362a9c4bc3ffa2d79c0c3b5`。 |
+| #7093 | `67d11c0a5`；採用，head `e8d98bc564ff0be0dc171e2e9b6c9e2695366224`。 |
+| #7095 | `12ce8c2ff`；不適用，head `8c8e1d20cd2ce8689bea42b07d24328298171c61`。 |
+| #7096 | `e2edc93f5`；採用，head `c66b013a6a1534613f5d30e45736c68b5a266126`。 |
+| #7097 | `1071ff35a`；採用，head `ecc96fcff36e52320f954067c5ee70459c7ffaa5`。 |
+| #7101 | `341fdd353`；不適用，head `780a434970a604e9297f1ac13eecd70aba4a3724`。 |
+| #7103 | `c5a5e0882`；不適用，head `44f95ebed90f6066fd07215b207716fd4bdc4959`。 |
+| #7104 | `3dc82f18e`；延後，head `03384995e6cc9d2ee93a5e0373f16d5040b97e4e`。 |
+| #7112 | `3adc9f130`；不適用，head `7b14df4140989f47f16778c5e08a9664252aaed1`。 |
+| #7114 | `9304d73ec`；不適用，head `70df6244baa3c845322f7838b6a1189389e01826`。 |
+| #7116 | `d88d2cce4`；不適用，head `74010b8b62ff2cf996fbd843a2c21426137d0857`。 |
+| #7120 | `b02fe6506`；延後，head `a16a435d3258c09deea6837f60bc6267b8681fcf`。 |
+| #7121 | `d21877eb2`；不適用，head `8d0e085698fd65c80515e7b2bcb33a0ff54aa110`。 |
+| #7128 | `183614bda`；不適用，head `c9e166ee62afb0bb1c53d74db7ec526488add4cc`。 |
+
+#6842／#7013／#6745／#6919／#6947／#6928 的編號在 PR 水位以內，其 merged 補丁已於上表讀過；它們同時是 baseline `monitored` 項，本輪**沒有重釘**（PR head 與 merged 補丁不保證相同，尚未逐一讀各自的 PR head），仍列入剩餘 monitored。
+
+### 採用、驗證與已知環境失敗
+
+採用項與上游作者（供 Co-authored-by）：#6842 的 offload 部分（WaterrrForever `miao.yang@heygen.com`）、#7013 的 autoUpdate 部分（Wenbo Zhu `wenbo_zhu@berkeley.edu`）、#7088／#7093／#7097／#6745／#6919／#7096／#6947／#6928（Miguel Ángel `miguel.sierra@heygen.com`）。每項先把測試放到舊碼：
+
+| 項目 | 舊碼 | 新碼 |
+| --- | --- | --- |
+| #6842 offload（`src/cloud/offload.test.ts`） | 4 failed／27 passed | 31 passed |
+| #7013 autoUpdate（`src/utils/autoUpdate.test.ts`） | 2 failed／20 passed | autoUpdate、installer、updateCheck、installerDetection、cli.lifecycle 共 100 passed |
+| #7088／#7093（engine `frameCapture-scriptLoadCause`、`-subTimelinePoll`） | 測試匯入失敗；加 `recordFailedRequest` 但未擋取消時 1 failed／25 passed | 26 passed |
+| #6745（`mediaProbe.test.ts`） | 2 failed／6 passed | 與 `useTimelinePlayer*` 共 127 passed（7 檔） |
+| #6928（`validate.test.ts`、`checkBrowser.test.ts`） | 3 failed／86 passed | 89 passed |
+| #6919（`check.test.ts -t "slow analysis"`、`checkPipeline.reportingProgress.test.ts`） | check_runtime_failure 被報出（1 failed）；`reportingProgress is not a function` | reportingProgress 4 passed；check 套件綠 |
+| #6947（`check.test.ts`、`checkBrowser.test.ts`） | 2 failed／217 passed（10000 與 NaN） | check、checkBrowser、checkPipeline 共 263 passed（7 檔） |
+| #7096（producer） | `observability.test.ts` 1 failed；`captureStreamingStage.test.ts`（bun）2 failed／28 passed | stage 30 pass／0 fail；vitest 的 `stallClock`＋`observability` 22 passed |
+
+另跑：`bun run --cwd packages/{engine,cli,studio,producer} build` 皆 exit 0；`oxfmt --check`／`oxlint` 對變更檔 0 warnings／0 errors。
+
+已知本機失敗（與本輪修改無關，已在舊碼重現）：
+
+- `src/cloud/offload.undecodableTrack.test.ts` 2 failed：ffmpeg 9.0.2 在 `made.mov` 已存在時詢問覆寫（`already exists. Overwrite? [y/N]`），舊碼同樣失敗。
+- `src/utils/checkDeadline.process.test.ts` 2 failed（啟動 Chrome 逾時，1 skipped），舊碼同樣失敗。
+- engine `src/services/frameCapture` 全套並行跑時 3 例 5 s 逾時（firstBeginFrame、freshFallback、softwareWebGpu）；三檔單獨跑在舊碼與新碼都是 25 passed。producer `renderOrchestrator.deGateProbe.test.ts` 首次冷啟動逾時，第二次 3 passed。
+- 先前已知的 symlink EPERM（`assetResolution.test.ts:311`、`projectShaders.test.ts:85`）與 `media.test.ts:99` 含 `?` 檔名失敗，本輪沒有重跑產品 Quick gate，不宣稱完整產品驗收通過。
+
+### 水位與剩餘範圍
+
+commit 連續區段 `2daedcdaf..183614bda`（兩端含）共 28 個 commit，其中 6 個沿用前文證據、22 個本輪逐筆處理，水位推進至 `183614bda3df15812d9f18fd4a71ee77a7da6387`。PR 水位維持 #7077（#7078 起未逐筆審）；issue 維持 #7113。
+
+固定上游 `183614bda` 的起始掃描為 28 commit／68 PR／16 monitored。審查期間上游又前進到 `7e71718`（新增 #7144 `19be35a`、#7143 `7e71718`），結束檢查 `python tools/check_upstream_updates.py --strict` exit 1：水位以上 2 個 commit、68 筆 PR、0 筆新 issue、80 筆釘選中 17 筆變動（含 pr#6714 `6c09af39…`→`4f09b98`、仍 open）。扣除本輪已有逐筆證據的 22 筆 PR（#7079／#7080／#7081／#7082／#7087／#7115 加上表列 16 筆），真正未審 PR 為 46 筆；monitored 未重釘，仍為 17 筆。剩餘計畫只在 ROADMAP.md 近期列維護。

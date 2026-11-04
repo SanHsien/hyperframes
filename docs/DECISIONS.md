@@ -974,3 +974,13 @@ commit 水位僅推進連續 14 筆到 `4c1c1782afae1ac45f119771dc2c142edfd86304
 #7070／#7080 改變擷取恢復或瀏覽器像素；#7073 缺非同步 signature walker；#7082 缺 Safari valve 前置鏈；#7069 改 HTML parse／serialization，需 SDK round-trip 配套；#7072 依賴本線未同步的命令路徑與錯誤合約。依清冊具體觸發條件延後。未引入的 measure、billing、reverse 技能與版本宣告不直接覆蓋；沒有建立付費 checkout 或啟用新 telemetry。
 
 commit 只推進連續 11 筆至 `3f42dc1c7`，其中 3 筆沿用已有證據；額外 4 筆不作跨越缺口依據。PR 至 #7077，issue 維持 #7113。#6945／#6963／#7003 已重新讀 diff 並釘 closed，#7079 加入 open head 追蹤。審查水位不代表產品整版採用；Windows 平台限制與驗證結果保存在清冊。
+
+## 2026-11-04：接續至 `183614bda`，移植 10 筆獨立修正
+
+以 fork `397e937f8` 與固定上游 `183614bda` 為起點，新增逐筆審查 22 個 commit（連續區段共 28 個），各筆檔案行號、PR head、紅綠證據與重訪條件見 [同日接續清冊](UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-04接續至-183614bda移植-10-筆獨立修正)。
+
+採用：#6842 的 offload 部分（`<template>` 內媒體改寫、同名他資料夾檔不誤留）、#7013 的 autoUpdate 部分（0.x minor 與 Homebrew 不背景安裝）、#7088／#7093（腳本載入失敗的 origin／code 診斷，被頁面取消的 script 不算失敗）、#7097（社群邀請連結）、#6745（媒體時長每檔寫 store 一次）、#6919（check 分析階段每個 driver 呼叫重啟閒置視窗）、#6947（check 預設等待與 snapshot／render 一致，為公開預設值變更）、#6928（image 取消請求不被副檔名誤忽略）、#7096（系統睡眠不計入擷取停滯；另超出上游，本線 sequential 分支 `captureStreamingStage.ts:1049` 也改用 `createStallClock`，上游該處仍用 `Date.now() - lastProgressAt`，reset 與 idle(0) 之間只有同步程式碼、行為一致，統一時間來源）。每項程式修正的測試先在舊碼紅燈、新碼綠燈（#7097 為連結變更，無測試）；engine、cli、studio、producer build 皆 exit 0。
+
+延後：#7092 試移植後還原，因單搬只把 parse 次數從 5 降到 3，測試性質要求的 1 次需先有 #7069；#7104 改變整次渲染的失敗恢復，需 Windows render 與 regression 證據；#7013 的 skills release-tag 安裝與 #7120 成組，涉及 `npx skills` 版本釘選與遠端 ref。不適用：本線沒有的 templates、billing、reverse、HeyGen 媒體服務鏈與版本宣告（#7084／#7116／#7112／#7121／#7103／#7101／#7114／#7095／#7128）。
+
+commit 水位連續推進到 `183614bda`；PR 水位仍為 #7077、issue 維持 #7113；monitored 未重釘。已知本機環境失敗（ffmpeg 9 覆寫詢問、Chrome 啟動逾時、並行載入逾時）已在舊碼重現並寫入清冊，不宣稱完整產品驗收通過。
