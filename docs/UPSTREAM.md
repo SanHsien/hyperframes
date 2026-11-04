@@ -141,11 +141,11 @@ Baseline 代表「已審查」，不代表「全部已合併」。
 
 - 逐筆裁決與檔案行號見 [維護決策](DECISIONS.md#2026-11-04上游連續區段與同秒匯出修正)。審查 15 個 commit（連續 14 個加 #7053）、10 筆 PR、4 筆 issue、7 筆既有 monitored 變動；不同軸有重疊，不相加當作獨立修正數。
 - 採用 #7053；#7015 與 sharp 0.35.5 保留既有採用，不重複移植。commit 水位只到 `4c1c1782afae1ac45f119771dc2c142edfd86304`，不跨過未審的 `e8ffaa410`；PR 水位到 #7025，issue 到 #7113。#7053 雖已審，仍在 commit／PR 水位以上。
-- 更新 7 筆已審 monitored 的 head／狀態，新增 #7019、#7023 的條件追蹤；其餘變動保持原釘選值。未審範圍與 issue 重訪條件由 [路線圖](../ROADMAP.md) 追蹤。
+- 更新 7 筆已審 monitored 的 head／狀態，新增 #7019、#7023 的條件追蹤；其餘變動保持原釘選值。未審範圍與 issue 重訪條件由 repo 根目錄 `ROADMAP.md` 追蹤。
 - 結束檢查固定上游 `183614bda3df15812d9f18fd4a71ee77a7da6387`：strict exit 1，水位以上 67 commit／101 PR／0 issue／22 monitored；扣除已審 #7053，未審為 66／100／0／22。新增 release #7128 保持未審，不跨越水位。
 
 ## 2026-11-04（續）：追到 `8a6636efe`，移植 #7049
 
 - 逐筆裁決與檔案行號見 [2026-11-04 接續清冊](UPSTREAM_REVIEW_2026-11-04.md)。審查 18 個 commit（連續 14 個加 4 個水位以上）、23 筆 PR、3 筆 monitored 變動。
 - 採用 #7049（較舊 CLI 版本快取不進入 metadata）。三軸水位：commit `8a6636efe36c3ec313aeb4a122f875b687ffdc5d`、PR #7049、issue #7113；baseline monitored 共 78 筆。
-- 未審範圍由 [路線圖](../ROADMAP.md) 追蹤。
+- 未審範圍由 repo 根目錄 `ROADMAP.md` 追蹤。
