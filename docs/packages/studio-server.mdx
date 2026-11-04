@@ -54,6 +54,10 @@ A `StudioApiAdapter` supplies:
 - render output storage and job startup;
 - optional thumbnails, sessions, registry installation, and background removal.
 
+Exports started in the same second receive separate job IDs and output files.
+When a job ID is already in use or its output file exists, the API appends a
+numeric suffix (`-2`, `-3`, and so on), preserving earlier exports.
+
 Use the interface exported by your installed version as the exact contract. It
 changes as Studio gains capabilities.
 

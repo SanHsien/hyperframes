@@ -136,3 +136,10 @@ Baseline 代表「已審查」，不代表「全部已合併」。
 
 - 採用 #7015（`5a07ea2`：`catalog` 讀不到 registry 時 exit 1 並說原因），細節見 [`DECISIONS.md`](DECISIONS.md) 2026-11-03 條目。
 - 三軸水位仍為 commit `036e41fa09e6670f155fa3f2c361b58b8ed77e02`、PR #7014、issue #6995；其餘新進項目尚未審查，不推進水位。
+
+## 2026-11-04：連續區段審查與 #7053
+
+- 逐筆裁決與檔案行號見 [維護決策](DECISIONS.md#2026-11-04上游連續區段與同秒匯出修正)。審查 15 個 commit（連續 14 個加 #7053）、10 筆 PR、4 筆 issue、7 筆既有 monitored 變動；不同軸有重疊，不相加當作獨立修正數。
+- 採用 #7053；#7015 與 sharp 0.35.5 保留既有採用，不重複移植。commit 水位只到 `4c1c1782afae1ac45f119771dc2c142edfd86304`，不跨過未審的 `e8ffaa410`；PR 水位到 #7025，issue 到 #7113。#7053 雖已審，仍在 commit／PR 水位以上。
+- 更新 7 筆已審 monitored 的 head／狀態，新增 #7019、#7023 的條件追蹤；其餘變動保持原釘選值。未審範圍與 issue 重訪條件由 [路線圖](../ROADMAP.md) 追蹤。
+- 結束檢查固定上游 `183614bda3df15812d9f18fd4a71ee77a7da6387`：strict exit 1，水位以上 67 commit／101 PR／0 issue／22 monitored；扣除已審 #7053，未審為 66／100／0／22。新增 release #7128 保持未審，不跨越水位。

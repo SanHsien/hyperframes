@@ -44,6 +44,48 @@ function buildApp(spy: ReturnType<typeof vi.fn>): {
   return { app, rendersDir, cleanup: () => rmSync(rendersDir, { recursive: true, force: true }) };
 }
 
+describe("POST /projects/:id/render — job ids", () => {
+  it.each([false, true])(
+    "keeps same-second exports separate when a previous output exists: %s",
+    async (previousOutput) => {
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(new Date("2026-11-02T12:00:00Z"));
+      const spy = vi.fn();
+      const { adapter, rendersDir } = createAdapter(spy);
+      let app = new Hono();
+      registerRenderRoutes(app, adapter);
+      const start = () =>
+        app.request("http://localhost/projects/demo/render", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ fps: 30, quality: "standard", format: "mp4" }),
+        });
+      try {
+        if (previousOutput) {
+          const { jobId } = await (await start()).json();
+          writeFileSync(join(rendersDir, `${jobId}.mp4`), "previous-output");
+          // A fresh API instance has no in-memory record of the earlier export.
+          app = new Hono();
+          registerRenderRoutes(app, adapter);
+        }
+        const responses = await Promise.all([start(), start(), start()]);
+        expect(responses.map((response) => response.status)).toEqual([200, 200, 200]);
+        const ids = await Promise.all(
+          responses.map(async (response) => (await response.json()).jobId),
+        );
+        expect(new Set(ids).size).toBe(3);
+        expect(spy.mock.calls.slice(-3).map(([opts]) => opts.outputPath)).toEqual(
+          ids.map((id) => join(rendersDir, `${id}.mp4`)),
+        );
+        if (previousOutput) expect(ids).not.toContain(spy.mock.calls[0][0].jobId);
+      } finally {
+        vi.useRealTimers();
+        rmSync(rendersDir, { recursive: true, force: true });
+      }
+    },
+  );
+});
+
 describe("GET /projects/:id/renders — stale sidecar status", () => {
   it("does not mark an existing output failed from stale metadata", async () => {
     const spy = vi.fn();

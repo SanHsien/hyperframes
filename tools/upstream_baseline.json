@@ -1,10 +1,10 @@
 {
   "repo": "https://github.com/heygen-com/hyperframes.git",
   "branch": "main",
-  "reviewed_through": "036e41fa09e6670f155fa3f2c361b58b8ed77e02",
-  "reviewed_date": "2026-11-02",
-  "reviewed_pr_through": 7014,
-  "reviewed_issue_through": 6995,
+  "reviewed_through": "4c1c1782afae1ac45f119771dc2c142edfd86304",
+  "reviewed_date": "2026-11-04",
+  "reviewed_pr_through": 7025,
+  "reviewed_issue_through": 7113,
   "decision_log": "docs/DECISIONS.md",
   "monitored": [
     {
@@ -229,8 +229,8 @@
     },
     {
       "item": "pr#6934",
-      "head": "a53b81375a8f3b1261da06add1840013109ffcd2",
-      "state": "open"
+      "head": "b9d11eaf0836381518f0302f4544b98600867bd6",
+      "state": "closed"
     },
     {
       "item": "pr#6935",
@@ -304,18 +304,18 @@
     },
     {
       "item": "pr#6990",
-      "head": "cdb503eb3d964edb6dae6bf38b20506d26ddd707",
-      "state": "open"
+      "head": "e0c984433b5222405ee8845998178d0861a0175e",
+      "state": "closed"
     },
     {
       "item": "pr#6991",
       "head": "c1b5a2beb7342567e4ce71fc459b30d79df3f000",
-      "state": "open"
+      "state": "closed"
     },
     {
       "item": "pr#6992",
       "head": "8301df1492a89fae448f28c8402ab7fdd2d6fb7d",
-      "state": "open"
+      "state": "closed"
     },
     {
       "item": "pr#6993",
@@ -339,8 +339,8 @@
     },
     {
       "item": "pr#7007",
-      "head": "39aeaaa9f530f2ba7182e5a3852c2f94e17f8447",
-      "state": "open"
+      "head": "edb98aaa9a7dde2b94c1beb22db246079d31b179",
+      "state": "closed"
     },
     {
       "item": "pr#7008",
@@ -349,13 +349,13 @@
     },
     {
       "item": "pr#7009",
-      "head": "384a823df9192bae03c6fdc66ce4b882926f7a30",
-      "state": "open"
+      "head": "c691c4cb3ec6dfddef1798816ff40fb42d07b5b3",
+      "state": "closed"
     },
     {
       "item": "pr#7011",
       "head": "184448a715ca24c76ba3c59fc1d59e6cb2c0023d",
-      "state": "open"
+      "state": "closed"
     },
     {
       "item": "pr#7013",
@@ -365,6 +365,16 @@
     {
       "item": "pr#7014",
       "head": "2987c132791bebda62cef5e5dd3303be02b698dd",
+      "state": "open"
+    },
+    {
+      "item": "pr#7019",
+      "head": "b278d8829d573062e4cce7ae6fabbb10f1cff1dc",
+      "state": "open"
+    },
+    {
+      "item": "pr#7023",
+      "head": "1a9910e1f93802067e25a28ffc44b15a6769d7a3",
       "state": "open"
     }
   ]
