@@ -167,3 +167,9 @@ commit 水位只推進連續 11 筆至 `3f42dc1c73b0c9915b311e48bd0099b39a0865a9
 逐筆審查 22 個新 commit（連續區段 `2daedcdaf..183614bda` 共 28 個，其中 6 個沿用既有證據），檔案行號、PR head、紅綠證據與重訪條件見 [同日接續清冊](UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-04接續至-183614bda移植-10-筆獨立修正)。採用 #6842 的 `<template>` 媒體 offload、#7013 的 0.x minor 與 Homebrew 不背景升級、#7088／#7093 的腳本載入診斷與取消判定、#7097 的社群邀請連結、#6745 的媒體時長單檔寫入、#6919 的 check 分析閒置視窗、#6947 的 check 預設等待、#6928 的取消判定、#7096 的睡眠不計入擷取停滯；#7092／#7104／#7120 與 #7013 的 skills 安裝延後，billing、templates、reverse 與版本宣告不適用。
 
 三軸水位為 commit `183614bda3df15812d9f18fd4a71ee77a7da6387`、PR #7077、issue #7113。PR 水位不動：#7078 起仍有未審項目，隨 commit 讀過補丁的 16 筆 PR 只作額外證據；baseline monitored 未重釘，共 80 筆。剩餘範圍只在 ROADMAP.md 近期列維護，審查不代表整版同步或完整產品驗收。
+
+## 2026-11-04：追到 `1ff4cefd4`，移植 4 筆獨立修正
+
+逐筆審查 10 個 commit（`183614bda..1ff4cefd4` 連續）、#7078–#7157 範圍內尚無證據的 PR、19 筆既有 monitored 重釘與 8 筆新增；檔案行號、PR head、紅綠證據與重訪條件見 [同日接續清冊](UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-04接續至-1ff4cefd4移植-4-筆獨立修正)。採用 #7143（scene 內 host 共用 composition id 時各自保有 timeline）、#7151（Windows 磁碟根目錄輸出不再在寫檔前 EPERM）、#7155（雲端上傳被拒時點名檔案與參數）、#7154（頁面從未就緒的 render 只失敗一次並回報不可重試的錯誤碼，手工適配本線 `server.ts` 的錯誤碼集合）；#7144、#7145、#7152、#7156 不適用，#7094、#7102 延後（update 指令與 skills 政策成組）。
+
+三軸水位為 commit `1ff4cefd40c8dad98127fc78e8761c1ac62053dd`、PR #7157、issue #7113；baseline monitored 共 88 筆（19 筆重釘，新增 #7098、#7110、#7142、#7150、#7119、#7148、#7153、#7154）。收尾 strict 檢查 exit 0；上游仍會前進，剩餘範圍只在 ROADMAP.md 維護，審查不代表整版同步或完整產品驗收。

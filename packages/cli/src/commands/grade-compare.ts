@@ -2,7 +2,6 @@ import { failCommand } from "../utils/commandResult.js";
 import {
   copyFileSync,
   existsSync,
-  mkdirSync,
   mkdtempSync,
   readFileSync,
   rmSync,
@@ -24,6 +23,7 @@ import { openSettledCompositionPage, runFfmpegOnce } from "../capture/captureCom
 import { findFFmpeg } from "../browser/ffmpeg.js";
 import { c } from "../ui/colors.js";
 import { normalizeErrorMessage } from "../utils/errorMessage.js";
+import { makeOutputFolder } from "../utils/outputFolder.js";
 import { loadSharp } from "../utils/optionalPackages.js";
 import { displayPathFromBase, readOptionalString, resolveFromBase } from "../utils/pathArgs.js";
 import { trackCompareSheet } from "../telemetry/events.js";
@@ -668,7 +668,7 @@ export default defineCommand({
         prepared.tempDir,
         parsed.timeoutMs,
       );
-      mkdirSync(dirname(parsed.outPath), { recursive: true });
+      makeOutputFolder(dirname(parsed.outPath));
       copyFileSync(tempSheet, parsed.outPath);
       trackCompareSheet({
         command: "grade-compare",

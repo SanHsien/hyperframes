@@ -21,6 +21,7 @@ import {
 } from "../capture/captureCompositionFrame.js";
 import { c } from "../ui/colors.js";
 import { normalizeErrorMessage } from "../utils/errorMessage.js";
+import { makeOutputFolder } from "../utils/outputFolder.js";
 import { displayPathFromInput, readOptionalString, resolveFromBase } from "../utils/pathArgs.js";
 import { trackCompareSheet } from "../telemetry/events.js";
 import { serveStaticProjectHtml } from "../utils/staticProjectServer.js";
@@ -361,7 +362,7 @@ async function renderCompareSheet(parsed: ParsedCompareArgs): Promise<CompareSuc
       renderReadyTimedOut = renderReadyTimedOut || rendered.renderReadyTimedOut;
     }
 
-    mkdirSync(dirname(parsed.outPath), { recursive: true });
+    makeOutputFolder(dirname(parsed.outPath));
     await createContactSheet(framePaths, parsed.outPath, {
       cols: parsed.cols ?? defaultCompareCols(framePaths.length),
       maxImages: framePaths.length,

@@ -12,6 +12,7 @@ import {
 } from "./manager.js";
 import { findPython, hasPythonPackage } from "./python.js";
 import { writeNewFileSync } from "../utils/writeNewFile.js";
+import { makeOutputFolder } from "../utils/outputFolder.js";
 
 // ---------------------------------------------------------------------------
 // Inline Python script for Kokoro synthesis
@@ -209,7 +210,7 @@ export async function synthesize(
   const scriptPath = ensureSynthScript();
 
   // 4. Ensure output directory exists
-  mkdirSync(dirname(outputPath), { recursive: true });
+  makeOutputFolder(dirname(outputPath));
 
   // 5. Run synthesis
   options?.onProgress?.(`Generating speech with voice ${voice} (${lang})...`);

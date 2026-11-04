@@ -984,3 +984,13 @@ commit 只推進連續 11 筆至 `3f42dc1c7`，其中 3 筆沿用已有證據；
 延後：#7092 試移植後還原，因單搬只把 parse 次數從 5 降到 3，測試性質要求的 1 次需先有 #7069；#7104 改變整次渲染的失敗恢復，需 Windows render 與 regression 證據；#7013 的 skills release-tag 安裝與 #7120 成組，涉及 `npx skills` 版本釘選與遠端 ref。不適用：本線沒有的 templates、billing、reverse、HeyGen 媒體服務鏈與版本宣告（#7084／#7116／#7112／#7121／#7103／#7101／#7114／#7095／#7128）。
 
 commit 水位連續推進到 `183614bda`；PR 水位仍為 #7077、issue 維持 #7113；monitored 未重釘。已知本機環境失敗（ffmpeg 9 覆寫詢問、Chrome 啟動逾時、並行載入逾時）已在舊碼重現並寫入清冊，不宣稱完整產品驗收通過。
+
+## 2026-11-04：接續至 `1ff4cefd4`，移植 4 筆獨立修正
+
+以 fork `08cc80bd5` 為起點，逐筆審查 `183614bda..1ff4cefd4` 的 10 個 commit 與 #7078–#7157 範圍內尚無證據的 PR，各筆檔案行號、PR head、紅綠證據與重訪條件見 [同日接續清冊](UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-04接續至-1ff4cefd4移植-4-筆獨立修正)。
+
+採用：#7143（`inlineSubCompositions.ts:474` 在 host 不在身分表時讀自己的 composition id）、#7151（`makeOutputFolder` 對已存在的資料夾不呼叫遞迴 `mkdir`；本機 Node 實測 `C:\`、`D:\` 皆 EPERM；另補 `motionShot` 呼叫端回歸）、#7155（雲端上傳被拒時帶上檔名與參數，過期類拒絕不誤指型別）、#7154（`PAGE_NEVER_READY`：校準與擷取都 `Runtime.evaluate` 逾時且無畫格時回報不可重試錯誤；本線沒有 `safeRenderErrorCode.ts` 與 `surfaceScriptFailure`，改在 `server.ts` 的集合與 `tooSlowError ?? pageNeverReady ?? caught` 手工適配）。每項程式修正的測試先在舊碼紅燈、新碼綠燈；core、cli、producer build 皆 exit 0。
+
+不適用：#7144／#7145（HyperFrames 帳戶媒體服務與 credit-limit 鏈，拒絕訊息會導向本線不存在的 `media-use generate`）、#7152／#7156（版本與發行說明含未採功能）、billing／reverse／measure／share 等本線沒有的模組。延後：#7094（`update --check`、每日通知與 skills release-tag，依賴 #7013 skills 部分與 #7120）、#7102（agent 不安裝技能的政策，與 #7094 成組並需重生 manifest 雜湊）、generated schema 重生（與 #7062／#7058 成組）、Safari preload #7091（與 #7082 成組）；open 的 #7098、#7110、#7142、#7150 是獨立可採的修正，等合併後採用並已加入 monitored。
+
+commit 水位連續推進到 `1ff4cefd4`，PR 水位到 #7157，issue 維持 #7113，monitored 19 筆重釘並新增 8 筆。已知本機環境失敗（ffmpeg 覆寫詢問、Chrome 啟動逾時、symlink EPERM、`media.test.ts:99` 含 `?` 檔名、`renderOrchestrator.stall.test.ts` 時序）已在舊碼重現並寫入清冊，不宣稱完整產品驗收通過。

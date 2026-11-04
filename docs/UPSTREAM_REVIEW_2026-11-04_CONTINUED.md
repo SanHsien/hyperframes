@@ -273,3 +273,169 @@ Merged PR 以 GitHub merge SHA 核對實際 `git show` 補丁；未合併 PR 讀
 commit 連續區段 `2daedcdaf..183614bda`（兩端含）共 28 個 commit，其中 6 個沿用前文證據、22 個本輪逐筆處理，水位推進至 `183614bda3df15812d9f18fd4a71ee77a7da6387`。PR 水位維持 #7077（#7078 起未逐筆審）；issue 維持 #7113。
 
 固定上游 `183614bda` 的起始掃描為 28 commit／68 PR／16 monitored。審查期間上游又前進到 `7e71718`（新增 #7144 `19be35a`、#7143 `7e71718`），結束檢查 `python tools/check_upstream_updates.py --strict` exit 1：水位以上 2 個 commit、68 筆 PR、0 筆新 issue、80 筆釘選中 17 筆變動（含 pr#6714 `6c09af39…`→`4f09b98`、仍 open）。扣除本輪已有逐筆證據的 22 筆 PR（#7079／#7080／#7081／#7082／#7087／#7115 加上表列 16 筆），真正未審 PR 為 46 筆；monitored 未重釘，仍為 17 筆。剩餘計畫只在 ROADMAP.md 近期列維護。
+
+## 2026-11-04：接續至 `1ff4cefd4`，移植 4 筆獨立修正
+
+起點為 fork `08cc80bd5`，baseline 為 commit `183614bda`、PR #7077、issue #7113。起始 `python tools/check_upstream_updates.py --strict` exit 1：上游本地快照 `11f43268a`，水位以上 8 個 commit、75 筆 PR、0 筆新 issue，80 筆釘選中 19 筆變動（比上一輪結束時的 2／46／17 多，因為上游持續合併）。審查期間上游又前進到 `1ff4cefd4`（先後合併 #7154、#7156）並新開 #7157，本輪一併處理。本輪逐筆審查 **10 個 commit、#7078–#7157 範圍內尚無證據的 PR、19 筆既有 monitored 重釘、新增 8 筆 monitored**；各軸重疊，不相加為修正數。
+
+`SHA:檔案:行號` 指該提交內容；「本線」指起點工作樹，採用項標明移植後行號。逐筆讀實際補丁，不以 `--stat` 或主旨判斷。未合併 PR 以 `gh pr diff --repo heygen-com/hyperframes` 取目前 head 的完整補丁；merged PR 另核對 merge 補丁與 PR head 補丁的新增／刪除行集合相同。對本輪新讀的補丁（8 個 commit、#7154、45 筆 PR 補丁、19 筆 monitored head）共 34309 個新增行做隱藏內容掃描（40 字元以上空白後接內容、`eval(`／`new Function`／`atob(`／`fromCharCode`、`globalThis`、100 字元以上 base64、500 字元以上單行、零寬與雙向控制字元）：命中只有 Markdown 表格欄位對齊的空白（#6842、#6968、#7135、#7136、`7cb6018c6`）、文件與技能的長句（#6842、#7134、#7138、`19be35a46`、`6857bb08e`、`76da5f693`）、測試中的 `globalThis`／`page.$eval`（#7014、#7108、#7119、#7140）以及 #7137 測試 fixture 內的重複字元與長 regex；沒有行尾藏碼。
+
+### Commit 裁決（10 筆）
+
+| Commit／PR | 檔案行號證據與本線差異 | 裁決與重訪條件 |
+| --- | --- | --- |
+| `19be35a46` #7144 | `packages/cli/src/heygen/v3.ts:277`、`:297` 把 `publicVoices` 抽成 `listVoices`，新增 `ownVoices`（`type: "private"`），401／403 導向 `auth login`；`commands/media-use/voices.ts:1` 新增 `media-use voices`，`commands/media-use.ts:103` 註冊。本線 `packages/cli/src/heygen/` 不存在，`packages/cli/src/media-use/lib/voice-provider.mjs:32` 仍以 `heygen voice list` 取聲線，`commands/media-use.ts` 無 `voices`／`generate`，`measure/command.ts` 也不存在。 | 不適用：整個補丁掛在本線沒有的 HyperFrames 帳戶媒體服務鏈（#7063）上，不能只搬一個 `ownVoices`。引入 `heygen/v3.ts` 與 `media-use generate` 時成組重訪，驗聲線列表走 HyperFrames 帳戶而非 `heygen` 登入、401／403 提示與 `--limit` 邊界。 |
+| `7e717189c` #7143 | `packages/core/src/compiler/inlineSubCompositions.ts:474` 在 scene 內的 host 不在 `hostIdentityMap` 時，改讀 host 自己的 `data-composition-id`（原本 `identity?.authoredCompositionId \|\| null` 把它丟成 null，兩個共用 composition id 的 host 註冊到同一個 timeline key）；`htmlBundler.nestedTimelines.test.ts:1` 新增回歸；兩份 `pageBuild.*.html` golden 去掉內層根重複的 `data-composition-id`。本線 `inlineSubCompositions.ts:474` 與上游父版相同（`if (hostIdentityMap) { const identity = hostIdentityMap.get(hostEl); … }`）。 | **採用**（本線 `inlineSubCompositions.ts:474`、`:226` 說明、`__goldens__/pageBuild.preview.html`／`pageBuild.render.html`、`htmlBundler.nestedTimelines.test.ts:1`）。補丁無衝突，行為與上游一致；golden 變動是內層根不再帶重複的 `data-composition-id`，由 golden 測試釘住。 |
+| `76da5f693` #7145 | `packages/cli/src/media-use/lib/credit-limit.mjs:10` 讀 `.hyperframes/credit-limit.json`，`:35` 的 `refuseUnderLimit` 對無法計價的 `heygen` 呼叫拒絕並導向 `media-use generate --type voice`；`heygen/v3.ts:221` 的 `withinLimit` 在付費任務前預留額度；`voice-provider.mjs`、`heygen-video-provider.mjs`、`skills/media-use/audio/scripts/lib/tts.mjs:311` 加拒絕。本線 `voice-provider.mjs:39`、`heygen-video-provider.mjs:46` 直接呼叫 `heygen` CLI，沒有 credit-limit 檔案也沒有 `media-use generate`。 | 不適用：拒絕訊息導向本線不存在的指令，單獨加上會讓使用者被擋卻無替代路徑。與 #7144 同屬媒體服務鏈，成組引入時驗額度預留、refused 回補、重試去重與無法計價的呼叫。 |
+| `7cb6018c6` #7094 | 25 檔 +1956：新增 `commands/update.ts:1`（`update --check`，`:28` 範例）、`utils/dailyNotice.ts:1`（每日一次通知，未來時間不信任）、`installerDetection.ts:190` 起 `runningInstall`／`updateCommandFor`、`skillsUpdateCheck.ts:33` 起把快取改 2 小時並記錄 `skillsCheckedVersion`、`commands/skills.ts:328`、`:511` 以 `opts.cliVersion` 取 release tag、`telemetry/config.ts:503`、`doctor.ts` 新增 CLI binary 檢查。本線無 `commands/update.ts`、`utils/dailyNotice.ts`；`installerDetection.ts:56` 的 `isEphemeralExec` 只看上層目錄名是否以 `bunx-` 開頭（上游 `:63`–`:65` 補 `/bunx-[^/]+/node_modules/` 辨識真實 bunx 路徑），但本線 `detectInstaller` 對該路徑各分支皆不命中，最終於 `:153` 回 skip，自動更新行為不受影響；`skills.ts:137` 與 `skillsManifest.ts:711` 仍無 release-tag ref。 | 延後：新增公開指令與通知政策，並依賴 #7013 skills 部分（`cliReleaseTag`／固定 `skills` 版本）與 #7120 才完整。bunx 路徑辨識只影響 `update`／`doctor` 的標籤，本線無可觀察錯誤，不單獨搬。同步 skills 安裝與 update 指令時成組驗：`--check --json` 的 `_meta`、brew／plugin／project-local 的更新指令、每日通知不寫入唯讀 HOME、快取版本與 CLI 版本不同時失效、Windows 路徑。 |
+| `e04b722a9` #7152 | `packages/cli/package.json:3` 等升 0.9.11；`releases/v0.9.11.md:1` 與 `docs/changelog.mdx:11` 宣告 #7094、#7145、#7143、#7144。本線 `packages/cli/package.json:3` 為 0.8.210。 | 不適用：版本與發行說明含未採功能（update、credit limit、voices），不能只升版本。整版同步並完成產品驗收後重訪。 |
+| `6857bb08e` #7102 | 17 檔 ±57：`skills/hyperframes/references/skill-lifecycle.md:1`／`:12` 改為「安裝、更新、移除技能是使用者的步驟，agent 只告知」並要求 agent 跑 `init` 時加 `--skip-skills`；`skills/hyperframes-cli/SKILL.md:6`、`:18`、`:27` 與 `skills/hyperframes/SKILL.md` 同步，`skills-manifest.json` 18 行雜湊。本線 `init.ts:779` 已有 `--skip-skills`；`skills/hyperframes-cli/SKILL.md:16`、`:25` 與 `skill-lifecycle.md:8`、`:12` 仍寫由 agent 執行 `skills update`。補丁含本線沒有的 `reverse-any-video`、`style-sampling` 技能與 `scripts/check-core-skills.test.mjs:43` 的 reverse 斷言。 | 延後：這是 agent 行為政策，與 `7cb6018c6` 的「把過期狀態轉告使用者」成組（技能文字要求 agent 轉述 stale 提醒，而本線無該提醒），且 `skills-manifest.json` 雜湊需重生。同步 #7094／#7013 skills 部分時一併採用，驗 `init --skip-skills` 範例、plugin 安裝文字與 manifest 雜湊，並只改本線已有的技能。 |
+| `50ce9fb51` #7151 | `packages/cli/src/utils/outputFolder.ts:1` 新增 `makeOutputFolder`：目錄已存在時不呼叫 `mkdirSync`；Windows 對已存在的磁碟根目錄（`D:\`）做遞迴 `mkdir` 會回 EPERM，輸出直接放磁碟根的指令在寫檔前就失敗。下列呼叫端改用它：`cloud/download.ts`、`commands/batchRender.ts`（2 處）、`compare.ts`、`grade-compare.ts`、`measure/extract.ts`、`measure/probe.ts`、`motionShot.ts`、`render/execute.ts`、`templates.ts`、`heygen/generate.ts`、`tts/synthesize.ts`；`fileIds.windows.test.ts` 的 `statSync` mock 改為保留 `Stats` 方法。本線無 `measure/`、`templates.ts`、`heygen/`。 | **採用**（本線 `utils/outputFolder.ts:1`；呼叫端 `cloud/download.ts:77`、`batchRender.ts:323`／`:345`、`compare.ts:365`、`grade-compare.ts:671`、`motionShot.ts:63`、`render/execute.ts:75`、`tts/synthesize.ts:213`；`fileIds.windows.test.ts` 的 mock 同上游）。本機 Node 26.12.1 實測 `fs.mkdirSync` 遞迴建立已存在的 `C:\` 與 `D:\` 皆回 EPERM，與上游描述一致。上游未動的 `commands/capture.ts:339`、`whisper/transcribe.ts:518` 等 `mkdirSync(outputDir)` 不在補丁內，本輪不擴大。 |
+| `11f43268a` #7155 | `packages/cli/src/cloud/errors.ts:78`–`:80` 在 `err.param` 存在且訊息未含時，補上 `(parameter: …)`；`cloud/upload.ts:203` 的 `TYPE_REFUSAL` 與 `nameRefusedFile` 在 `completeAssetUpload` 回 `invalid_parameter` 時帶上檔名，只有型別拒絕才說是「型別」，過期等拒絕不誤指檔案類型。本線 `errors.ts:75`、`upload.ts:199` 與上游父版相同，無此包裝。 | **採用**（本線 `errors.ts:80`、`upload.ts:203`／`:205`／`:251`、`errors.test.ts`、`upload.test.ts`）。補丁無衝突。 |
+| `5cea10e76` #7154 | `packages/producer/src/services/render/captureCost.ts:347`／`:386`／`:446`／`:488` 記錄校準最後一次失敗是否為 `Runtime.evaluate` 逾時、`:510` 回傳；新增 `render/pageNeverReady.ts:1`（`checkPageNeverReady`，`code: PAGE_NEVER_READY`、`retryable: false`、`owner: "user"`）；`renderOrchestrator.ts:5683` 在 catch 以它取代泛用錯誤；`safeRenderErrorCode.ts:12` 加入可公開的錯誤碼。本線沒有 `safeRenderErrorCode.ts`，該集合在 `packages/producer/src/server.ts:140`；`renderOrchestrator.ts:5473` 的 catch 為 `const error = tooSlowError ?? caught`（上游父版另有 `surfaceScriptFailure`，本線沒有）。 | **採用，手工適配**（本線 `captureCost.ts:346`／`:385`／`:445`／`:487`／`:509`、`pageNeverReady.ts:1`、`renderOrchestrator.ts:194`／`:2983`／`:4031`／`:5476`、`server.ts:151`）：補丁無法直接套用，錯誤碼加到本線 `server.ts` 的集合，catch 用 `tooSlowError ?? pageNeverReady ?? caught`；取消判定順序與上游相同（`executionSignal?.aborted` 仍走取消分支）。merge 補丁與 PR head 補丁的新增／刪除行集合相同（246 行）。 |
+| `1ff4cefd4` #7156 | 21 檔：各 package.json 升 0.9.12；`releases/v0.9.12.md:1`、`docs/changelog.mdx:11` 宣告 #7154、#7155、#7151、#7102（其中 #7102 本線延後）。本線 `packages/cli/package.json:3` 為 0.8.210。除版本號、changelog 與發行說明外沒有其他新增行。 | 不適用：同 `e04b722a9`，版本與發行說明含未採功能，整版同步並完成產品驗收後重訪。 |
+
+### PR 裁決（PR 水位 #7077 → #7157）
+
+下列依編號列出尚無證據的項目。前文清冊已有證據的 #7079、#7080、#7081、#7082、#7087、#7115，以及已隨 commit 讀過補丁的 #7084、#7088、#7092、#7093、#7095、#7096、#7097、#7101、#7103、#7104、#7112、#7114、#7116、#7120、#7121、#7128 不重複。#7111、#7113、#7139 不在上游 PR 清單內（issue 或不存在）。
+
+| PR | 檔案行號證據與裁決 |
+| --- | --- |
+| #7078 | closed head；`packages/cli/src/cloud/_gen/client.ts:5` 起新增 createImage／createVideo／listVoicesV3／createSpeechV3／createTranscription 等媒體端點，`types.ts:9` 起重生（+744 行），同時刪除舊端點宣告。不適用：與 #7063 同屬媒體服務與 generated client 鏈，本線 `cloud/_gen/client.ts` 沒有這些端點；不以 closed 補丁取代權威 schema。 |
+| #7083 | open head；`packages/engine/src/services/audioMixer.test.ts:1053` 把 normalize fallback 測試擴成 padded gain 與自動化音量兩例，`audioMixer.ts:359` 只改註解。延後：只有測試與註解，無行為修正可移植；合併後若本線 fallback 與測試不一致再評估，不單獨搬測試。 |
+| #7085 | open head；`commands/billing.ts`、`heygen/plan.ts`、`auth/oauth.ts` 新增終端機付款流程。不適用：本線無 billing、plan 與 OAuth 隔離（見 #7068）；未登入、未建立 checkout。 |
+| #7086 | closed head；`scripts/clawhub-sync.mjs:48` 起改為逐版往上重試發布。不採：closed 未合併，且自動發布與 ClawHub 同步屬路線圖「刻意不做」；本線 `scripts/clawhub-sync.mjs:39` 的 `versionPastSkippable` 維持原樣。 |
+| #7089 | open head；`commands/reverse/start.ts`、`commands/init.ts` 讓 reverse start 建立 `--dir` 專案並接受資料夾內既有影片。不適用：本線無 `commands/reverse/`。 |
+| #7090 | open head；`measure/extract.ts:64`、`measure/diff.ts:371`、`measure/media.ts:228`、`measure/person.ts:259` 把 crop 前先轉 rgb24 或加 `exact=1`，避免奇數尺寸被 yuv420p 向下取偶。不適用：本線無 `packages/cli/src/measure/`。引入 measure 時成組驗奇數框 33x33 與奇數位移。 |
+| #7091 | closed head；`runtime/preloadMedia.ts:34` 新增 `preloadFromInPoint`，WebKit 先載 metadata 再 seek 到入點；`init.ts:3055`、`:3140` 改呼叫。延後：與 #7082 的 Safari 音訊前置鏈成組，需 Safari 實機。同步 Safari 媒體時鐘時驗深入點、起點為 0 與非 WebKit 路徑，不以 closed 狀態判不適用。 |
+| #7094 | merge `7cb6018c6`；見 commit 表。延後。 |
+| #7098 | open head；`commands/render/plan.ts:572` 在擷取前用 `appendRateCapArgs` 驗 `--video-bitrate`，壞值 `abc`／`10x`／`0` 即 usage error；`plan.test.ts:249` 新增 4 例。本線 `plan.ts:482` 只 trim、`:512` 只拒空字串，壞值會到 ffmpeg 才失敗。延後至合併（獨立、可移植）；合併後依 commit 採用，驗 MOV 拒絕順序與 `--max-bitrate` 共用解析器。加入 monitored。 |
+| #7099 | open head；`auth/status.ts`、`heygen/v3.ts`、`measure/command.ts` 的 paywall 連結與方案標籤。不適用：本線無這些模組。 |
+| #7100、#7106、#7107、#7109、#7117、#7118、#7122、#7123、#7124、#7125、#7127、#7129 | 皆 closed head；`cloud/_gen/types.ts` 逐次補 `reverse_session_id`（`:124`）、`output_upload`（`:201`、`:243`）、`OutputUploadRequest`／`UploadTargetRequest`、`DeliveryStatus` 等欄位。延後：generated schema 不獨立覆蓋，與 #7062／#7058 同一重生條件；closed 本身不代表不適用。 |
+| #7102 | merge `6857bb08e`；見 commit 表。延後。 |
+| #7105 | closed head；`commands/billing.ts`、`heygen/v3.ts`、`skills/media-use/audio/scripts/lib/heygen.mjs` 的 top-up 改名 add-credits 並留別名。不適用：未採 billing；後續 #7121 已不留別名。 |
+| #7108 | open head；`.github/workflows/ci.yml`、`packages/engine/src/services/__fixtures__/motionBlur/*`、四個 `captureMotionBlur.*.browser.test.ts` 與 `packages/producer/scripts/integration-tests.json`，+1860 行的像素不變量與 CI job。延後：測試與 CI 工作流，需 Chrome 與新增 job；本線已有 `captureMotionBlur.pixels.browser.test.ts`，合併並確定 CI 契約後再評估，不為稽核變綠加 workflow。 |
+| #7110 | open head；`whisper/normalize.ts:502` 的 `parseWhisperJson` 把 JSON 字串外的 `nan`／`-nan`／`inf`／`-nan(ind)`（MSVC）換成 null，`transcribe.ts:581` 與 `loadTranscript` 改用；`normalize.test.ts:127` 新增回歸。本線 `normalize.ts:63`、`:531` 與 `transcribe` 讀 whisper JSON 處仍直接 `JSON.parse`，輸出含 `nan` 時會失敗。延後至合併（獨立、對 Windows MSVC 版 whisper-cli 有實益）；合併後依 commit 採用，驗字串內含 `nan` 的字詞不被改寫。加入 monitored。 |
+| #7119 | open head；`engine/src/services/frameCapture-decodeTimeoutCallers.test.ts` 新增 +181 行，釘住 decode 逾時警告到達所有呼叫者。本線試跑：3 例失敗（drawElement init、per-frame seek 各 5 s 逾時，batch loop 例斷言 `lateBackgrounds`，該欄位由 #6972 引入），所以測試依賴 #6972（open）。延後：先有 #6972 才有意義；試跑檔案已移除。加入 monitored。 |
+| #7126 | closed head；重複的 v0.9.10 release（#7128 已合併）。不適用：同 #7095。 |
+| #7130、#7157 | open head；`cloud/_gen/types.ts` 生成補丁，同 #7100 群（#7157 於收尾前新開，補丁為 +37 行的同一組 `reverse_session_id`、`output_upload`、`DeliveryStatus`、`FileDeliveryStatus`、`VideoDetail.delivery`）。延後。 |
+| #7131 | open head；`README.md`、`docs/faq.mdx`、`docs/introduction.mdx` 改寫「免費」與 Studio app 方案說明。不適用：Studio app 的方案與價格是上游產品宣告，本線不能複述。 |
+| #7132 | open head；`docs/packages/cli.mdx:1114` 改為 `open` 的交棒在 macOS、Windows、Linux 都可用，`docs/studio-app/edit-with-the-agent.mdx:66` 移除 add a transition。本線 `docs/packages/cli.mdx:1069` 仍寫僅 macOS，而 `commands/open.ts:17` 的錯誤訊息已寫三平台。延後：文件需與 `open` 在 Windows 的實測一致，合併後以 `hyperframes open` 實跑核對再調整。 |
+| #7133 | open head；`docs/docs-menu-label.js:1` 新增導覽按鈕標籤腳本。不適用：Mintlify 品牌互動，本線無對應需求。 |
+| #7134、#7135、#7136、#7137、#7138、#7140、#7141 | 皆 draft；#7134 新增 `packages/share/` 與 CI 發佈步驟，#7135 `commands/share.ts`，#7136 `share/publishTransition.ts` 與 `publish.ts`，#7137 `share/sources.ts`（+14374 行），#7138 `share/telemetry.ts`，#7140 Studio 分享路由，#7141 `core/src/storyboard/frameIdentity.ts` 與 `reviewManifest.ts`。不適用：本線無 `packages/share`、`commands/share.ts`，分享要求 HyperFrames 帳戶與遙測；#7141 改動本線有的 `storyboard/parseStoryboard.ts`、`editStoryboard.ts` 序列化，draft 未穩定，先不採，合併後與分享鏈成組重訪。 |
+| #7142 | open head；`commands/init.ts:215` 的 `missingRenderToolsWarning` 在 init 結束時警告找不到 FFmpeg／FFprobe，`browser/ffmpeg.ts:123` 對 macOS 補無 Homebrew 的路徑提示。本線 init 不警告，render 時才失敗。延後至合併（對 Windows 同樣有益）；合併後依 commit 採用，驗 `HYPERFRAMES_FFMPEG_PATH` 覆寫與非互動輸出。加入 monitored。 |
+| #7143、#7144、#7145 | merge `7e717189c`、`19be35a46`、`76da5f693`；見 commit 表。#7143 採用，其餘不適用。 |
+| #7146、#7147 | open head；`docs/snippets/catalog-gallery.jsx`、`docs/catalog-gallery.css`、`scripts/generate-catalog-previews.ts` 改 catalog 卡片為小段循環影片並加搜尋框。不適用：上游文件站互動與預覽資產管線，本線 catalog 頁無此需求。 |
+| #7148、#7153 | open head；#7148 `docs/docs.json:1014` 把頁尾社群連結改為 HyperFrames 的 X 與 Discord，#7153 又把 README／ADOPTERS／adopters.mdx 的 Discord 邀請改成兩組不同的新邀請碼並在 `docs.json:1011`、`:1074` 加導覽列。本線 `docs/docs.json:987` 仍是 HeyGen 的 X 與 Instagram。延後：邀請碼在一天內已被 #7097 → #7153 更動，且兩筆都改同一個 `docs.json`，待上游合併後以最後有效連結一次採用，避免本線再追一次改版。兩筆加入 monitored。 |
+| #7149 | open head；`engine/src/services/captureMotionBlur.sweep.browser.test.ts` 與 `__fixtures__/motionBlur/sweepFixtures.ts` +576 行，用症狀釘住 motion blur 掃描缺陷 A–O。延後：Chrome 像素測試，與 #7108 同批。 |
+| #7150 | open head；`core/src/runtime/init.ts:4072` 在 `buildReady` 的 hold 被 reject 時呼叫 `recordStartupError(err)`，擷取以 `__hfStartupError` 失敗並帶原因，而不是渲染從未建好的場景後 exit 0；`init.test.ts:4518` 新增回歸。本線 `init.ts:3918` 只 `swallow("runtime.init.buildReady", err)`，`recordStartupError` 已在 `init.ts:196` 匯入。延後至合併（獨立、小）；合併後依 commit 採用，驗 `__renderReady` 不被錯放與錯誤字串。加入 monitored。 |
+| #7151、#7152、#7155 | merge `50ce9fb51`、`e04b722a9`、`11f43268a`；見 commit 表。#7151／#7155 採用，#7152 不適用。 |
+| #7154 | merge `5cea10e76`；見 commit 表。採用。 |
+| #7156 | merge `1ff4cefd4`；見 commit 表。不適用。 |
+
+### Monitored 重審
+
+19 筆既有項目的 head 或狀態變動，逐一取目前 PR 完整補丁（`git diff <merge-base> <head>`）與前次已審 head 的新增／刪除行集合比對；merged 項目另與 merge 補丁比對。
+
+| PR | 前 head／state | 新 head／state | 補丁差異與裁決 |
+| --- | --- | --- | --- |
+| #6695 | `ddc987bd983b0d4d316399ad3137eb6a4437fe2f`／open | `ad1577afb426c7e886cd96e075b416a742418f13`／open | 只差各 package.json 的版本號（0.8.214 → 0.9.11），undici 7.30.1 本體不變。延後不變：本線尚未引入 #6571 的直接依賴。 |
+| #6714 | `6c09af3980ed84a27f0493aec10c283769a26758`／open | `4f09b98040af846cfdd727975876befe8bf8b0b7`／open | `beatFile.ts` 去掉「多個未標記 audio 時列出各候選」的歧義回報，改為「唯一未標記 audio 即音樂」，manifest 雜湊更新。延後不變：仍須驗證 beats 既有 JSON 契約。 |
+| #6745 | `5cc515742006a00db3a42ad25e75672a3a5b5672`／open | `4100fad8b14d5fecc1d54f10d58867f90f31cdf7`／closed | PR head 補丁（77 行）與 merge `3a28ef41a` 補丁的新增／刪除行集合相同。本線 `mediaProbe.ts` 與 merge 內容逐位元組一致，`useTimelinePlayer.ts:140` 同為 `return patched ? { elements: patched } : state`；前輪註記的「`return {}` 仍觸發通知」指舊碼。已採用，重釘。 |
+| #6816 | `224dba41b1b1200f2934d1f2798850b6f0315d4c`／open | `870f4d952a848d781b11a41ebdb0a7648e20ffb2`／open | 只差 `skills-manifest.json` 雜湊。延後不變。 |
+| #6842 | `60264653a7082d1d6f228596ce3aebb1f6fc51ef`／draft | `fe3e2cfdc32a280a39b1af3214432630adbff9bf`／closed | PR head 補丁（1220 行）與 merge `2daedcdaf` 補丁行集合相同。offload 部分已採用，其餘不適用，見 `2daedcdaf` 列。重釘。 |
+| #6861 | `070e6b9134a43e1ea6a39a9e33085b6110aca56e`／draft | `f55381bf079bdbb5bed716e5c09a59a865fa62de`／draft | 補丁由 579 行縮為 `docs/custom.css`、`docs/docs.json` 兩檔 55 行。不採不變：上游官網導覽。 |
+| #6890 | `e4bdfa3a45c38bcec354cc869813a8d4c8b20672`／open | `67e48cc71d7f2e3eb338c41bfd2b61a6a743abbf`／open | 舊 head 物件本地缺失，改讀新 head 完整補丁：8 檔 +1023，`commands/lambda.ts`、`cloudrun.ts`、`lambda/sam.ts` 與其測試、`cli.agentMode.test.ts`、`docs/packages/cli.mdx` 的整數旗標拒絕。延後不變：雲端路徑，本線不發佈。 |
+| #6913 | `357ef9fc037f6100e5b1eb506ab48f9500ee0d0d`／open | `b14c5dd56aa252845e1f18a32034ba35c4287640`／open | 補丁新增／刪除行集合與前 head 相同（只 rebase）。延後不變。 |
+| #6919 | `8d5201ba9d603b95ee7ae6d9b08da38773ea8f4d`／open | `8c73f86d0358e3bf78293ecc359e50f3d77f9dec`／closed | PR head 補丁（140 行）與 merge `3aaed65ef` 補丁行集合相同。已採用，重釘。 |
+| #6928 | `e9c0b30f28ed635fee61db2d0099d4e67d514bb0`／open | `dec711d2277dfb675847ea20b49748cf055e3642`／closed | PR head 補丁（51 行）與 merge `e46ecd850` 補丁行集合相同；新舊 head 只差一個測試名稱。已採用，重釘。 |
+| #6947 | `8bf6fd3684484a39a09462bdf03ce6a2869b889e`／open | `c948138fa8fa8c06eb4366bedb5667937300f51d`／closed | PR head 補丁（48 行）與 merge `f487a20b2` 補丁行集合相同；新舊 head 差異是 `RENDER_READY_WARNING_SUFFIX` 的引用方式。已採用，重釘。 |
+| #6955 | `2f42de39e0962ce50aed8d337a5ec44f4e616e2f`／open | `4e7963cd4eec18c9ef071407e0b3749c1d88d8fc`／open | 補丁新增／刪除行集合與前 head 相同。延後不變。 |
+| #6968 | `d4bd4f45303052da3c1896832de6fffdce4ea6da`／open | `62916ad7acfaeab31b0c5de9aa83231e91d54cf0`／open | 新增 `coreSkillContent.test.ts`、`packages/lint/src/rules/media.test.ts` 回歸，並把 lint 提示改為「在 `<video>` 保留 data-start、wrapper 不計時」（`media.ts`）。延後不變：技能文字與 lint 提示成組，本線尚未同步。 |
+| #6972 | `dcc3da710cb6c7d0e9098813be2e4c911f44afce`／open | `194f9a6078c2be505db668d4a2b61a389c588455`／open | 補丁由 80 行增為 191 行：late 背景的回報改走 `CaptureSession.warnings`（`recordBackgroundDecodeTimeouts`）並對網址去憑證與 query，新增 drawElement 與 freshFallback 測試。延後不變，並成為 #7119 的前置。 |
+| #6983 | `51da80f814398acff1ab3cf8345ffa8d0be99870`／open | `08896bea3af5ccd491a0fdddef5605574ea2a679`／open | 補丁增 6 行：`phaseDeg` 在 `motionBlurSettings.ts`、`filterTier.ts`、`tier.ts` 的傳遞，測試移到 `frames.test.ts`。延後不變：新增屬性，屬新功能。 |
+| #6988 | `af4f85471b1690c33f5208d2b95d2eea8f284bf4`／open | `59d21b3a94d153b26968401d0fd0e52acffd2d45`／open | 安裝頁一個連結由文字改為下載連結（增 4 行）。不採不變。 |
+| #7013 | `7e1587f1a5f67f701fa72ede95a9bf2d083865ef`／draft | `144e889627b97ba521920e31287321e2026a5059`／closed | PR head 補丁（505 行）與 merge `b2acef586` 補丁行集合相同；autoUpdate 部分已採用，skills release-tag 安裝延後（見 `b2acef586` 列與 `7cb6018c6`）。重釘。 |
+| #7014 | `2987c132791bebda62cef5e5dd3303be02b698dd`／open | `2b10d2ecd31b548fa9b9f7b33b5cc189d6cdecbc`／draft | 新 head 捨棄舊版的 `readRegistryManifest` 與 catalog 非零退出測試，改在 `registry/transport.ts` 以 `RegistryUnreachableError` 處理，並加入 mirror TLS 失敗後仍重試 raw GitHub reset 的測試。延後不變：registry 讀取契約仍在改，本線 `registry/remote.ts` 維持。 |
+| #7055 | `da542c363fb01019ef81ae6d1688452924c1130a`／open | `d72cdde7b90d75abbb9292b22045694bc621dee2`／open | `docs/custom.css` 的選擇器補上 `.text-primary`（Docs 下拉）並加註解。延後不變：純品牌外觀。 |
+
+新增 8 筆 monitored：#7098、#7110、#7142、#7150、#7119、#7148、#7153（均 open）與 #7154（結束前合併，baseline 重釘為 closed）。皆為「合併後可獨立採用」或「前置合併才有意義」的條件追蹤；其餘未合併 PR 的裁決已寫在 PR 表，合併後會以 commit 進入審查，不另列 monitored。
+
+### PR head 快照（2026-11-04）
+
+| PR | Head | State |
+| --- | --- | --- |
+| #7078 | `84df6a6f69ad94f0b1a1ab010f2b0037eeaafe96` | closed |
+| #7083 | `5fa3bcd27bb775a5cc54a214df426b423b0c44da` | open |
+| #7085 | `728bccb99a688b7abc5341e7ce7a9bbef8ed6c03` | open |
+| #7086 | `baa860ca28ee80db524aea361c3aad1aef64148a` | closed |
+| #7089 | `db29935554cdb2864c7cbf1d3829e42ff14713c4` | open |
+| #7090 | `7c427d42fbd31a2b50ead5c52c1d40913398a6d4` | open |
+| #7091 | `ee4074bc1ed6f13be7966597c9749ec46ba79d22` | closed |
+| #7094 | `81208743e9a75231d75bc09dafd51d03da5e4914` | merged |
+| #7098 | `84ae6de21589e87ca8a4827ae292c9eff83d2f84` | open |
+| #7099 | `d88ec54663889d5d64facc59f6e1565b5864eb50` | open |
+| #7100 | `3918e7e5e8af51e7d4f45d49305905e8512cb167` | closed |
+| #7102 | `b8f5ac1e895cf3c6d215d7b85619900831b17e8a` | merged |
+| #7105 | `81bf9d1850c5919585f03a819f94f4d11b28f500` | closed |
+| #7106 | `b7956377005ad8f1f7b087cbdd1ede73d6f700ca` | closed |
+| #7107 | `51c2ec1c760cf71f3314e451e4cf6df8456054ff` | closed |
+| #7108 | `d50d6c758ae0479d1124805fa2d31fb852b6eb08` | open |
+| #7109 | `f8cf2a098984e801239ca88a8401f863528b547a` | closed |
+| #7110 | `1e52c9020396c510dcb8b4ea5da5b6d465b47684` | open |
+| #7117 | `743dad0b00238c23d73eced31e365d00f0847bd2` | closed |
+| #7118 | `2eed09d5443d4c72d13d622fe2a5b27333f845e6` | closed |
+| #7119 | `d5b7ede744fad5d72584655f7f9487edaeeefef8` | open |
+| #7122 | `46cdf5ba8103479e54c837f33806bb3819f39e13` | closed |
+| #7123 | `c6e8ed0cd68a628419b2c68416d96bc329a5cf79` | closed |
+| #7124 | `4a4a4bef5ee1adcc5b40bc0f6e4747c693b5c944` | closed |
+| #7125 | `0acf9ccc7a5a944b975e7badbc348a2760be56b4` | closed |
+| #7126 | `f5441a7ae81f99855b3a7bb168fec2843b0f48a2` | closed |
+| #7127 | `d5a8e304a1cc34fcab2e25a991af37ddc11b802d` | closed |
+| #7129 | `80ded7c120dfb213ad93760d95a5490b22221d23` | closed |
+| #7130 | `f83fafba73db6086e8f28de5a21eca7812c670b8` | open |
+| #7131 | `4fd9ab24784ca232198dde6dadb4009e32a27c0b` | open |
+| #7132 | `11ee5bb5890d69421187106c23d20a59dfeb670d` | open |
+| #7133 | `68e22a63e82595561ab14f5cc57de9558a1e27a5` | open |
+| #7134 | `44ea44d75be281f354ec31bfc045d6a68e0c47c0` | draft |
+| #7135 | `15a19b98b0f7a9aab8e98b450c6d0c7f634ccb08` | draft |
+| #7136 | `fae212e56715c73971057fe7a011b2c616577615` | draft |
+| #7137 | `e295ce246eaa53338337bf4ef6409cd395b0d654` | draft |
+| #7138 | `570d844fad370852f57ebd6c42373a18208be95b` | draft |
+| #7140 | `02aa315572eead46572a92ae892afeb39f37ca11` | draft |
+| #7141 | `58f6c3acb4c5c9961a609b9b0dd060e5f3efcd02` | draft |
+| #7142 | `107e0f0a5e465ede2e3f34f94e9ff4f544a06ed5` | open |
+| #7143 | `186df6622b15b8190bb9e8c19096457565d82962` | merged |
+| #7144 | `0427e8f9a4849e23afb067aed346b41cd333d350` | merged |
+| #7145 | `18bddeb42001a5a2179974e50a78febee18b5f08` | merged |
+| #7146 | `96dc56344a0ae1d80e7abe2f0daa04a175a42498` | open |
+| #7147 | `b6e10d732f52301fac6a6e8f4d1095c26bdcc69b` | open |
+| #7148 | `cdc5c67d663b871bb8b3088f1e64d51427123c40` | open |
+| #7149 | `88e5031c9d879362a189a35e619eeb7bcf8ea43b` | open |
+| #7150 | `0e2396e4bbb9353d4bccb830f63b8280bfcc7429` | open |
+| #7151 | `50d1403489f887e85ea88e12cd14f81783cc1d18` | merged |
+| #7152 | `3d475ffba76688aeede2f38ce62d93e0d027eb49` | merged |
+| #7153 | `f865c42d1caad67ca763c090d0536483d078f4d7` | open |
+| #7154 | `38ec25c70c14734791c863094cf24e8b1e7a5eca` | open（快照取於合併前，之後已合併） |
+| #7155 | `e6b9dadd2e82cef5cb18dcc39ac368e12994a83f` | merged |
+| #7156 | `da80133fdaa1af9d92279388f0ee60b0ce33c84b` | merged |
+| #7157 | `0348d528e76765f628329f1201b380113d25f5a4` | open |
+
+### 採用與驗證
+
+採用項與上游作者（供 Co-authored-by）：#7143、#7151、#7155、#7154 皆為 Miguel Ángel `miguel.sierra@heygen.com`。每項先把測試放到舊碼：
+
+| 項目 | 舊碼 | 新碼 |
+| --- | --- | --- |
+| #7143（core `htmlBundler.nestedTimelines.test.ts`） | 1 failed／0 passed：timeline key 為 `["caption-style","caption-style"]` 而非 `take-a`／`take-b` | 1 passed；`src/compiler` 24 檔中 23 檔 650 passed，`pageBuild.golden.test.ts` 在並行載入下 2 例 5 s 逾時，單獨以 `--testTimeout=60000` 跑 4 passed（新舊程式碼各自對應各自的 golden 皆通過） |
+| #7151（cli `utils/outputFolder.test.ts`；另補本線呼叫端回歸 `commands/motionShot.driveRoot.test.ts`） | 上游測試匯入失敗（無 `outputFolder.ts`）；呼叫端回歸 1 failed／1 passed（對已存在的資料夾 mkdir 回 EPERM） | 相關 18 檔 298 passed／2 skipped／0 failed（outputFolder、motionShot*、fileIds.windows、cloud/download、batchRender、compare、grade-compare、tts、render） |
+| #7155（cli `cloud/errors.test.ts`、`upload.test.ts`） | 3 failed／23 passed | `src/cloud` 11 檔 132 passed／2 skipped／2 failed：失敗的是既有 `offload.undecodableTrack.test.ts`（ffmpeg 覆寫詢問），與本輪無關 |
+| #7154（producer `captureCost.calibrationTimeout.test.ts`、`renderOrchestrator.pageNeverReady.test.ts`） | 3 failed／2 passed（`calibrationEvaluateTimedOut` 為 undefined；錯誤為 `CaptureStageError` 而非 `PAGE_NEVER_READY`） | 5 檔 18 passed／0 failed（含 `server.errorCode`、`server.notMediaErrorCode`）；`bun test src/server.test.ts src/server.errorCode.test.ts` 44 pass／0 fail |
+
+另跑：`bun run --cwd packages/{core,cli,producer} build` 皆 exit 0；變更檔 `oxfmt`／`oxlint` 0 warnings／0 errors。`renderOrchestrator*`／`server*` 的 vitest 擴大跑 14 檔：406 passed／1 failed，失敗為 `renderOrchestrator.stall.test.ts`「retries a stalled attempt on fewer workers…」（expected Symbol(pending) to be 'completed'）；還原 #7154 的三個 producer 檔後單獨重跑同樣失敗，屬既有環境或時序失敗，不是本輪回歸。`server.test.ts` 是 bun 測試，vitest 載入會因 `bun:test` 失敗，改用 bun 跑通過。
+
+已知本機失敗（與本輪修改無關）：`media.test.ts:99` 含 `?` 的 Windows 檔名、symlink EPERM（`assetResolution.test.ts:311`、`projectShaders.test.ts:85`）、`offload.undecodableTrack.test.ts` 與 `checkDeadline.process.test.ts` 的前述環境失敗；本輪沒有重跑 Windows render verification，不宣稱完整產品驗收通過。
+
+### 水位與剩餘範圍
+
+commit 連續區段 `19be35a46..1ff4cefd4`（10 個，兩端含）逐筆有證據，水位推進到 `1ff4cefd40c8dad98127fc78e8761c1ac62053dd`；PR 水位推進到 #7157（#7078–#7157 每筆有證據）；issue 維持 #7113。monitored 共 88 筆，19 筆重釘、8 筆新增（含已合併的 #7154 重釘為 closed）。收尾的 `python tools/check_upstream_updates.py --strict` exit 0：水位以上 0 個 commit、0 筆 PR、0 筆新 issue，88 筆釘選皆在審過的 head 與狀態。上游仍會繼續前進，下一次從 `1ff4cefd4`、PR #7157 接續；審查不代表整版同步或完整產品驗收。
