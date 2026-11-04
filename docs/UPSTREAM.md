@@ -155,3 +155,9 @@ Baseline 代表「已審查」，不代表「全部已合併」。
 從 `8a6636efe` 之後逐筆讀實際補丁，新增審 14 個 commit、18 筆 PR、1 筆 monitored；證據、採用／不適用／延後與重訪條件見 [接續缺口清冊](UPSTREAM_REVIEW_2026-11-04_CONTINUED.md)。採用 #7115 的 FFmpeg error code／signal 診斷，focused 回歸先紅後綠、CLI ESM／DTS build 成功。產品 Quick gate 仍因既有兩例 Windows symlink EPERM 失敗，不宣稱完整產品驗收通過。
 
 commit 水位只推進連續 14 筆至 `79b6af9b484280706da5d1af8e981305f4e1a13d`，其中 #7053／#7048／#7046 沿用既有證據；另審 #7063／#7057／#7115，不跳過下一筆 `9a2cd9e61`。PR 水位至 #7067，issue 保持 #7113；重釘 #6949 的 head／closed，新增 #7055 的 open head。上游快照為 `183614bda`，計畫範圍見 ROADMAP.md；審查不代表整版產品採用。
+
+## 2026-11-04：接續至 `3f42dc1c7`，移植 #7087
+
+新增逐筆審查 12 個 commit、15 筆 PR、3 筆 monitored 變動；檔案行號、完整 PR head、裁決與重訪條件見 [同日接續清冊](UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-04接續至-3f42dc1c7-與完成任務-ttl)。採用 #7087 的最小完成任務 TTL 修正，兩例回歸先紅後綠，受影響 render／renderDeletion 96 passed／1 skipped，studio-server ESM／DTS build 成功。
+
+commit 水位只推進連續 11 筆至 `3f42dc1c73b0c9915b311e48bd0099b39a0865a9`，其中 #7041／#7063／#7057 沿用已有逐筆證據；額外審 #7068／#7069／#7082／#7087 不跨下一筆 `2daedcdaf`。PR 水位至 #7077，不跨 #7078；issue 保持 #7113。重釘 #6945／#6963／#7003 的 closed head，新增 open #7079，monitored 共 80 筆；上游固定 `183614bda`。剩餘計畫只在 ROADMAP.md 近期列維護，審查不代表整版同步或完整產品驗收。

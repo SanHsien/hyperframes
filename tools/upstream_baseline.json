@@ -1,9 +1,9 @@
 {
   "repo": "https://github.com/heygen-com/hyperframes.git",
   "branch": "main",
-  "reviewed_through": "79b6af9b484280706da5d1af8e981305f4e1a13d",
+  "reviewed_through": "3f42dc1c73b0c9915b311e48bd0099b39a0865a9",
   "reviewed_date": "2026-11-04",
-  "reviewed_pr_through": 7067,
+  "reviewed_pr_through": 7077,
   "reviewed_issue_through": 7113,
   "decision_log": "docs/DECISIONS.md",
   "monitored": [
@@ -245,7 +245,7 @@
     {
       "item": "pr#6945",
       "head": "60c4bfbff8bf4a0f26cc660d53f812fdbe7c4ee3",
-      "state": "open"
+      "state": "closed"
     },
     {
       "item": "pr#6947",
@@ -265,7 +265,7 @@
     {
       "item": "pr#6963",
       "head": "f9418f549f92ae3dc314487ac10e7ed4e40f7a2c",
-      "state": "open"
+      "state": "closed"
     },
     {
       "item": "pr#6965",
@@ -335,7 +335,7 @@
     {
       "item": "pr#7003",
       "head": "c15936cabcde65cbefec460ef7d2e29b23da974d",
-      "state": "open"
+      "state": "closed"
     },
     {
       "item": "pr#7007",
@@ -400,6 +400,11 @@
     {
       "item": "pr#7055",
       "head": "da542c363fb01019ef81ae6d1688452924c1130a",
+      "state": "open"
+    },
+    {
+      "item": "pr#7079",
+      "head": "f50de0ba2e7ae39a0b53c2e1273472785d20f075",
       "state": "open"
     }
   ]

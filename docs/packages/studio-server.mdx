@@ -58,6 +58,11 @@ Exports started in the same second receive separate job IDs and output files.
 When a job ID is already in use or its output file exists, the API appends a
 numeric suffix (`-2`, `-3`, and so on), preserving earlier exports.
 
+Finished render and background-removal jobs remain readable for at least five
+minutes after cleanup first observes them finished, even when processing took
+longer than five minutes. Cleanup expires the in-memory job state; it does not
+delete output files.
+
 Use the interface exported by your installed version as the exact contract. It
 changes as Studio gains capabilities.
 

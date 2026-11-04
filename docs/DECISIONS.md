@@ -964,3 +964,13 @@ commit 水位僅推進連續 14 筆到 `4c1c1782afae1ac45f119771dc2c142edfd86304
 #7051 有尚未採用的 OAuth 隔離與付款身分依賴；#7060、#7061、#7067 改瀏覽器／時鐘生命週期且本線有前置或 hold 分歧；#7062 與 #7058 必須連同 hosted schema、公開 CLI 及負例測試同步。故依清冊的具體觸發條件延後，不直接覆蓋產品或刪測試。未採新版本、服務或 skill 工作流的發行宣告判不適用，不能把審查水位視為整版採用。
 
 連續 commit 範圍為 `81b93cf05..79b6af9b4`（兩端含），其中 3 筆沿用已審證據；另 3 筆額外 commit 不用來跨缺口。PR 至 #7067，issue 保持 #7113；#6949 依已審 head／closed 重釘，新增 open #7055 的條件追蹤。後續範圍只在 ROADMAP.md 記錄。
+
+## 2026-11-04：完成任務 TTL 與接續至 `3f42dc1c7`
+
+以 fork `9fb5e7368` 與固定上游 `183614bda` 為起點，新增逐筆審查 12 個 commit、15 筆 PR、3 筆 monitored 變動；各筆檔案行號、head、採用／不適用／延後與觸發條件見 [同日接續清冊](UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-04接續至-3f42dc1c7-與完成任務-ttl)。
+
+只採用 #7087：原本以建立時間清除完成任務，長任務完成後第一次 cleanup 即可能失去 progress；改為首次觀察到完成狀態後才計五分鐘 TTL。render 與 background removal 共用 WeakMap helper；保留 scoped store、safePath、job ID 避讓、取消與磁碟輸出。兩例先紅（404 而非 200），再以受影響 render／renderDeletion 96 passed／1 skipped 驗證，studio-server ESM／DTS build 成功。整版同步包含該修正時移除 fork 差異。
+
+#7070／#7080 改變擷取恢復或瀏覽器像素；#7073 缺非同步 signature walker；#7082 缺 Safari valve 前置鏈；#7069 改 HTML parse／serialization，需 SDK round-trip 配套；#7072 依賴本線未同步的命令路徑與錯誤合約。依清冊具體觸發條件延後。未引入的 measure、billing、reverse 技能與版本宣告不直接覆蓋；沒有建立付費 checkout 或啟用新 telemetry。
+
+commit 只推進連續 11 筆至 `3f42dc1c7`，其中 3 筆沿用已有證據；額外 4 筆不作跨越缺口依據。PR 至 #7077，issue 維持 #7113。#6945／#6963／#7003 已重新讀 diff 並釘 closed，#7079 加入 open head 追蹤。審查水位不代表產品整版採用；Windows 平台限制與驗證結果保存在清冊。
