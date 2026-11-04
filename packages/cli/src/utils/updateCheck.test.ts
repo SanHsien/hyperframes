@@ -376,6 +376,7 @@ describe("updateCheckDue / cachedUpdateCheck — what the parent reads without f
   afterEach(() => {
     vi.doUnmock("../telemetry/config.js");
     vi.doUnmock("./env.js");
+    vi.doUnmock("../version.js");
     vi.resetModules();
     vi.unstubAllEnvs();
   });
@@ -443,7 +444,29 @@ describe("updateCheckDue / cachedUpdateCheck — what the parent reads without f
     },
   );
 
-  it.each(["0.0.1", "999.0.0", "999.0.0-beta.1+build.5"])(
+  it.each([
+    ["2.3.9", undefined, false],
+    ["2.4.0-beta.1", undefined, false],
+    ["2.4.0", "2.4.0", false],
+    ["2.4.1", "2.4.1", true],
+  ])(
+    "filters cached %s against the running install without changing the daily cadence",
+    async (cached, latestVersion, updateAvailable) => {
+      const running = "2.4.0";
+      vi.doMock("../version.js", () => ({ VERSION: running, PRODUCER_VERSION: running }));
+      const mod = await load({ lastUpdateCheck: hoursAgo(1), latestVersion: cached });
+      expect(mod.updateCheckDue()).toBe(false);
+      expect(mod.getUpdateMeta()).toEqual({ version: running, latestVersion, updateAvailable });
+      expect(mod.cachedUpdateCheck()).toEqual({
+        current: running,
+        latest: latestVersion ?? running,
+        updateAvailable,
+      });
+      expect(await mod.checkForUpdate()).toEqual(mod.cachedUpdateCheck());
+    },
+  );
+
+  it.each(["999.0.0", "999.0.0-beta.1+build.5"])(
     "preserves safe cached version %s and the update-check result in metadata",
     async (latestVersion) => {
       const mod = await load({ latestVersion });

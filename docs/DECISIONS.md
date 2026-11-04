@@ -950,3 +950,9 @@ commit 水位僅推進連續 14 筆到 `4c1c1782afae1ac45f119771dc2c142edfd86304
 2026-11-04 結束檢查時，上游已新增 `183614bda3df15812d9f18fd4a71ee77a7da6387`（release #7128），此提交不在上述裁決範圍。`python tools/check_upstream_updates.py --strict` exit 1：67 個水位以上 commit、101 筆 PR、0 筆新 issue、22 筆 monitored 變動；扣除已審 #7053 後，真正未審為 66 個 commit、100 筆 PR、22 筆 monitored 變動。水位保持不跨過未審提交。
 
 本機驗收以 `49a72b8d3` 加 #7053 移植的工作樹執行：維護 gate 39 passed、相對連結 0 錯誤；受影響 render／renderDeletion 路由 94 passed、1 skipped，studio-server build 成功。產品入口 `tools/test_product.ps1` exit 1：parsers 1367 passed／1 failed／7 skipped／3 todo，lint 1225 passed／1 failed；兩個失敗都是建立測試 symlink 時 EPERM（`packages/parsers/src/assetResolution.test.ts:311`、`packages/lint/src/projectShaders.test.ts:85`），不是產品斷言失敗。這兩個測試檔與 HEAD 位元組一致；沒有修改權限、放寬測試或宣稱完整產品 gate 通過。
+
+## 2026-11-04：接續 18 個 commit 與 CLI 版本快取修正
+
+逐筆證據、23 筆 PR head 與 3 筆 monitored 重新裁決見 [2026-11-04 接續清冊](UPSTREAM_REVIEW_2026-11-04.md)。採用 #7049 的最小快取過濾：metadata 省略較舊版本，fallback 使用目前版本，每日檢查節奏不變；固定 mock 的正式版／prerelease 兩例先紅，修正後 updateCheck 42 個測試通過，CLI ESM／DTS build 成功。其餘依本線呼叫鏈與服務邊界逐筆延後或判不適用，條件均留在清冊。既有 #7015、sharp 0.35.5、#7053 保留。
+
+連續 commit 水位推進 14 筆至 `8a6636efe36c3ec313aeb4a122f875b687ffdc5d`；其外另審 `a5a612133`、`b84835c41`、`3baf81f9a`、`05ddddbbf`，但不跨過中間缺口。PR 水位至 #7049，issue 維持 #7113；重釘 #6967／#6975／#6993，新增 #7034／#7036／#7038／#7042 的 head 條件追蹤。固定上游 `183614bda` 的結束檢查的真正未審為 48 個 commit、81 筆 PR（列至 #7133）、19 筆 monitored 變動，計畫保留於 ROADMAP；此水位不是整版產品採用或瀏覽器驗收證據。

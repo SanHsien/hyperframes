@@ -45,6 +45,8 @@
 
 2026-11-04 另移植上游 #7053：Studio 同秒匯出會避開記憶體中的 job ID 與磁碟既有輸出檔，以數字後綴分配名稱；變更限 `packages/studio-server/src/routes/render.ts` 與回歸測試。上游產品同步包含此修正時移除這段差異，細節見 [維護決策](docs/DECISIONS.md)。
 
+2026-11-04 另移植上游 #7049：CLI 的 JSON `_meta.latestVersion` 省略比目前安裝舊的快取，快取 fallback 回報目前版本，保留每日更新檢查節奏；差異限 `packages/cli/src/utils/updateCheck.ts` 與固定版本關係的回歸測試。上游產品同步含此修正時移除這段差異，見 [逐筆裁決](docs/UPSTREAM_REVIEW_2026-11-04.md)。
+
 ## 分支與 remote
 
 - `origin/main`：SanHsien 維護線，也是唯一長期分支。

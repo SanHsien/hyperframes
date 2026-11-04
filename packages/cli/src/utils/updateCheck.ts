@@ -117,7 +117,9 @@ function fallbackResult(cachedLatest?: string): UpdateCheckResult {
 }
 
 function safeCachedVersion(value: unknown): string | undefined {
-  return typeof value === "string" && isSafeVersion(value) ? value : undefined;
+  return typeof value === "string" && isSafeVersion(value) && !isNewerSemver(VERSION, value)
+    ? value
+    : undefined;
 }
 
 /**

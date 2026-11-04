@@ -63,6 +63,11 @@ The CLI also renders in batches and from variables, writes image sequences and
 several video formats, and runs in the cloud — managed, on AWS Lambda, or on
 Google Cloud Run. Most commands take `--json` when you need to read the result from a script.
 
+JSON output includes `_meta` with version information from a daily cache.
+After upgrading the CLI, an older cached latest version is omitted from
+`_meta.latestVersion`; cached update results use the running version instead.
+This does not trigger an earlier background check or a network request for `--json`.
+
 Browser installation and the media probes used by `snapshot` and
 `remove-background` preserve Unicode filenames and non-English text in
 subprocess diagnostics.
