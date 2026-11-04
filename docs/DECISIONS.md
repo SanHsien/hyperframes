@@ -956,3 +956,11 @@ commit 水位僅推進連續 14 筆到 `4c1c1782afae1ac45f119771dc2c142edfd86304
 逐筆證據、23 筆 PR head 與 3 筆 monitored 重新裁決見 [2026-11-04 接續清冊](UPSTREAM_REVIEW_2026-11-04.md)。採用 #7049 的最小快取過濾：metadata 省略較舊版本，fallback 使用目前版本，每日檢查節奏不變；固定 mock 的正式版／prerelease 兩例先紅，修正後 updateCheck 42 個測試通過，CLI ESM／DTS build 成功。其餘依本線呼叫鏈與服務邊界逐筆延後或判不適用，條件均留在清冊。既有 #7015、sharp 0.35.5、#7053 保留。
 
 連續 commit 水位推進 14 筆至 `8a6636efe36c3ec313aeb4a122f875b687ffdc5d`；其外另審 `a5a612133`、`b84835c41`、`3baf81f9a`、`05ddddbbf`，但不跨過中間缺口。PR 水位至 #7049，issue 維持 #7113；重釘 #6967／#6975／#6993，新增 #7034／#7036／#7038／#7042 的 head 條件追蹤。固定上游 `183614bda` 的結束檢查的真正未審為 48 個 commit、81 筆 PR（列至 #7133）、19 筆 monitored 變動，計畫保留於 ROADMAP；此水位不是整版產品採用或瀏覽器驗收證據。
+
+## 2026-11-04：接續缺口與 #7115 診斷
+
+逐筆 14 個新 commit、18 筆新 PR、1 筆 monitored 的實際補丁裁決見 [接續缺口清冊](UPSTREAM_REVIEW_2026-11-04_CONTINUED.md)。只採用 #7115 的 readToolVersion 診斷：保留 status 優先，沒有 status 才使用 code，再沒有 code 才使用 signal；使用 unknown／Reflect.get，不引入型別強制斷言。取消仍先拋出，Windows DLL 提示保留；測試先 4 failed、再 33 passed／1 skipped，CLI ESM／DTS build 成功。使用者可見說明同步到 CLI doctor 文件；#7015、sharp 0.35.5、#7053、#7049 保留。
+
+#7051 有尚未採用的 OAuth 隔離與付款身分依賴；#7060、#7061、#7067 改瀏覽器／時鐘生命週期且本線有前置或 hold 分歧；#7062 與 #7058 必須連同 hosted schema、公開 CLI 及負例測試同步。故依清冊的具體觸發條件延後，不直接覆蓋產品或刪測試。未採新版本、服務或 skill 工作流的發行宣告判不適用，不能把審查水位視為整版採用。
+
+連續 commit 範圍為 `81b93cf05..79b6af9b4`（兩端含），其中 3 筆沿用已審證據；另 3 筆額外 commit 不用來跨缺口。PR 至 #7067，issue 保持 #7113；#6949 依已審 head／closed 重釘，新增 open #7055 的條件追蹤。後續範圍只在 ROADMAP.md 記錄。

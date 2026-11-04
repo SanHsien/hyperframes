@@ -1,5 +1,7 @@
 # 2026-11-04：接續上游逐筆審查
 
+後續接續見 [接續缺口清冊](UPSTREAM_REVIEW_2026-11-04_CONTINUED.md)。
+
 ## 範圍與讀法
 
 起點為 fork `6d29b2631` 與 `tools/upstream_baseline.json` 的 commit `4c1c1782a`、PR #7025、issue #7113。起始 strict 檢查在固定上游 `183614bda3df15812d9f18fd4a71ee77a7da6387` 列出 67 個 commit 與 22 筆 monitored 變動；#7053 已審，故 commit 真正未審 66 筆。PR 持續新增，計數以結束 strict 回報為準。

@@ -1828,6 +1828,10 @@ It reports CLI version, Node.js, CPU, memory, disk, the extracted-frame cache,
 the archive extractor, `/dev/shm` on Linux, environment, whisper-cpp, local TTS
 and BGM models, FFmpeg, FFprobe, Chrome, and Docker.
 
+If FFmpeg cannot start, its diagnostic includes the exit code when available,
+otherwise the OS error code (such as `ENOENT` or `EACCES`), otherwise the signal
+(such as `SIGKILL`). On Windows, the runtime DLL installation hint still applies.
+
 The **frames cache** row is worth knowing about: it prints the effective cache
 directory, its free space, and whether the location came from
 `HYPERFRAMES_EXTRACT_CACHE_DIR` or the default. Under 2 GB free it fails, since

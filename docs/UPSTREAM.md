@@ -149,3 +149,9 @@ Baseline 代表「已審查」，不代表「全部已合併」。
 - 逐筆裁決與檔案行號見 [2026-11-04 接續清冊](UPSTREAM_REVIEW_2026-11-04.md)。審查 18 個 commit（連續 14 個加 4 個水位以上）、23 筆 PR、3 筆 monitored 變動。
 - 採用 #7049（較舊 CLI 版本快取不進入 metadata）。三軸水位：commit `8a6636efe36c3ec313aeb4a122f875b687ffdc5d`、PR #7049、issue #7113；baseline monitored 共 78 筆。
 - 未審範圍由 repo 根目錄 `ROADMAP.md` 追蹤。
+
+## 2026-11-04：缺口接續至 `79b6af9b4`
+
+從 `8a6636efe` 之後逐筆讀實際補丁，新增審 14 個 commit、18 筆 PR、1 筆 monitored；證據、採用／不適用／延後與重訪條件見 [接續缺口清冊](UPSTREAM_REVIEW_2026-11-04_CONTINUED.md)。採用 #7115 的 FFmpeg error code／signal 診斷，focused 回歸先紅後綠、CLI ESM／DTS build 成功。產品 Quick gate 仍因既有兩例 Windows symlink EPERM 失敗，不宣稱完整產品驗收通過。
+
+commit 水位只推進連續 14 筆至 `79b6af9b484280706da5d1af8e981305f4e1a13d`，其中 #7053／#7048／#7046 沿用既有證據；另審 #7063／#7057／#7115，不跳過下一筆 `9a2cd9e61`。PR 水位至 #7067，issue 保持 #7113；重釘 #6949 的 head／closed，新增 #7055 的 open head。上游快照為 `183614bda`，計畫範圍見 ROADMAP.md；審查不代表整版產品採用。
