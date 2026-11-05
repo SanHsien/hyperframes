@@ -1,3 +1,4 @@
+import { assertKnownFlags } from "../utils/reject-unknown-flags.js";
 import { runCommand } from "citty";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -3750,5 +3751,13 @@ describe("check stopped by a signal", () => {
       "Check stopped before finishing (SIGTERM).",
     );
     expect(order).toEqual(["print {", "exit 143"]);
+  });
+});
+
+describe("check --lint-verbose", () => {
+  it("is a known flag, as render, preview and publish spell it, and a made-up one still is not", () => {
+    const check = createCheckCommand() as never;
+    expect(() => assertKnownFlags(check, ["--lint-verbose", "--json"], "check")).not.toThrow();
+    expect(() => assertKnownFlags(check, ["--lint-loud"], "check")).toThrow("Unknown flag");
   });
 });

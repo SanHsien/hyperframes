@@ -1033,3 +1033,12 @@ commit 水位連續推進到 `370f886aa`，PR 水位到 #7164，issue 維持 #71
 #7182、#7176、#7104／#7168 retry、#6716 的 17 檔遷移維持前節條件，#6983 沒有依賴它們。`94c048ba7` 已補入 #6665 的 golden LFS pointer，前節「未採 golden」只代表歷史快照；保留其修正，不重生輸出。
 
 commit 水位僅推進一個有證據的連續 commit 至 `aace91b5ec0d937772f66ab06e63c5755e579646`，PR #7189、issue #7223 不動；monitored 維持 92 筆，#6983 重釘 `a3eec9fad7ee690fb706fc872466d161d640949d`／closed。其餘軸與後續 commit 仍由 ROADMAP 接續列追蹤。
+
+
+## 2026-11-06：採用 11 筆修正與連續水位 `aa34cffe4`
+
+以 fork `8406f9bca` 接續，逐筆審查 `f6ae9bfb4..aa34cffe4` 的 15 個連續 commit。採用 #7199、#7194、#7195、#5746、#7201、#6466、#5017、#5680、#7205、#7210 與 #7190；逐檔證據、前後測試與限制見 [接續清冊](UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-06接續至-aa34cffe4審查-15-個連續-commit)。#7203 等待 producer reference-background 契約，#7207 生成型別維持成組分流，#7197 官方下載歸因與 #7202 整版發行不適用。
+
+#7199 適配本線既有 peak guard，不引入延後的 limiter；#7195 不引入本線沒有的 starts cache；#7190 不搬入缺 #7108 前置 fixture 的缺陷測試。#7182、#7176、#7104／#7168 retry、#6716 的 17 檔快取遷移仍維持既有條件。沒有 golden LFS pointer 變更或新增待上傳物件。
+
+commit 水位 `aa34cffe4b8d66053bc1bf999275b12265c22ab7`、PR #7190、issue #7223，monitored 維持 92 筆。最新剩餘數量只在接續清冊的此節記錄。審查水位不代表整版同步或完整產品驗收；ROADMAP 保留接續計畫。

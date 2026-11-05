@@ -17,6 +17,7 @@
  *   - `perfStages.audioProcessMs` is set whether or not the call ran.
  */
 
+import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type { Fps } from "@hyperframes/core";
 import {
@@ -54,6 +55,8 @@ export interface AudioStageInput {
   assertNotAborted: () => void;
   /** Where a per-track failure's detail goes. Optional so tests need not pass one. */
   log?: ProducerLogger;
+  /** Leave the delivered PCM in workDir for assembly; its owner removes the dir. */
+  keepDeliverySource?: boolean;
 }
 
 export interface AudioStageResult {
@@ -61,6 +64,8 @@ export interface AudioStageResult {
   audioLoweredDb?: number;
   /** Always `join(workDir, MIXED_AUDIO_FILENAME)`. */
   audioOutputPath: string;
+  /** The PCM audioOutputPath encodes, if it was kept and still matches delivery. */
+  deliverySourcePath?: string;
   /** True iff the audio mix actually produced a file. False when there are no audio elements. */
   hasAudio: boolean;
   /** Wall-clock ms for the audio mix phase. Zero-elements path is near-zero but always set. */
@@ -103,6 +108,7 @@ async function runAudioStageScoped(input: AudioStageInput): Promise<AudioStageRe
   const stageStart = Date.now();
   const pcmSourcePath = join(input.workDir, "audio-source.wav");
   const duration = (input.totalFrames * input.fps.den) / input.fps.num;
+  let deliverySourcePath: string | undefined;
   try {
     const result = await mixAudioForDelivery(input, duration, pcmSourcePath);
     let audioLoweredDb: number | undefined;
@@ -117,11 +123,19 @@ async function runAudioStageScoped(input: AudioStageInput): Promise<AudioStageRe
       });
       if (!peak.success) throw encoderFailureError("Audio true-peak check failed", peak);
       audioLoweredDb = peak.loweredDb;
+      if (input.keepDeliverySource && !peak.sourceStale && existsSync(pcmSourcePath)) {
+        deliverySourcePath = pcmSourcePath;
+      }
       input.log?.info("[audio] phases", { ...result.audioPhaseMs, guard: Date.now() - guardStart });
     }
-    return { ...result, audioLoweredDb, audioProcessMs: Date.now() - stageStart };
+    return {
+      ...result,
+      audioLoweredDb,
+      deliverySourcePath,
+      audioProcessMs: Date.now() - stageStart,
+    };
   } finally {
-    removeScratch(pcmSourcePath);
+    if (!deliverySourcePath) removeScratch(pcmSourcePath);
   }
 }
 

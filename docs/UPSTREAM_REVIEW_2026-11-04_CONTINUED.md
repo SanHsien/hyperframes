@@ -772,3 +772,159 @@ commit 水位為 `aace91b5ec0d937772f66ab06e63c5755e579646`；PR #7189、issue #
 ### 收尾 strict 快照（剩餘數量的單一記錄處）
 
 `python tools/check_upstream_updates.py --strict --output tmp/upstream-20261106/strict-final.md` exit 1；固定上游 tip `256b84a41bc32913870953c06e05f4ab25e963f8`，commit 水位以上 62 筆（包含檢查期間新進者）、PR #7190 起 73 筆、issue #7259 一筆；monitored 92 筆全部維持釘選 head／state，移動數為 0。不以水位變更掩蓋其餘待審軸，ROADMAP 接續列保留。
+
+
+## 2026-11-06：接續至 `aa34cffe4`，審查 15 個連續 commit
+
+起點 fork `8406f9bca`，原 commit 水位 `aace91b5e`、PR #7189、issue #7223。先執行 `python tools/check_upstream_updates.py --strict`，exit 1。以下依上游時間序列逐筆讀完整補丁，不以檔案數判斷；只推進有裁決與回歸證據的連續前綴。
+
+| Commit／PR／作者                                                                                                         | 上游 SHA:檔案:行號                                                        | fork 證據與裁決                                                                                                                                                                                                                                                                                                                                                         |
+| ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `f6ae9bfb43a4e4bee0d132a5ac2a0b1ce4bf383f`／[#7199](https://github.com/heygen-com/hyperframes/pull/7199)／WaterrrForever | `f6ae9bfb4:packages/producer/src/services/render/stages/audioStage.ts:60` | 本線 `packages/producer/src/services/render/stages/audioStage.ts:59`。採用，手工適配既有 constrainAacTruePeak，保留 delivery PCM 至 assemble；sourceStale 即使刪檔被 Windows 拒絕也不交給 assembly。沒有引入延後的 limitDeliveryPeaks。                                                                                                                                 |
+| `2372fc34a12cc65e5793e88251c2ad783ec98ed6`／[#7194](https://github.com/heygen-com/hyperframes/pull/7194)／Miguel Ángel   | `2372fc34a:packages/cli/src/browser/manager.ts:765`                       | 本線 `packages/cli/src/browser/manager.ts:769`。採用。只在 Windows 對 EBUSY／EPERM／EACCES 有界退避；安裝及最後 rename 都重試，非 Windows／其他錯誤不重試。測試明確切換 linux，修正上游假定測試主機為 POSIX 的最後一例。                                                                                                                                                |
+| `e2a65358600bbc70d5bd17c51ef2ec58cbc692aa`／[#7195](https://github.com/heygen-com/hyperframes/pull/7195)／Miguel Ángel   | `e2a653586:packages/core/src/runtime/init.ts:1464`                        | 本線 `packages/core/src/runtime/init.ts:1428`。採用。timing invalidation 清 queryCache，unmount 清掉強引用，離線節點不進待樣式集合。本線沒有 neverStyledStarts，故不新增該 cache 或照搬其 WeakMap 變更。                                                                                                                                                                |
+| `33c17df5aeb7bc45f717e7091e81ea0e0ebe6e23`／[#7202](https://github.com/heygen-com/hyperframes/pull/7202)／WaterrrForever | `33c17df5a:packages/core/package.json:3`                                  | 本線 `packages/core/package.json:3`。不適用。只提高上游發行版本並宣告整版功能；本線版本與 release guard 維持，選擇性移植不宣稱 0.9.15。另已讀 docs/changelog.mdx:8 與 releases/v0.9.15.md:1。                                                                                                                                                                           |
+| `071ec1fdddb874927f85827a42e84f04924f1bd2`／[#5746](https://github.com/heygen-com/hyperframes/pull/5746)／kevin          | `071ec1fdd:packages/core/src/runtime/diagnostics.ts:59`                   | 本線 `packages/core/src/runtime/diagnostics.ts:59`。採用。buildReady rejection 記錄 key 與 reason，ready 同 tick 釋放並攜 startup error；teardown 只清自己產生的錯誤。generated position-edits IIFE 依本線 builder 重產，不覆蓋上游 minifier 名稱。                                                                                                                     |
+| `58b9ec0efffec78beb028e8866bd7150397585b8`／[#7203](https://github.com/heygen-com/hyperframes/pull/7203)／Jerrai         | `58b9ec0ef:packages/cli/src/ui/renderResult.ts:8`                         | 延後。producer 尚無 ReferenceBackground／referenceBackgroundResult／REFERENCE_BACKGROUND_FIELD；本線 packages/producer/src/index.ts:1 與 packages/cli/src/commands/batchRender.ts:40 沒有該結果契約。等 producer 背景量測與公開投影介面成組採用，再驗四種值、quiet／TTY／失敗路徑及 manifest，不印空殼結果。                                                            |
+| `924bb64da6d14d515751e6357c4600d31768f1fc`／[#7201](https://github.com/heygen-com/hyperframes/pull/7201)／Miguel Ángel   | `924bb64da:packages/cli/src/commands/lint.ts:42`                          | 本線 `packages/cli/src/commands/lint.ts:41`。採用。lint 接受別名並顯示 info，check 接受同名旗標但維持顯示全部 findings。同步 CLI 文件，移除兩份 skill 的 --describe false 並由本線內容重生 manifest。                                                                                                                                                                   |
+| `6e8454d6d529fcaee42970b37c5f08f7369a0a38`／[#6466](https://github.com/heygen-com/hyperframes/pull/6466)／Jason          | `6e8454d6d:packages/cli/src/utils/studioSelectionClient.ts:73`            | 本線 `packages/cli/src/utils/studioSelectionClient.ts:73`。採用。預設 Studio 探測先以一秒 socket connect 拒絕 dropped port，destroy socket 後才 fetch；保留注入 fetchImpl 的測試介面與路徑正規化。                                                                                                                                                                      |
+| `982070388eeb4429d21c7bdd8bb61c7e24e303ae`／[#5017](https://github.com/heygen-com/hyperframes/pull/5017)／cooleryu       | `982070388:packages/core/src/runtime/adapters/waapi.ts:56`                | 本線 `packages/core/src/runtime/adapters/waapi.ts:56`。採用。初始 running／finished 的 document-timeline、rate 1 WAAPI 以 composition zero 對齊；保留 paused offset、CSS、其他 timeline／rate 及晚發現動畫基準。                                                                                                                                                        |
+| `bdf9ba0ee68369ddfa19e7bb59b5432544970294`／[#5680](https://github.com/heygen-com/hyperframes/pull/5680)／Vincent Yip    | `bdf9ba0ee:packages/studio/src/utils/marqueeGeometry.ts:28`               | 本線 `packages/studio/src/utils/marqueeGeometry.ts:28`。採用完整 24 檔補丁。canvas 與 timeline 同用 replace／add／subtract；Alt 優先於 Shift，release 決定模式，Escape 還原；URL 與 selection bridge 改用 replace。docs/studio/canvas.mdx 與 timeline.mdx 同步操作說明。                                                                                                |
+| `3b3d7c2cd32a9f2c7c9449dafed9c1a0d02bf05e`／[#7207](https://github.com/heygen-com/hyperframes/pull/7207)／heygen-rui-bot | `3b3d7c2cd:packages/cli/src/cloud/_gen/types.ts:127`                      | 本線 `packages/cli/src/cloud/_gen/types.ts:1`。不適用，沿用 generated schema 成組分流。增加 reverse session、帳戶媒體 output_upload／delivery 與未採背景量測型別；本線 packages/cli/src/cloud/\_gen/types.ts:1 仍是已採 API 契約。等對應 hosted 功能及 schema 生成來源一起驗證，不手改產生型別。                                                                        |
+| `7862e271d16baa9052c78d3b85535ebc725cd136`／[#7205](https://github.com/heygen-com/hyperframes/pull/7205)／Miguel Ángel   | `7862e271d:packages/cli/src/utils/contrastMotion.ts:99`                   | 本線 `packages/cli/src/utils/contrastMotion.ts:99`。採用。文字下方相交圖層的非 ambient tween 也算運動；以時間吻合辨識隨 parent seek 的 paused sub-timeline，旁側不相交圖層不誤抑制。                                                                                                                                                                                    |
+| `e976fdbfa1f118e761d5268905e3a667644f8b8c`／[#7210](https://github.com/heygen-com/hyperframes/pull/7210)／Miguel Ángel   | `e976fdbfa:packages/lint/src/rules/media.ts:650`                          | 本線 `packages/lint/src/rules/media.ts:646`。採用。lint hint 與技能說明一致要求 video 自有 timing、wrapper 不計時，保留既有 frame extractor 與 visibility 行為，重生 skills manifest。                                                                                                                                                                                  |
+| `4ba47aaa122f8906b70a578cc10023e7d6a6e4ad`／[#7197](https://github.com/heygen-com/hyperframes/pull/7197)／Ular Kimsanov  | `4ba47aaa1:docs/download-attribution.js:71`                               | 本線 `docs/download-attribution.js:1`。不適用於 fork 的產品修正。補丁擴充官方 hyperframes.studio 的跨站 campaign／referrer 儲存與轉送；本線 docs/download-attribution.js:13 仍指向官方下載站，沒有本 fork 自有的 attribution 消費端。不擴大追蹤，若日後啟用 fork 網站歸因，先與 #7176 的遙測政策一併裁決及驗 consent。                                                  |
+| `aa34cffe4b8d66053bc1bf999275b12265c22ab7`／[#7190](https://github.com/heygen-com/hyperframes/pull/7190)／Vance Ingalls  | `aa34cffe4:packages/core/src/runtime/captureMotionBlur/index.ts:206`      | 本線 `packages/core/src/runtime/captureMotionBlur/index.ts:201`。採用捲動修正。root 搬入／搬出 canvas 前保存 root 與後代的 scrollLeft／scrollTop，搬移後復原再 seek。另讀 engine thresholds.ts:9、captureMotionBlur.differential.browser.test.ts:21 與 producer blurDifferential.integration.test.ts:26；本線缺 #7108 fixture／測試，不新增這批缺前置鏈的缺陷釘選移除。 |
+
+### 分項依賴、文件與 generated artifacts
+
+#7199 的 PCM 保留只對本機 render 啟用；distributed plan 不要求保留。`audioPadTrim.ts` 的編碼與 peak correction 共用 PCM，`assembleStage.ts` 接收 `audioPcmPath`，`renderOrchestrator.ts` 傳遞結果；切 PCM 失敗時顯式 sourceStale，不能以 existsSync 推論 PCM 安全。保留原 workDir 所有權與最終清理。
+
+#7195 的 producer browser 測試包含 paused scrub；#5017 的 browser 測試比較實際 WAAPI transform，涵蓋正負 delay、reverse、finished 與 authored pause offset。#7190 的單元測試模擬 DOM 搬移清空巢狀 scroll offsets，不依賴 DOM emulator 自行實作捲動。
+
+#7201 更新 `docs/packages/cli.mdx`，#5680 補 canvas／timeline 的使用者說明。`docs/` 使用 Mintlify 根路徑與小寫錨點，沒有連到 docs 外的 `../`。技能 manifest 以 `bun packages/cli/scripts/gen-skills-manifest.ts` 依 fork 實際內容產生。
+
+#7182 仍需長來源分段 proxy 契約與 Windows 回歸；#7176 仍需遙測政策；#7104／#7168 retry 仍需 sequential resume、新 session 停滯與取消驗收；#6716 的 17 檔快取遷移仍需 Windows 私有快取根與整套 guard。這 15 個 commit 沒有要求先採它們。#7108／#7149／#7191 的 blur 缺陷測試鏈仍待 commit 軸到達時成組判斷。
+
+### PR、monitored、Golden 與作者
+
+唯讀 `gh pr view 7190 --repo heygen-com/hyperframes --json state,mergedAt,headRefOid,mergeCommit` 確認 merged head `ec6f9002828d3c2f09faca8b155b01a0d50a0856`、merge commit `aa34cffe4b8d66053bc1bf999275b12265c22ab7`；PR 水位只推進到 #7190，不越過尚未完整裁決的 #7191。issue 維持 #7223。92 筆 monitored 由起始 strict 確認沒有 head／state 移動；這個連續前綴沒有需重釘的既有 monitored，數量維持。
+
+這 15 個 commit 沒有新增或更動 golden LFS pointer，無新增待上傳 LFS 物件。保留 `94c048ba7` 已補的 #6665 golden。沒有上游 package-size budget 增量可採，保留現有預算。
+
+採用作者：WaterrrForever、Miguel Ángel、kevin、Jason、cooleryu、Vincent Yip、Vance Ingalls；提交者從對應上游 Git metadata 取 Co-authored-by email，不在文件保存 email。
+
+### 已移植檔案對照
+
+以下按補丁第一個可定位的新增程式／測試行釘選；同檔多筆保留各自來源，不代表整檔覆蓋。
+
+| 上游來源                                                                                 | fork 位置                                                                      |
+| ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `f6ae9bfb4:packages/producer/src/services/render/audioPadTrim.test.ts:18`                | `packages/producer/src/services/render/audioPadTrim.test.ts:18`                |
+| `f6ae9bfb4:packages/producer/src/services/render/audioPadTrim.ts:81`                     | `packages/producer/src/services/render/audioPadTrim.ts:81`                     |
+| `f6ae9bfb4:packages/producer/src/services/render/audioTruePeak.fakeFfmpeg.test.ts:126`   | `packages/producer/src/services/render/audioTruePeak.fakeFfmpeg.test.ts:121`   |
+| `f6ae9bfb4:packages/producer/src/services/render/stages/assembleStage.test.ts:95`        | `packages/producer/src/services/render/stages/assembleStage.test.ts:95`        |
+| `f6ae9bfb4:packages/producer/src/services/render/stages/assembleStage.ts:39`             | `packages/producer/src/services/render/stages/assembleStage.ts:39`             |
+| `f6ae9bfb4:packages/producer/src/services/render/stages/audioStage.test.ts:130`          | `packages/producer/src/services/render/stages/audioStage.test.ts:116`          |
+| `f6ae9bfb4:packages/producer/src/services/render/stages/audioStage.ts:20`                | `packages/producer/src/services/render/stages/audioStage.ts:20`                |
+| `f6ae9bfb4:packages/producer/src/services/renderOrchestrator.ts:3684`                    | `packages/producer/src/services/renderOrchestrator.ts:3514`                    |
+| `2372fc34a:packages/cli/src/browser/manager.test.ts:1297`                                | `packages/cli/src/browser/manager.test.ts:1292`                                |
+| `2372fc34a:packages/cli/src/browser/manager.ts:754`                                      | `packages/cli/src/browser/manager.ts:758`                                      |
+| `e2a653586:packages/core/src/runtime/init.ts:1442`                                       | `packages/core/src/runtime/init.ts:1406`                                       |
+| `e2a653586:packages/producer/src/services/coreRuntimeBrowser.test.ts:1600`               | `packages/producer/src/services/coreRuntimeBrowser.test.ts:1692`               |
+| `071ec1fdd:packages/core/src/runtime/diagnostics.ts:55`                                  | `packages/core/src/runtime/diagnostics.ts:55`                                  |
+| `071ec1fdd:packages/core/src/runtime/init.test.ts:4543`                                  | `packages/core/src/runtime/init.test.ts:4467`                                  |
+| `071ec1fdd:packages/core/src/runtime/init.ts:207`                                        | `packages/core/src/runtime/init.ts:197`                                        |
+| `924bb64da:docs/packages/cli.mdx:1195`                                                   | `docs/packages/cli.mdx:1118`                                                   |
+| `924bb64da:packages/cli/src/commands/check.test.ts:17`                                   | `packages/cli/src/commands/check.test.ts:1`                                    |
+| `924bb64da:packages/cli/src/commands/check.ts:168`                                       | `packages/cli/src/commands/check.ts:163`                                       |
+| `924bb64da:packages/cli/src/commands/lint.test.ts:92`                                    | `packages/cli/src/commands/lint.test.ts:92`                                    |
+| `924bb64da:packages/cli/src/commands/lint.ts:42`                                         | `packages/cli/src/commands/lint.ts:41`                                         |
+| `924bb64da:skills/hyperframes/references/storyboard.md:12`                               | `skills/hyperframes/references/storyboard.md:12`                               |
+| `924bb64da:skills/media-use/references/media-treatments.md:141`                          | `skills/media-use/references/media-treatments.md:141`                          |
+| `6e8454d6d:packages/cli/src/utils/studioSelectionClient.test.ts:2`                       | `packages/cli/src/utils/studioSelectionClient.test.ts:2`                       |
+| `6e8454d6d:packages/cli/src/utils/studioSelectionClient.ts:2`                            | `packages/cli/src/utils/studioSelectionClient.ts:2`                            |
+| `982070388:packages/core/src/runtime/adapters/waapi.initial.test.ts:1`                   | `packages/core/src/runtime/adapters/waapi.initial.test.ts:1`                   |
+| `982070388:packages/core/src/runtime/adapters/waapi.ts:56`                               | `packages/core/src/runtime/adapters/waapi.ts:56`                               |
+| `982070388:packages/producer/src/services/coreRuntimeBrowser.test.ts:203`                | `packages/producer/src/services/coreRuntimeBrowser.test.ts:203`                |
+| `bdf9ba0ee:packages/studio/src/components/editor/DomEditOverlay.tsx:8`                   | `packages/studio/src/components/editor/DomEditOverlay.tsx:8`                   |
+| `bdf9ba0ee:packages/studio/src/components/editor/MarqueeOverlay.tsx:1`                   | `packages/studio/src/components/editor/MarqueeOverlay.tsx:1`                   |
+| `bdf9ba0ee:packages/studio/src/components/editor/marqueeCommit.test.tsx:6`               | `packages/studio/src/components/editor/marqueeCommit.test.tsx:6`               |
+| `bdf9ba0ee:packages/studio/src/components/editor/marqueeCommit.ts:12`                    | `packages/studio/src/components/editor/marqueeCommit.ts:11`                    |
+| `bdf9ba0ee:packages/studio/src/components/editor/previewReadOnly.overlay.test.tsx:332`   | `packages/studio/src/components/editor/previewReadOnly.overlay.test.tsx:332`   |
+| `bdf9ba0ee:packages/studio/src/editorGesturesExports.test.tsx:101`                       | `packages/studio/src/editorGesturesExports.test.tsx:101`                       |
+| `bdf9ba0ee:packages/studio/src/hooks/useDomSelection.test.ts:140`                        | `packages/studio/src/hooks/useDomSelection.test.ts:140`                        |
+| `bdf9ba0ee:packages/studio/src/hooks/useDomSelection.ts:25`                              | `packages/studio/src/hooks/useDomSelection.ts:25`                              |
+| `bdf9ba0ee:packages/studio/src/hooks/useDomSelectionTypes.ts:5`                          | `packages/studio/src/hooks/useDomSelectionTypes.ts:5`                          |
+| `bdf9ba0ee:packages/studio/src/hooks/useStudioUrlState.ts:4`                             | `packages/studio/src/hooks/useStudioUrlState.ts:4`                             |
+| `bdf9ba0ee:packages/studio/src/hooks/useTimelineSelectionPreviewSync.test.tsx:8`         | `packages/studio/src/hooks/useTimelineSelectionPreviewSync.test.tsx:8`         |
+| `bdf9ba0ee:packages/studio/src/hooks/useTimelineSelectionPreviewSync.ts:4`               | `packages/studio/src/hooks/useTimelineSelectionPreviewSync.ts:4`               |
+| `bdf9ba0ee:packages/studio/src/index.ts:286`                                             | `packages/studio/src/index.ts:275`                                             |
+| `bdf9ba0ee:packages/studio/src/player/components/TimelineCanvas.tsx:229`                 | `packages/studio/src/player/components/TimelineCanvas.tsx:229`                 |
+| `bdf9ba0ee:packages/studio/src/player/components/TimelineProvider.tsx:19`                | `packages/studio/src/player/components/TimelineProvider.tsx:19`                |
+| `bdf9ba0ee:packages/studio/src/player/components/timelineMarquee.test.ts:10`             | `packages/studio/src/player/components/timelineMarquee.test.ts:10`             |
+| `bdf9ba0ee:packages/studio/src/player/components/timelineMarquee.ts:2`                   | `packages/studio/src/player/components/timelineMarquee.ts:2`                   |
+| `bdf9ba0ee:packages/studio/src/player/components/timelineMarqueeCommit.ts:1`             | `packages/studio/src/player/components/timelineMarqueeCommit.ts:1`             |
+| `bdf9ba0ee:packages/studio/src/player/components/useTimelineRangeSelection.test.tsx:107` | `packages/studio/src/player/components/useTimelineRangeSelection.test.tsx:107` |
+| `bdf9ba0ee:packages/studio/src/player/components/useTimelineRangeSelection.ts:11`        | `packages/studio/src/player/components/useTimelineRangeSelection.ts:10`        |
+| `bdf9ba0ee:packages/studio/src/styles/theme.css:199`                                     | `packages/studio/src/styles/theme.css:199`                                     |
+| `bdf9ba0ee:packages/studio/src/utils/marqueeGeometry.test.ts:2`                          | `packages/studio/src/utils/marqueeGeometry.test.ts:2`                          |
+| `bdf9ba0ee:packages/studio/src/utils/marqueeGeometry.ts:17`                              | `packages/studio/src/utils/marqueeGeometry.ts:17`                              |
+| `bdf9ba0ee:packages/studio/src/utils/studioUrlState.test.ts:221`                         | `packages/studio/src/utils/studioUrlState.test.ts:221`                         |
+| `7862e271d:packages/cli/src/utils/contrastMotion.test.ts:164`                            | `packages/cli/src/utils/contrastMotion.test.ts:164`                            |
+| `7862e271d:packages/cli/src/utils/contrastMotion.ts:20`                                  | `packages/cli/src/utils/contrastMotion.ts:20`                                  |
+| `e976fdbfa:packages/lint/src/rules/media.test.ts:357`                                    | `packages/lint/src/rules/media.test.ts:342`                                    |
+| `e976fdbfa:packages/lint/src/rules/media.ts:650`                                         | `packages/lint/src/rules/media.ts:646`                                         |
+| `e976fdbfa:skills/hyperframes/SKILL.md:29`                                               | `skills/hyperframes/SKILL.md:27`                                               |
+| `e976fdbfa:skills/hyperframes/references/format.md:149`                                  | `skills/hyperframes/references/format.md:149`                                  |
+| `aa34cffe4:packages/core/src/runtime/captureMotionBlur/index.test.ts:640`                | `packages/core/src/runtime/captureMotionBlur/index.test.ts:614`                |
+| `aa34cffe4:packages/core/src/runtime/captureMotionBlur/index.ts:206`                     | `packages/core/src/runtime/captureMotionBlur/index.ts:201`                     |
+
+### 聚焦回歸與建置證據
+
+完整輸出保存在忽略目錄 `tmp/upstream-20261106-next/`。先只套回歸測試，再移植產品程式；下表紅燈均為實際執行，不以預期失敗代替。
+
+| 指令／範圍                                                                                                                                                                                                                                              | 舊碼紅燈                                                                                                    | 新碼結果                                                                                          |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| core：`bun run --cwd packages/core test src/runtime/init.test.ts src/runtime/adapters/waapi.initial.test.ts src/runtime/captureMotionBlur/index.test.ts --maxWorkers=2`；新碼用相同範圍的 `bun x vitest run`                                            | exit 1，13 failed／381 passed                                                                               | exit 0，394 passed／0 failed；#5746 3 例、#5017 9 例、#7190 1 例由紅轉綠                          |
+| CLI：`bun run --cwd packages/cli test src/browser/manager.test.ts src/commands/lint.test.ts src/commands/check.test.ts src/utils/studioSelectionClient.test.ts src/utils/contrastMotion.test.ts --maxWorkers=2`                                         | exit 1，12 failed／263 passed                                                                               | exit 0，275 passed／0 failed                                                                      |
+| Studio：`bun run --cwd packages/studio test` 加 9 個變更測試檔與 `--maxWorkers=2`                                                                                                                                                                       | exit 1，33 failed／116 passed                                                                               | exit 0，149 passed／0 failed；檔案清單見 red-studio.log／green-studio-focused.log                 |
+| lint：`bun run --cwd packages/lint test src/rules/media.test.ts --maxWorkers=1`                                                                                                                                                                         | exit 1，2 failed／144 passed                                                                                | exit 0，146 passed／0 failed；舊碼 maxWorkers=2，測試範圍相同                                     |
+| producer bun unit 分類的 `audioPadTrim.test.ts`，`HYPERFRAMES_TEST_LANE=unit bun test --preload ./scripts/no-network.mjs ./src/services/render/audioPadTrim.test.ts`                                                                                    | exit 1，4 failed／41 passed                                                                                 | exit 0，45 passed／0 failed                                                                       |
+| producer unit lane `node scripts/run-test-lane.mjs unit`（`VITEST_MAX_WORKERS=2`）                                                                                                                                                                      | audioStage／assembleStage 各一例 failed；共 4 failed／1132 passed／5 skipped，另兩例為 Windows 路徑／所有權 | 新測試均通過；完整 unit Vitest 結果與限制另列                                                     |
+| producer integration lane `node scripts/run-test-lane.mjs integration vitest`；browser 聚焦 `HYPERFRAMES_TEST_LANE=integration bun x vitest run src/services/coreRuntimeBrowser.test.ts -t 'lets go of each scene\|seeks initial WAAPI' --maxWorkers=1` | 舊 runtime 的 7 例 WAAPI 與 paused scene 一例失敗；取得紅燈後停止 lane 所啟動的程序樹，該次沒有完整總數     | 新 runtime 聚焦 exit 0，13 passed／78 skipped／0 failed；未把聚焦結果當完整 integration lane 通過 |
+
+producer 聚焦採 repo `test-classification.mjs` 的 runner／lane 與 no-network preload，不把 bun:test 交給 Vitest。完整 lane 的命令保留原 runner，未改分類或測試選擇規則。
+
+`bun run --cwd packages/{core,cli,producer,studio} build` 各自執行，四者均 exit 0；runtime artifacts、CLI／Studio ESM 與 DTS、producer build 完成。lefthook 的 core、studio、scripts 三組 `node node_modules/typescript/bin/tsc --noEmit -p <package>/tsconfig.json` 均 exit 0。`node_modules/.bin/fallow audit --base origin/main --fail-on-issues` exit 0：最終 66 changed files，No issues（10.35 秒）；3 筆 inherited complexity 由原有 new-only gate 排除，不冒稱全部舊碼無問題。變更 TypeScript 的 oxlint exit 0：52 files、0 warnings／0 errors。
+
+core 的 package test wrapper 因 `check:position-edits-render` 使用 `git diff --exit-code`，對正當的 generated IIFE 變更回 exit 1；沒有以 staging 遮掉差異。改跑其底層完整 Vitest，並由 build 與重複產生的位元組一致性驗證 generated artifact。
+
+### 水位與 strict 快照（本節為最新剩餘數量的單一記錄處）
+
+`python tools/check_upstream_updates.py --strict --output tmp/upstream-20261106-next/strict-final.md` exit 1；固定上游 tip `4935d6736b64ed3dd68524c1cb2c7f011171baef`。commit 水位以上 48 筆，從 `f3e5b81df`（#7149）開始；PR #7191 起 72 筆，issue #7259 一筆；monitored 92 筆全部仍在釘選 head／state，移動數 0。commit 連續前綴由 `git rev-list --count aace91b5e..aa34cffe4` 證明為 15，且 `aa34cffe4` 是該上游 tip 的 ancestor。strict 未綠，ROADMAP 近期接續列保留。
+
+### 完整套件與乾淨 HEAD 對照
+
+| 命令                                                                        | Exit code    | 結尾輸出與裁決                                                                                                                                                                                                              |
+| --------------------------------------------------------------------------- | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| core 目錄：`bun x vitest run --maxWorkers=2`                                | 1            | 261 files：5577 passed／1 failed／11 skipped。唯一失敗是 `pageBuild.golden.test.ts:163` 的 5000ms timeout，沒有像素或 snapshot 差異；只重跑該檔 exit 0，4 passed／0 failed。保留初次失敗，不把兩次結果冒充一次全綠。        |
+| `bun run --cwd packages/cli test --maxWorkers=2`                            | 1            | 464 files：6183 passed／35 failed／303 skipped。六個 unit 失敗檔在乾淨 HEAD 同樣 27 failed；Chrome 的另外 8 個失敗採三檔各一代表案例複核。                                                                                  |
+| `bun run --cwd packages/studio test --maxWorkers=2`                         | 1            | 717 files：7938 passed／229 failed／2 skipped／16 todo。22 個失敗檔全部在乾淨 HEAD 重現，229 個失敗名稱完全相同，集中於 localStorage／DOM 模擬與既有測試合約。                                                              |
+| `bun run --cwd packages/lint test --maxWorkers=2`                           | 1            | 24 files：1244 passed／1 failed；`projectShaders.test.ts` symlink EPERM，乾淨 HEAD 的同檔 3 passed／1 failed，同一失敗。                                                                                                    |
+| producer：`VITEST_MAX_WORKERS=2 node scripts/run-test-lane.mjs unit vitest` | 1            | 76 files：1133 passed／3 failed／5 skipped。只重跑失敗的 3 檔為 20 passed／2 failed，stall 通過；renderDirOwner 與 segmentManifest 的兩個差異，在乾淨 HEAD 同範圍也 20 passed／2 failed。                                   |
+| producer：`node scripts/run-test-lane.mjs unit bun`                         | 1            | 在 `chunkAudio.test.ts` 6 passed／3 failed 後 runner 停止，後續 bun 檔未完整執行，不能報完整 bun lane 總數。乾淨 HEAD 同檔仍 6 passed／3 failed（現有 FFmpeg／音軌 fixture）。另已完成 audioPadTrim 的 45 passed 聚焦回歸。 |
+| producer：`node scripts/run-test-lane.mjs integration vitest`               | 中止，非通過 | 舊 runtime 取得 #7195／#5017 的實際紅燈後停止此命令所啟動的程序樹；沒有完整 lane 總數。新 runtime 的 13 例 browser 聚焦通過，不代表所有 integration tests 通過；其他整合與端到端影片回歸未完整驗證。                        |
+| `pwsh -NoProfile -File tools/dev_check.ps1`                                 | 0            | 39 passed／0 failed，compileall／Ruff 通過，相對連結 12 份文件 0 錯誤；`WINDOWS DEV CHECK GREEN`。                                                                                                                          |
+
+乾淨 HEAD 對照使用 `8406f9bca`：先把 64 個 tracked 變更與 2 個新檔逐一備份，還原全部 HEAD bytes，新檔移到忽略目錄，再重建舊 core；`git status --porcelain` 空。對照後恢復 66 檔並逐一檢查 SHA-256，重建新 core 成功，HEAD 與 index 均保持原樣。沒有切分支、staging、commit 或外部寫入。
+
+HEAD 比對的精確輸出：CLI 六檔 147 passed／27 failed／13 skipped，失敗名稱與完整 CLI 的 unit 部分相同；Studio 22 檔 55 passed／229 failed，229 個失敗名稱逐一相同。producer 三檔 20 passed／2 failed、chunkAudio 6 passed／3 failed，lint 一檔 3 passed／1 failed。這些都不改測試消除差異。
+
+Chrome 代表案例在 HEAD 重建的舊 runtime 上執行：warmCheck 的 cold-check parity、chromeOrphans 的 check-finished cleanup、snapshot.lateImages 的 delayed img，各一例；exit 1，3 failed／14 skipped，209.33 秒，240 秒 named per-batch cap 未觸發。三個失敗原因分別與完整 CLI 的 exit 1、缺 processes.json、Command failed 相同。其餘 5 個 Chrome 失敗沒有逐例在 HEAD 重跑，不把代表案例推論成每例都已驗證。
+
+提交前的獨立審查另以 `git archive 8406f9bca` 建乾淨樹（重建 core、lint、producer、studio、cli 的 `dist`），兩邊各跑一次完整 CLI 與逐檔 producer bun unit lane 並比對失敗名稱：CLI 移植樹 6187 passed／31 failed、乾淨樹 6174 passed／31 failed，31 個失敗名稱相同（含 warmCheck、chromeOrphans 等 Chrome 案例）；producer bun 52 檔移植樹 875 passed／8 failed、乾淨樹 870 passed／8 failed，8 個失敗相同。只在移植樹失敗的案例為 0；上表 35 與此處 31 的差距是 Chrome 案例在不同次執行間的波動。
+
+完整 CLI 批次 1079.20 秒、Studio 批次 1138.48 秒，各自低於 1200 秒上限；沒有跑 `tools/test_product.ps1 -Full`，沒有重跑已通過的套件。core generated position-edits IIFE 重複產生 exit 0 且 SHA-256 相同（`a02104a8f122437a31386b940fbe8fc1fe2ca8e85315af4f94d0a59718ba7608`）。Markdown 的追加節以空 ignore 檔交給 oxfmt，保留各文件 HEAD 前綴；MDX 只格式化新增段落，避免覆蓋既有格式。
+
+完整產品驗收仍未通過，strict 也仍有未審範圍，ROADMAP 接續列保留。這份紀錄只認列有逐筆證據的 15 個連續 commit 與 11 項移植，不把審查水位當成產品驗收。

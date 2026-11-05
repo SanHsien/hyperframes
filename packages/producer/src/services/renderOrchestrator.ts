@@ -3511,9 +3511,10 @@ async function executeRenderPipeline(input: {
           abortSignal: executionSignal,
           assertNotAborted,
           log,
+          keepDeliverySource: true,
         }),
     );
-    const { audioOutputPath, hasAudio } = audioResult;
+    const { audioOutputPath, deliverySourcePath, hasAudio } = audioResult;
     perfStages.audioProcessMs = audioResult.audioProcessMs;
     recordLimiterAttenuation(job, audioResult.audioLoweredDb);
     if (audioResult.audioError) {
@@ -5350,6 +5351,7 @@ async function executeRenderPipeline(input: {
             job,
             videoOnlyPath,
             audioOutputPath,
+            audioPcmPath: deliverySourcePath,
             outputPath: stagedOutputPath,
             hasAudio,
             format: outputFormat,

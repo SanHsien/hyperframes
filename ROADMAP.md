@@ -1,7 +1,7 @@
 # 路線圖
 
 > 本 repo 後續工作的單一真相源。做完一項，就在同一個 commit 刪掉那一列；新工作只加在這裡。
-> 上游審查於 2026-11-06 接續到 commit `aace91b5ec0d937772f66ab06e63c5755e579646`（PR #7189、issue #7223）；逐筆裁決見 [接續缺口清冊](docs/UPSTREAM_REVIEW_2026-11-04_CONTINUED.md)。CI／告警保留現況段既有日期快照。
+> 上游審查於 2026-11-06 接續到 commit `aa34cffe4b8d66053bc1bf999275b12265c22ab7`（PR #7190、issue #7223）；逐筆裁決見 [接續缺口清冊](docs/UPSTREAM_REVIEW_2026-11-04_CONTINUED.md)。CI／告警保留現況段既有日期快照。
 
 ## 現況
 
@@ -24,6 +24,8 @@ HyperFrames 將 HTML、CSS 與動畫渲染為影片，本線保留 Windows 渲�
 2026-11-06 以 fork `2f575f082` 接續至 commit `15b1de4ae`（上游順序第 1–24 個），PR 水位 #7189、issue 維持 #7223；採用 #7165（雲端 render 帶系統字型）、#7168（逾時看門狗、單一本機 render 槽、lint 字型簡寫）、#7166、#6972、#7183、#7184 與先決的 #6665、#6697、#6716（僅 cache-dir helper），文件採 #7132、#7196；#7182、#7176 延後，其餘不適用。monitored 由 91 增為 92 筆（新增 #7181，#6695 換 head，#6972 重釘 closed）。下一個 commit 是 `aace91b5e`（#6983），逐筆證據見 [接續清冊](docs/UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-06接續至-15b1de4ae移植-716571687166與先決修正)。
 
 2026-11-06 以 fork `94c048ba7` 接續審查並手工採用 #6983（motion blur shutter phase），連續 commit 水位至 `aace91b5e`，PR #7189／issue #7223 不動，monitored 維持 92 筆，#6983 重釘 merged head／closed。受影響 core 全套（2 workers）5552 passed／11 skipped／0 failed、Studio panel 11 passed、core build 與 lefthook 三組 typecheck／fallow 通過；維護 gate 39 passed／0 failed。跨 workspace Full 因大量 worker 啟動失敗與逾時停止，未完成；乾淨 `94c048ba7` 的產品 Quick 同樣有兩例 symlink EPERM，不能視為完整產品驗收。下一個 commit 是 `f6ae9bfb4`（#7199），逐檔與剩餘範圍見 [接續清冊](docs/UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-06接續至-aace91b5e採用-6983)。
+
+2026-11-06 以 fork `8406f9bca` 接續審完 `f6ae9bfb4..aa34cffe4` 的 15 個連續 commit，採用 11 筆修正；commit 水位至 `aa34cffe4`、PR #7190、issue #7223，monitored 維持 92 筆。core 聚焦 394 passed、CLI 聚焦 275 passed、Studio 聚焦 149 passed、producer 瀏覽器聚焦 13 passed；lefthook 三組 typecheck 與 fallow 通過。受影響套件全套與本機限制的精確結果見 [接續清冊](docs/UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-06接續至-aa34cffe4審查-15-個連續-commit)，不宣稱完整產品驗收；保留近期接續列與既有日期快照。
 
 ## 近期：可以直接動手
 
