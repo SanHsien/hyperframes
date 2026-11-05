@@ -15,6 +15,7 @@ import { failCommand, setCommandExitCode } from "../../utils/commandResult.js";
  * place instead of each workflow improvising its own.
  */
 
+import { NetworkFailure } from "../../utils/networkFailure.js";
 import { defineCommand } from "citty";
 import {
   ENV_CREDENTIAL_VAR,
@@ -152,6 +153,8 @@ async function verify(credential: ResolvedCredential): Promise<VerifiedStatus> {
     const user = await client.getCurrentUser(credential);
     return { credential, user, persistedUser, apiError: null };
   } catch (err) {
+    if (err instanceof NetworkFailure)
+      return { credential, user: null, persistedUser, apiError: `${err.message} ${err.hint}` };
     if (!isAuthError(err)) throw err;
     return {
       credential,

@@ -28,7 +28,7 @@ import { trackCheckReport, trackCommandFailure } from "../telemetry/events.js";
 import { trackLintRun } from "../telemetry/lintRun.js";
 import { getRunId } from "../telemetry/runId.js";
 import type { ProjectDir } from "./project.js";
-import { lintProject, shouldBlockRender, type ProjectLintResult } from "./lintProject.js";
+import { lintProject, type ProjectLintResult } from "./lintProject.js";
 import {
   buildLayoutSampleTimes,
   buildTransitionSampleTimes,
@@ -1655,6 +1655,12 @@ export async function runAuditGrid(
   };
 }
 
+const leavesNothingToLoad = (finding: { code: string; severity: string }): boolean =>
+  finding.severity === "error" && finding.code === "root_missing_composition_id";
+
+const compositionCannotLoad = (lintResult: ProjectLintResult): boolean =>
+  lintResult.results[0]?.result.findings.some(leavesNothingToLoad) ?? false;
+
 export async function runCheckPipeline(
   project: ProjectDir,
   options: CheckOptions,
@@ -1681,7 +1687,7 @@ export async function runCheckPipeline(
 
     const lint = buildLintSection(lintResult);
     const { hdr, audio } = await inspectProjectMedia(project, dependencies);
-    if (shouldBlockRender(true, false, lintResult.totalErrors, lintResult.totalWarnings)) {
+    if (compositionCannotLoad(lintResult)) {
       return buildReport(
         options,
         lint,

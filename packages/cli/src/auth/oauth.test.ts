@@ -170,6 +170,20 @@ describe("auth/oauth", () => {
   });
 
   describe("refreshTokens", () => {
+    it("bounds refresh requests and names an offline token endpoint", async () => {
+      let signal: AbortSignal | null | undefined;
+      const fetchImpl: typeof fetch = async (_url, init) => {
+        signal = init?.signal;
+        throw new TypeError("fetch failed", {
+          cause: Object.assign(new Error("getaddrinfo ENOTFOUND"), { code: "ENOTFOUND" }),
+        });
+      };
+      await expect(refreshTokens("test-refresh", { fetchImpl })).rejects.toMatchObject({
+        name: "NetworkFailure",
+      });
+      expect(signal).toBeInstanceOf(AbortSignal);
+    });
+
     it("posts grant_type=refresh_token and persists the response", async () => {
       process.env["HEYGEN_API_URL"] = "https://api.test.example";
       await writeStore({ oauth: { access_token: "old_at", refresh_token: "old_rt" } });

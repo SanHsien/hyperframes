@@ -976,6 +976,8 @@ Narrow the context with `--context-fields` (`server`, `selection`, `lint`,
 
 Your composition opens in HyperFrames Studio, and edits to `index.html` and its
 sub-compositions refresh live. Preview and render share the same runtime.
+Opening preview leaves the project HTML unchanged; element IDs are assigned in
+memory and written to a source file only when an edit to that file is saved.
 
 The server picks one of three modes by itself: **embedded** (the default for
 `npx` — Studio bundled in the CLI, no extra dependencies), **local studio**
@@ -1132,7 +1134,9 @@ npx hyperframes check [dir] --at 1.5,4,7.25
 npx hyperframes check [dir] --strict       # warnings fail too
 ```
 
-`check` runs the linter first and skips the browser entirely on a lint error.
+`check` runs the linter first. A lint error fails the check but does not stop
+it: the browser checks still run and both are reported, unless the lint error
+leaves no composition to load (a root with no `data-composition-id`).
 Then it loads the bundled composition once and sweeps a single seek grid,
 running every audit at every sample: runtime console errors and failed requests,
 layout defects (overflow, clipping, held overlaps, occlusion, coordinate-frame
@@ -1144,7 +1148,7 @@ a source with no audio track or that cannot be read as audio (error: render
 stops), a clip that starts past the end of its file, a clip whose played part is
 silent (warnings), and a film with no sound at all (info).
 
-When the browser never ran (lint errors, a linter crash, or a browser launch
+When the browser never ran (no composition to load, a linter crash, or a browser launch
 failure), `browserSkipped` is `true` and the `layout`, `motion` and `contrast`
 sections are empty, not clean.
 
@@ -2165,6 +2169,10 @@ hyperframes auth status
 hyperframes auth status --json
 ```
 
+Account verification and OAuth token requests time out after 15 seconds.
+Network failures name the host and a next step; `auth status` keeps any cached
+identity separate from the failed live verification and exits non-zero.
+
 ### `auth refresh`
 
 Force-refreshes the stored OAuth access token. Applies to an OAuth session, not
@@ -2255,7 +2263,7 @@ Render parameters mirror local `hyperframes render` where they overlap:
 | `--format`             | `mp4`                       | `mp4`, `webm`, or `mov`                                                                                                                         |
 | `--page-motion-blur`   | current cloud behavior      | Pass `off` to disable authored page motion blur. Omit to preserve current behavior. Sends the public API field `page_motion_blur: "off"`. |
 | `--resolution`         | `1080p`                     | `1080p` or `4k`. 4k bills at 1.5×.                                                                       |
-| `--aspect-ratio`       | auto                        | `16:9`, `9:16`, or `1:1`. Auto-detected from a local project's `data-width` and `data-height`, so you rarely need it. The renderer cannot reshape a composition — a value that disagrees with the authored ratio is an error. With `--asset-id` or `--url` the server defaults to `16:9`. |
+| `--aspect-ratio`       | auto                        | Any `W:H`, auto-detected from a local project's `data-width` and `data-height`, so you rarely need it. At `1080p` the output keeps the composition's own size, whatever its ratio (a 1920×960 composition renders 1920×960). `4k` scales only `16:9`, `9:16` and `1:1` compositions and refuses any other ratio before upload. The renderer cannot reshape a composition — a value that disagrees with the authored ratio is an error. |
 | `--composition` / `-c` | `index.html`                | Entry HTML file inside the zip                                                                                                                   |
 | `--variables`          | —                           | Inline JSON overriding `data-composition-variables`                                                                                              |
 | `--variables-file`     | —                           | Read those overrides from a JSON file                                                                                                            |

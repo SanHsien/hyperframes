@@ -185,3 +185,9 @@ commit 水位只推進連續 11 筆至 `3f42dc1c73b0c9915b311e48bd0099b39a0865a9
 起始 strict 檢查 exit 1：水位以上 77 個 commit、72 筆 PR、3 筆 issue、17 筆 monitored 變動。量太大，只做連續前綴：commit `b3b6a8116..370f886aa` 共 14 個、PR #7161–#7164，逐筆 SHA:檔案:行號、紅綠證據與重釘見 [同日接續清冊](UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-05接續至-370f886aa移植-6-筆獨立修正)。採用 #7158（管線提早關閉時失敗的 run 改 exit 1，ROADMAP 中期列完成）、#7161（磁碟寫滿回 `disk_full` 而非影片壞掉）、#7163（拒絕符號連結的磁碟不論錯誤碼都退回複製）、#7171（頁面全數逾時載入時減半 worker 重試）、#7172（切割起點參照另一個 clip 的 clip）、#7169（lint 擋下 render 讀不了的 `data-automation`／`data-fx-chain`）；另在水位之外先行移植 #7179（尚未載入的 `<img>` 不再拉伸）與 #7173（沒有節拍的曲目回空結果）。#7160 延後（與 #7094／#7102 成組）、#7153 不採用（只換 Discord 邀請碼的歸因）、#7108 延後（Chrome 像素測試），#7146、#7042、#6988、#7055、#7164 與 #7162 不適用。
 
 三軸水位為 commit `370f886aa953c897906f97896e67229c19fd41a8`、PR #7164、issue #7113；baseline monitored 維持 91 筆（#7158、#7160、#7153、#6988、#7042、#7055 重釘為 closed，#7142 換新 head）。收尾 strict 檢查仍 exit 1：尚有 65 個 commit（含起始檢查之後新進的 2 個）、#7165 起的 70 筆 PR、3 筆 issue 與 10 筆 monitored 未重審；剩餘範圍只在 ROADMAP.md 維護，審查不代表整版同步或完整產品驗收。
+
+## 2026-11-05：接續至 `06722eb9b`，拆分 #7170
+
+以 fork `9f61d82ce` 接續，commit 連續審到 `06722eb9b90834beee636d1a9d41cd22452bd7fd`，不越過 `cba66f20a`；PR 維持 #7164，issue 推進至 #7223。逐筆 SHA／檔案／行號、monitored 重釘與最新 strict 結果見 [接續清冊](UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-05接續至-06722eb9b拆分-7170)。
+
+採用 #7170 的 auth timeout／network diagnostics、可載入 composition 的 check browser pass、preview 不寫 HTML、cloud aspect／4K preflight；#7148 社群連結同步。其他 #7170 部分按缺少的前置契約分流，未聲稱整版同步。monitored 維持 91 筆；#6695 換 head，#6714／#6727／#6761／#6968／#7008／#7014／#7148 重釘 closed，#6972／#6983 保持原釘選。ROADMAP 保留接續計畫。

@@ -307,4 +307,27 @@ describe("auth/client", () => {
     });
     expect(captured["authorization"]).toBe("Bearer at_xyz");
   });
+
+  it("turns a request that never got an answer into a named network failure", async () => {
+    const offline: typeof fetch = async () => {
+      throw new TypeError("fetch failed", {
+        cause: Object.assign(new Error("getaddrinfo EAI_AGAIN api.test.example"), {
+          code: "EAI_AGAIN",
+        }),
+      });
+    };
+    await expectRejectionMessage(makeClient(offline), (msg) =>
+      expect(msg).toMatch(/^Could not reach api\.test\.example: .*offline/),
+    );
+  });
+
+  it("bounds the account request so an unreachable host fails in seconds", async () => {
+    let signal: AbortSignal | null | undefined;
+    const capture: typeof fetch = async (_url, init) => {
+      signal = init?.signal;
+      return new Response("{}", { status: 200 });
+    };
+    await makeClient(capture).getCurrentUser(apiKeyCred());
+    expect(signal).toBeInstanceOf(AbortSignal);
+  });
 });

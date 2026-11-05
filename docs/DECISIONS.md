@@ -1008,3 +1008,11 @@ PR 水位推進到 #7160，commit 維持 `1ff4cefd4`，issue 維持 #7113，moni
 採用：#7158（本線 `packages/cli/src/cli.ts:448-451` 的 EPIPE 處理無條件 exit 0，改依交付與否 0／1）、#7161（`videoFrameExtractor.ts` 新增 `disk_full` 並升為 `ENOSPC`）、#7163（`render/shared.ts` 的連結失敗不論錯誤碼都退回 junction／複製）、#7171（`renderOrchestrator.ts:1455` 的初始化逾時改減半 worker）、#7172（`studio-server/.../sourceMutation.ts` 切割保留對其他 clip 的起點參照）、#7169（`audio_attribute_unreadable` lint 規則，lint 套件 unpacked 預算 695173 → 737342）。先行移植 #7179 與 #7173，水位不推進到它們。不採用：#7153（只換 Discord 邀請碼與歸因，舊碼本來就到同一伺服器）。延後：#7160（措辭，與 #7094／#7102 成組）、#7108（Chrome 像素測試，與後續 blur 修正成組）。不適用：#7146、#7042、#6988、#7055（上游文件站互動與品牌）、#7164（本線沒有付費樣式範本包與 style-sampling）、#7162（生成型別）。
 
 commit 水位連續推進到 `370f886aa`，PR 水位到 #7164，issue 維持 #7113，monitored 維持 91 筆。已知本機環境失敗（symlink EPERM、`hfIdPersist.test.ts` rename EPERM、`undecodableAudioTrack.test.ts`、`media.test.ts:99`）在舊碼重現，不宣稱完整產品驗收通過。
+
+## 2026-11-05：拆分 #7170 與接續至 `06722eb9b`
+
+依 [逐筆清冊](UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-05接續至-06722eb9b拆分-7170) 採用已合併 #7170 的獨立修正：auth GET／token POST 有界 timeout 與 transport 診斷、check 不因一般 lint error 隱藏 browser findings、preview 啟動不改寫來源 HTML、cloud 任意 W:H／4K preset preflight。保留本線 OAuth persist、registry 公開 cause-chain helper、preview 測試原檔名、cloud page-motion-blur 與發布守衛。
+
+#7170 的 desktop hint 需要未同步的 agent-only 契約；SFX advisory 需要未同步的 HeyGen provider，且本線 media-use 整合測試有乾淨 HEAD 可重現的 tts.mjs 載入失敗；templates／avatars 的 hosted 模組不在本線。各部分的採用條件明載清冊，不能以刪測試或引入整串帳戶功能繞過。#7148 的產品社群連結採用，#7175 的整版發行宣告不適用於選擇性移植。
+
+三軸水位為 commit `06722eb9b90834beee636d1a9d41cd22452bd7fd`、PR #7164、issue #7223。monitored 維持 91 筆，8 筆 head／狀態按清冊重釘；closed 未合併 PR 不移植，#6968 的替代 #7210 按 commit 軸再審。#7193／#7223 記為有明確前後像素驗收條件的渲染風險，#7204 保持功能提案；issue 關閉或審查水位推進皆不代表 fork 已修好。最新剩餘範圍與驗證證據只在清冊維護。
