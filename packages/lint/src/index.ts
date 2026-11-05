@@ -13,3 +13,4 @@ export {
 } from "./hyperframeLinter.js";
 export { lintProject, shouldBlockRender } from "./project.js";
 export type { ProjectLintResult } from "./project.js";
+export { audioAttributeShapeError, type AudioAttribute } from "./rules/audioAttributes.js";

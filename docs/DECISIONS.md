@@ -1000,3 +1000,11 @@ commit 水位連續推進到 `1ff4cefd4`，PR 水位到 #7157，issue 維持 #71
 審查 #7158、#7159、#7160，皆為 open，故不移植。#7158 條件式採用：本線 `packages/cli/src/cli.ts:448-451` 的 `handleStreamEpipe` 仍無條件 exit 0；上游 head `15f04db69` 改為依交付與否 exit 0／1，合併後手工適配 `isRenderSucceeded()` 並先在舊碼紅燈。#7159、#7160 延後（本線無對應診斷欄位；`update` 指令與 skills 政策成組延後）。逐筆證據見 [同日接續清冊](UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-04接續至-pr-7160三筆新開-pr-全數釘選)。
 
 PR 水位推進到 #7160，commit 維持 `1ff4cefd4`，issue 維持 #7113，monitored 88 筆增為 91 筆。
+
+## 2026-11-05：接續至 `370f886aa`，移植 6 筆獨立修正
+
+起始 strict 檢查報 77 個 commit、72 筆 PR、3 筆 issue；只審連續前綴 `b3b6a8116..370f886aa`（14 個 commit）與 #7161–#7164。逐筆證據見 [同日接續清冊](UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-05接續至-370f886aa移植-6-筆獨立修正)。
+
+採用：#7158（本線 `packages/cli/src/cli.ts:448-451` 的 EPIPE 處理無條件 exit 0，改依交付與否 0／1）、#7161（`videoFrameExtractor.ts` 新增 `disk_full` 並升為 `ENOSPC`）、#7163（`render/shared.ts` 的連結失敗不論錯誤碼都退回 junction／複製）、#7171（`renderOrchestrator.ts:1455` 的初始化逾時改減半 worker）、#7172（`studio-server/.../sourceMutation.ts` 切割保留對其他 clip 的起點參照）、#7169（`audio_attribute_unreadable` lint 規則，lint 套件 unpacked 預算 695173 → 737342）。先行移植 #7179 與 #7173，水位不推進到它們。不採用：#7153（只換 Discord 邀請碼與歸因，舊碼本來就到同一伺服器）。延後：#7160（措辭，與 #7094／#7102 成組）、#7108（Chrome 像素測試，與後續 blur 修正成組）。不適用：#7146、#7042、#6988、#7055（上游文件站互動與品牌）、#7164（本線沒有付費樣式範本包與 style-sampling）、#7162（生成型別）。
+
+commit 水位連續推進到 `370f886aa`，PR 水位到 #7164，issue 維持 #7113，monitored 維持 91 筆。已知本機環境失敗（symlink EPERM、`hfIdPersist.test.ts` rename EPERM、`undecodableAudioTrack.test.ts`、`media.test.ts:99`）在舊碼重現，不宣稱完整產品驗收通過。

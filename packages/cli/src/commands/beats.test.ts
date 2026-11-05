@@ -105,11 +105,17 @@ describe.skipIf(!canDecode)("hyperframes beats", () => {
     expect(out).not.toContain("hyperframes audio");
   });
 
-  it("writes nothing for a track with no steady beat", async () => {
+  it("answers a track with no steady beat with an empty result and writes nothing", async () => {
     const dir = project("silent", null);
     const { exitCode, out } = await runBeats(dir);
-    expect(exitCode).toBe(1);
-    expect(out).toMatch(/No beats detected in assets\/song\.wav/);
+    expect(exitCode).toBe(0);
+    expect(JSON.parse(out)).toEqual({
+      ok: true,
+      track: "assets/song.wav",
+      file: null,
+      count: 0,
+      bpm: null,
+    });
     expect(existsSync(join(dir, "beats"))).toBe(false);
   });
 

@@ -465,3 +465,83 @@ commit 連續區段 `19be35a46..1ff4cefd4`（10 個，兩端含）逐筆有證�
 ### 水位與剩餘範圍
 
 PR 水位推進到 #7160（#7158–#7160 每筆有證據）；commit 維持 `1ff4cefd40c8dad98127fc78e8761c1ac62053dd`，issue 維持 #7113。monitored 由 88 筆增為 91 筆（新增 #7158、#7159、#7160，既有項目未重釘）。審查不代表整版同步或完整產品驗收。
+
+## 2026-11-05：接續至 `370f886aa`，移植 6 筆獨立修正
+
+起點為 fork `b604b39eb`（`origin/main`），baseline 為 commit `1ff4cefd4`、PR #7160、issue #7113。起始 `python tools/check_upstream_updates.py --strict` exit 1：水位以上 77 個 commit、72 筆 PR（#7161–#7236，編號 #7193、#7200、#7204、#7223 是 issue 或空號）、3 筆 issue（#7193、#7204、#7223），91 筆釘選中 17 筆 head 或狀態變動。量太大，本輪只做**連續前綴**：commit 從 `b3b6a8116` 到 `370f886aa` 共 14 筆（上游順序第 1–14 個），PR 到 #7164，issue 不動。其餘（第 15 個 `fb738015a`（#7170）起的 63 個 commit、#7165 起的 PR、3 筆 issue）留待下一輪。
+
+`SHA:檔案:行號` 指上游 commit 補丁（`git show`，唯讀）的 hunk 起始行；「本線」指 `b604b39eb` 的行號。每項程式修正先把上游測試（或本線改寫的測試）放到舊碼確認紅燈，再移植來源。
+
+### Commit 裁決（14 筆）
+
+| Commit | PR／作者 | 裁決與證據 |
+| --- | --- | --- |
+| `b3b6a8116` | #7158 Miguel Ángel | **採用**。`b3b6a8116:packages/cli/src/cli.ts:461` 的 `handleStreamEpipe` 依是否已交付決定 `process.exit(0 或 1)`；本線 `cli.ts:448-451` 無條件 exit 0，被拒絕的 render 在管線提早關閉時回 0。手工適配本線的 `isRenderSucceeded()`（上游為 `isRunDelivered()`），並同步標頭註解（`cli.ts:10`）。測試改自 `b3b6a8116:packages/cli/src/cli.lifecycle.test.ts:366-380`，本線位置 `cli.lifecycle.test.ts:322`。履行 ROADMAP 中期列「採用 #7158」，該列已刪。；差異：上游用 `isRunDelivered()`（含 #6659 的「非 render 指令已交付」判斷），本線因 #6659 於 10-29 延後，只能用 `isRenderSucceeded()`，所以成功的非 render 指令在交付後管線才關閉會回 1（上游回 0）；隨 #6659 採用時一併改回。 |
+| `604a25fba` | #7160 Wenbo Zhu | **延後，條件不變**。純措辭（PR 自述 No behavior changes）：把 skills 安裝與更新提示改成「For the user:」對人說，目的是過上游發佈審查（DeltaVerdict D5）。`604a25fba:packages/cli/src/commands/update.ts:153`、`update.test.ts:202` 在本線不存在（沒有 `update` 指令）；`git apply --check` 對本線 `README.md:64`、`media-use/resolve.mjs:56`、`skillsUpdateCheck.test.ts:191` 失敗，其餘（`init.ts:690,977`、`skills.ts:380,550,577`、`bundled-sfx-provider.mjs:27`、`docs/quickstart.mdx:55`）可套。與 #7094／#7102（update 指令與 skills 政策成組延後）同一個決定；採用時整組一起做。 |
+| `21f211919` | #7153 Tejashmakwana | **不採用**。`21f211919:README.md:11,23,327`、`ADOPTERS.md:12`、`docs/community/adopters.mdx:14` 只是把 Discord 邀請碼換成帶來源歸因的新碼，`docs/docs.json:1011,1074` 加頁尾與導覽列圖示；commit 內文自述「Every link already went to the new server」，舊碼本來就到同一伺服器，改碼只影響上游的加入來源統計。本線 README 與 `docs/docs.json:987` 不動；X／Instagram 連結的 #7148（`f333569f1`）在第 16 個 commit，下一輪一併裁決。前輪「合併後一次採用」的條件改為不採用，理由如上。 |
+| `ac1948a88` | #7161 Miguel Ángel | **採用**。`ac1948a88:packages/engine/src/services/videoFrameExtractor.ts:412,558,1439,1481` 新增 `disk_full` 失敗種類，磁碟寫滿不再被歸為「影片壞了」且不再用軟體解碼重跑；`extractVideosStage.ts:262-284` 把它升為 `ENOSPC` 主機錯誤。本線 `videoFrameExtractor.ts:408,1275,1317` 與 `extractVideosStage.ts:253` 沒有該分支，磁碟滿時回 `ffmpeg_failed`。補丁原樣套用。 |
+| `845bd638a` | #7163 Miguel Ángel | **採用**。`845bd638a:packages/producer/src/services/render/shared.ts:581-620`：拒絕符號連結的磁碟不論回什麼錯誤碼都退回 junction 再複製，只有 `ENOSPC`／`EDQUOT`／`EEXIST`／`ENOENT` 直接拋出。本線 `shared.ts:551-585` 仍只認 `EPERM`／`EACCES`／`UNKNOWN`，其他碼（`EISDIR`、`EIO`、`EINVAL`）直接失敗。補丁原樣套用。 |
+| `0bbc9b294` | #7172 Miguel Ángel | **採用**。`0bbc9b294:packages/studio-server/src/helpers/sourceMutation.ts:431,490,536,584`：起點寫成另一個 clip 的名字（`data-start="b + 1"`）時，切割改用 studio 給的解析範圍，兩半都保留參照；本線 `sourceMutation.ts:448-456` 把參照起點讀成 0（`resolveElementTiming` 回 `timing.start ?? 0`），在 clip 真實時間內的切割被拒、之前的切割會把 clip 改寫成從 0 開始。本線的 `readClipTiming(...).startExpression` 與 `ReferenceExpression` 已由 `packages/parsers/src/compositionContract.ts:34,73,153` 提供；補丁因 import 區塊不同改手工套用，測試附在檔尾。 |
+| `cd7b7383c` | #7169 WaterrrForever | **採用**。`cd7b7383c:packages/lint/src/rules/audioAttributes.ts:1-84` 新增錯誤 `audio_attribute_unreadable`，在 `hyperframes check` 就擋下缺 `"version": 1` 的 `data-automation`／`data-fx-chain`；本線 `packages/core/src/audioAutomation.ts:457` 的 render 會拋 `Unsupported automation version`，lint 沒規則（`media.ts:884` 的規則表無此項）。新增檔原樣，`index.ts:13`、`media.ts:19,887` 手工加入，`docs/reference/lint-rules.mdx`、`audio-effects.mdx:242,541` 同步，lint 套件 unpacked 預算 695173 → 737342（上游值）。CLI 預算上游同次調高，本線未量測 CLI 實際大小，不改。 |
+| `04bc4737a` | #7171 Miguel Ángel | **採用**。`04bc4737a:packages/producer/src/services/renderOrchestrator.ts:1472-1500`：每個頁面都逾時載入（`Network.enable timed out`、`Navigation timeout`）時減半 worker 重試，單 worker 僅重試一次；本線 `renderOrchestrator.ts:1455` 只對 `protocol_timeout` 的 `Network.enable` 重試一次，且不降 worker 數。補丁原樣套用（該區塊搬到 transient 重試之前）。 |
+| `d36cad798` | #7108 Vance Ingalls | **延後**。15 檔 +1860：`engine/src/services/__fixtures__/` 與四個 `captureMotionBlur.*.browser.test.ts`、`producer/.../blurDifferential.integration.test.ts` 用症狀釘住預設開啟的 capture blur 缺陷；另改 `ci.yml` 逾時 30 → 60 分鐘與 `run-test-lane.mjs`。本線只有 `captureMotionBlur.pixels.browser.test.ts`，沒有 `__fixtures__/motionBlur/`，而後續 commit（`aace91b5e` #6983、`aa34cffe4` #7190、`898d0fb00` #7191）會改同一批 `thresholds.ts` 與 `captureMotionBlur.differential.browser.test.ts`，尚未審。這批是 Chrome 像素測試，本機不能代跑；等 blur 修正審完再與其成組判斷。 |
+| `b3dd76661` | #7146 Ular Kimsanov | **不適用**。`b3dd76661:docs/snippets/catalog-gallery.jsx:5,98,228`、`docs/catalog-gallery.css:17`、`scripts/generate-catalog-previews.ts:136,561`：catalog 卡片從即時播放器改為預先產生的循環小影片，需要上游文件站的預覽資產管線。本線 `docs/snippets/catalog-gallery.jsx` 仍是即時播放器，沒有對應資產。 |
+| `986d7c680` | #7042 Ular Kimsanov | **不適用**。`986d7c680:docs/docs.json:1058,1066` 頁尾加「Made by HeyGen」、`docs/logo/dark.svg:1` 換單行標誌：上游品牌。本線 `docs/docs.json:1033` 仍是「Download the Studio app」。 |
+| `7128dc059` | #6988 Ular Kimsanov | **不適用**。`7128dc059:docs/quickstart.mdx:19`、`docs/studio-app/index.mdx:11,30,46`：Studio app 下載卡片與 `hyperframes.studio/studio/download?src=docs-*` 歸因連結，本線 `docs/quickstart.mdx:22` 的說明文字不同且不推廣該 app。 |
+| `71b67ccf4` | #7055 Ular Kimsanov | **不適用**。`71b67ccf4:docs/custom.css:503,1421` 純外觀（目前分頁的灰色膠囊）；本線 `docs/custom.css:506` 選擇器仍是舊樣式，不影響行為。 |
+| `370f886aa` | #7164 WaterrrForever | **不適用**。`370f886aa:packages/cli/src/commands/templates.ts:31-58` 重釘五個付費樣式範本包的雜湊與大小，`skills/style-sampling/SKILL.md:9`、`references/remix.md:6` 改文案；本線沒有 `commands/templates.ts`、沒有 `skills/style-sampling/`，已於 `2daedcdaf` #6842 列為不適用。 |
+
+### 先行移植（commit 水位之後，不推進水位）
+
+這兩筆在上游順序第 20、22 個，在本輪連續前綴之外，但實查本線有同樣缺陷後一併移植；水位不超過它們，下一輪遇到這兩個 commit 時記為「已於本節移植」。
+
+| Commit | PR／作者 | 證據 |
+| --- | --- | --- |
+| `3d78ac0fa` | #7179 Miguel Ángel | `3d78ac0fa:packages/core/src/runtime/init.ts:1027-1037`：尚未載入檔案的 `<img>` 量得高度 0，被補成 `height: 100%` 而拉伸到畫面底部；改為 `img` 不補尺寸。本線 `init.ts:1010` 有同樣的 `el.style.width = "100%"` 補尺寸。補丁原樣套用。 |
+| `cffd70f2f` | #7173 Miguel Ángel | `cffd70f2f:packages/cli/src/commands/beats.ts:96,153`：沒有節拍的曲目回 exit 0 與 `count: 0` 的空結果，而不是錯誤。本線 `beats.ts:121` 仍 `fail("No beats detected …")`。本線的 `beats` 不接受單一音檔（`beats.ts:108` 導向 `hyperframes audio`），上游 `analyzeFile` 那一支不存在，只移植專案路徑；`docs/packages/cli.mdx:702` 同步。 |
+
+### PR 裁決（PR 水位 #7160 → #7164）
+
+| PR | Head | 作者 | 裁決與證據 |
+| --- | --- | --- | --- |
+| #7161 | `e9df2a72790ad729dbf415650de709e460aff832`（merged，`ac1948a88`） | Miguel Ángel | 採用，見 commit 表。 |
+| #7162 | `4a239e553901ca26204be3d680fcf6da018b86d4`（closed，未合併） | heygen-rui-bot | `packages/cli/src/cloud/_gen/types.ts` +37 的 cloud client 重新產生，已關閉未合併，由後續 resync（#7207）取代。不適用：同 #7100 群，本線不同步生成型別。 |
+| #7163 | `5b04fd6e616a99afbab048838e2190e48166ed1b`（merged，`845bd638a`） | Miguel Ángel | 採用，見 commit 表。 |
+| #7164 | `01d646d450e28cbc7288c12d2e39cb6f340291aa`（merged，`370f886aa`） | WaterrrForever | 不適用，見 commit 表。 |
+
+### 隨 commit 讀過補丁的 PR（PR 水位不動）
+
+#7158、#7160、#7153 在水位以內，見 commit 表與下節 monitored。#7169、#7171、#7172 編號高於 #7164，PR 水位要等 #7165–#7168 審完才能越過它們。#7108、#7146、#7042、#6988、#7055 是更早編號 PR 的 merge。
+
+### Monitored 重審
+
+| PR | 前 head／state | 新 head／state | 補丁差異與裁決 |
+| --- | --- | --- | --- |
+| #7158 | `15f04db69abbc269face07ffce2e2812e2d0a0e3`／open | 同 head／closed（merged `b3b6a8116`） | head 未變，內容即 merge 補丁。已採用，重釘。 |
+| #7160 | `f543e3b9a91f2acb45db9231e5a8b5a1af860913`／open | 同 head／closed（merged `604a25fba`） | head 未變。延後不變（#7094／#7102 成組），重釘。 |
+| #7153 | `f865c42d1caad67ca763c090d0536483d078f4d7`／open | 同 head／closed（merged `21f211919`） | head 未變。不採用，重釘。 |
+| #6988 | `59d21b3a94d153b26968401d0fd0e52acffd2d45`／open | 同 head／closed（merged `7128dc059`） | head 未變。不適用，重釘。 |
+| #7042 | `4f1d7caa23ff64cffadd3c4d87c1005bf1aa91f9`／open | 同 head／closed（merged `986d7c680`） | head 未變。不適用，重釘。 |
+| #7055 | `d72cdde7b90d75abbb9292b22045694bc621dee2`／open | 同 head／closed（merged `71b67ccf4`） | head 未變。不適用，重釘。 |
+| #7142 | `107e0f0a5e465ede2e3f34f94e9ff4f544a06ed5`／open | `af8fbc6277db940e05ea8e80898a01d4f396d03d`／open | 目前 PR 補丁 5 檔（`gh pr diff 7142`）：`cli/src/browser/ffmpeg.ts:1,123` 新增 macOS 無 Homebrew 的提示（本線 `ffmpeg.ts:118-124` 只有 win32／linux 分支，Windows 不受影響）、`commands/init.ts:213,984,1223` 的 `missingRenderToolsWarning` 是前輪記錄的 `init.ts:215` 警告同一組改動。延後不變：合併後依 commit 採用，重釘新 head。 |
+
+尚未重審、留待下一輪（head 或狀態仍與 baseline 不同）的 10 筆：#6695（open，新 head `21ab00f49`）；#6714、#6727、#6761、#6968、#7008、#7014（皆 2026-11-05 關閉未合併，原因待讀補丁）；#6972、#6983、#7148（已合併，分別在上游順序第 23、44、16 個 commit，審到該 commit 時一併重釘）。
+
+### 採用與驗證
+
+採用項與上游作者（供 Co-authored-by）：#7158、#7161、#7163、#7171、#7172、#7179、#7173 為 Miguel Ángel；#7169 為 WaterrrForever。
+
+| 項目 | 舊碼 | 新碼 |
+| --- | --- | --- |
+| #7158（cli `cli.lifecycle.test.ts`） | 1 failed／14 passed：預期 exit 1，實際 0 | 15 passed |
+| #7161（producer `extractVideosStage.test.ts`；engine `videoFrameExtractor.mediaEngine.test.ts`） | producer 1 failed／24 passed（沒有 `ENOSPC`）；engine 該檔在 win32 整檔 skip，改以暫存、移除 skipIf 的複本跑：2 failed（`ffmpeg_failed` 而非 `disk_full`；解碼次序 `[videotoolbox, null]` 而非 `[videotoolbox]`） | producer 25 passed；engine 暫存複本 8 passed／1 skipped（darwin 專屬），複本已刪；engine `videoFrameExtractor*` 8 檔 261 passed／24 skipped／0 failed |
+| #7163（producer `windowsFrameStaging.test.ts`） | 3 failed／12 passed（`EISDIR`、`EIO`、`EINVAL` 拒絕連結時直接失敗） | 15 passed／1 skipped |
+| #7171（producer `renderOrchestrator.test.ts`） | 1 failed／290 passed | 291 passed |
+| #7172（studio-server `sourceMutationSplitAndGroup.test.ts`） | 3 failed／53 passed（另 2 例釘住既有行為，舊碼即綠） | 56 passed；`src/helpers` 44 檔 610 passed／3 failed／8 skipped，3 例為 `hfIdPersist.test.ts` 兩例的 `EPERM` rename 與 `undecodableAudioTrack.test.ts`，還原 #7172 來源後同樣失敗，與本輪無關 |
+| #7169（lint `audioAttributes.test.ts`、core `audioAttributeLintParity.test.ts`） | lint 測試檔因 `./audioAttributes.js` 不存在而無法載入；parity 在規則存在但 `packages/lint/dist` 未重建時 `audioAttributeShapeError is not a function`（vitest 走 `node` 條件取 dist） | `bun run --cwd packages/lint build` 後 parity 17 passed；lint 套件 24 檔 1236 passed／1 failed，失敗為既有 `projectShaders.test.ts` 的 symlink `EPERM` |
+| #7173（cli `beats.test.ts`） | 1 failed／21 passed | 22 passed |
+| #7179（core `runtime/init.test.ts`） | 1 failed／260 passed | 261 passed |
+
+### 水位與剩餘範圍
+
+commit 連續區段 `b3b6a8116..370f886aa`（14 個，兩端含）逐筆有證據，水位推進到 `370f886aa953c897906f97896e67229c19fd41a8`；PR 水位推進到 #7164（#7161–#7164 每筆有證據）；issue 維持 #7113。monitored 維持 91 筆，其中 6 筆重釘為 closed、1 筆（#7142）換新 head。收尾的 `python tools/check_upstream_updates.py --strict` 仍 exit 1：水位以上 65 個 commit（63 個為起始檢查時已有，另 2 個是之後新進）、#7165 起的 70 筆 PR、3 筆 issue，以及上述 10 筆未重審的 monitored。下一次從 `370f886aa` 之後的 `fb738015a`（#7170，36 檔 bug bash，含本線有的 `check.ts`、`studioServer.ts`、`desktopApp.ts`、`auth/client.ts`，也含本線沒有的 `templates.ts`、`avatars.ts`）與 PR #7165 接續。審查不代表整版同步或完整產品驗收。

@@ -18,6 +18,7 @@ import {
 import { extractMediaSrcMutations } from "@hyperframes/parsers/composition";
 import { parseHTML } from "linkedom";
 import { findLinkedClipFindings } from "./linkedClips";
+import { findUnreadableAudioAttributeFindings } from "./audioAttributes";
 
 /**
  * Does the GSAP call that names `#id` also set `volume` in the same call?
@@ -882,6 +883,7 @@ export const mediaRules: Array<(ctx: LintContext) => HyperframeLintFinding[]> = 
   // audio_group_holds_elements
   findAudioGroupHoldsElementsFindings,
   findLinkedClipFindings,
+  findUnreadableAudioAttributeFindings,
 ];
 
 /**
