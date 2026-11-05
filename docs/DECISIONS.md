@@ -1016,3 +1016,12 @@ commit 水位連續推進到 `370f886aa`，PR 水位到 #7164，issue 維持 #71
 #7170 的 desktop hint 需要未同步的 agent-only 契約；SFX advisory 需要未同步的 HeyGen provider，且本線 media-use 整合測試有乾淨 HEAD 可重現的 tts.mjs 載入失敗；templates／avatars 的 hosted 模組不在本線。各部分的採用條件明載清冊，不能以刪測試或引入整串帳戶功能繞過。#7148 的產品社群連結採用，#7175 的整版發行宣告不適用於選擇性移植。
 
 三軸水位為 commit `06722eb9b90834beee636d1a9d41cd22452bd7fd`、PR #7164、issue #7223。monitored 維持 91 筆，8 筆 head／狀態按清冊重釘；closed 未合併 PR 不移植，#6968 的替代 #7210 按 commit 軸再審。#7193／#7223 記為有明確前後像素驗收條件的渲染風險，#7204 保持功能提案；issue 關閉或審查水位推進皆不代表 fork 已修好。最新剩餘範圍與驗證證據只在清冊維護。
+
+## 2026-11-06：接續至 `15b1de4ae`
+
+依 [逐筆清冊](UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-06接續至-15b1de4ae移植-716571687166與先決修正) 採用已合併的獨立修正：#7165（雲端 render 把專案用到的系統字型連同 `.ttc` 單一 face 打包，缺字型在上傳前停下）、#7168（effect scan 與 session 開啟逾時走 60／300 秒看門狗、一次只跑一個本機 render、lint 讀字型簡寫與 `font_face_local_only`、雲端字型失敗點名專案檔案）、#7166、#6972、#7183、#7184；先決 #6665（字型簡寫）、#6697（effect scan 預算）與 #6716 的 `@hyperframes/core/cache-dir` helper。文件採 #7132（交接已支援 Windows／Linux，程式早已有）與 #7196。
+
+保留的取捨：#7168 的「逾時後新 session 重試」依賴已延後的 #7104，本線逾時直接失敗；#6716 的 17 檔快取路徑遷移與全套 guard 測試不採，因需對齊 Windows 私有快取根；#6665 的 3 個黃金輸出（含 mp4）需 Chrome 重產，未採；套件預算實測仍在範圍內，不採上游調高。延後：#7182（需上游長來源分段複本）、#7176（遙測政策）。不適用：#7131、#7133、#7147、#7178、#7180、#7185、#7186、#7187、#7177、#7192；#7188／#7189 淨零。
+
+三軸水位為 commit `15b1de4aeba2a375931c13542fa2d1e6500174db`、PR #7189、issue #7223。monitored 由 91 增為 92 筆：新增 #7181（`--disable-partial-raster`，修 #7111，合併後以 1／多 workers RGBA 驗收）、#6695 換 head、#6972 重釘 closed。已知本機環境失敗（symlink EPERM、`offload.undecodableTrack`）在乾淨碼同樣出現，不宣稱完整產品驗收通過。
+

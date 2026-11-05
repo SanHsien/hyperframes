@@ -191,3 +191,10 @@ commit 水位只推進連續 11 筆至 `3f42dc1c73b0c9915b311e48bd0099b39a0865a9
 以 fork `9f61d82ce` 接續，commit 連續審到 `06722eb9b90834beee636d1a9d41cd22452bd7fd`，不越過 `cba66f20a`；PR 維持 #7164，issue 推進至 #7223。逐筆 SHA／檔案／行號、monitored 重釘與最新 strict 結果見 [接續清冊](UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-05接續至-06722eb9b拆分-7170)。
 
 採用 #7170 的 auth timeout／network diagnostics、可載入 composition 的 check browser pass、preview 不寫 HTML、cloud aspect／4K preflight；#7148 社群連結同步。其他 #7170 部分按缺少的前置契約分流，未聲稱整版同步。monitored 維持 91 筆；#6695 換 head，#6714／#6727／#6761／#6968／#7008／#7014／#7148 重釘 closed，#6972／#6983 保持原釘選。ROADMAP 保留接續計畫。
+
+## 2026-11-06：接續至 `15b1de4ae`，移植字型與 render 看門狗
+
+以 fork `2f575f082` 接續，commit 連續審到 `15b1de4aeba2a375931c13542fa2d1e6500174db`（上游順序第 1–24 個，`cba66f20a` 起），PR 水位 #7189，issue 維持 #7223。逐筆 SHA／檔案／行號、紅綠證據與重釘見 [接續清冊](UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-06接續至-15b1de4ae移植-716571687166與先決修正)。
+
+採用 #7165、#7168（分項：看門狗、單一本機 render 槽、lint 字型簡寫、雲端字型失敗點名檔案）、#7166、#6972、#7183、#7184，先決 #6665、#6697 與 #6716 的 cache-dir helper；文件 #7132、#7196。#7182、#7176 延後，#7131／#7133／#7147／#7178／#7180／#7185／#7186／#7187／#7177／#7192 不適用，#7188／#7189 淨零。monitored 92 筆：新增 #7181、#6695 換 head、#6972 重釘 closed、#6983 待第 25 個 commit。
+

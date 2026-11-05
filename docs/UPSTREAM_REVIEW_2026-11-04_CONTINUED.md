@@ -616,3 +616,103 @@ commit 連續區段 `b3b6a8116..370f886aa`（14 個，兩端含）逐筆有證�
 ### 收尾 strict 快照（剩餘數量的單一記錄處）
 
 `python tools/check_upstream_updates.py --strict` exit 1，固定上游 tip `b7d72c947`：commit 水位以上 69 筆、PR #7165 起 84 筆、issue #7223 以上 0 筆、91 筆 monitored 中 2 筆移動（#6972、#6983）。這是 checker 的水位缺口，包含水位外已先行採用的 #7173／#7179，以及額外讀過但未形成 PR 連續前綴的項目；不冒充全數未讀或 strict 綠燈。下一個 commit 是 `cba66f20a`（#7165），不跨缺口推進。ROADMAP 的接續列保留。
+
+## 2026-11-06：接續至 `15b1de4ae`，移植 #7165／#7168／#7166 與先決修正
+
+起點為 fork `2f575f082`（`origin/main`），baseline 為 commit `06722eb9b`、PR #7164、issue #7223。前一個 Codex 工作階段在額度耗盡時留下 #7165 的未提交移植；本輪先逐檔對上游 `cba66f20a` 核對：新增 8 檔與 4 個修改檔的變動行與上游**完全一致**，再補紅綠。只處理連續前綴：commit 上游順序第 1–24 個（`cba66f20a` 到 `15b1de4ae`），PR 水位 #7164 → #7189，issue 不動。第 25 個 `aace91b5e`（#6983）起留待下一輪。
+
+`SHA:檔案:行號` 指上游補丁；「本線」指 `2f575f082` 的行號。
+
+### Commit 裁決（24 筆）
+
+| Commit | PR／作者 | 裁決與證據 |
+| --- | --- | --- |
+| `cba66f20a` | #7165 Miguel Ángel | **採用**。`cba66f20a:packages/cli/src/cloud/fontPreflight.ts:78` 的 `embedSystemFonts` 讓雲端 render 把專案用到的系統字型打包進 zip、找不到時在上傳前停下；`core/src/fonts/sfntNames.ts:100 extractSfntFace` 與 `systemFontLocator.ts` 依檔內 family 名找 `.ttc` 單一 face。本線 `deterministicFonts.ts:779` 只以檔名找、整個 `.ttc` 原樣嵌入；`cloud/render.ts:664` 暫存後直接上傳。未提交移植與上游逐行一致，補測試紅綠後採用。 |
+| `d4e4b07e3` | #7168 WaterrrForever | **分項採用**，見下節。 |
+| `3d78ac0fa` | #7179 Miguel Ángel | **已於 `9f61d82ce` 先行移植**，不重複套用（`git apply --check` 因已存在而失敗，內容一致）。 |
+| `2679bcdee` | #7180 Miguel Ángel | **不適用**。`2679bcdee:.github/workflows/ci.yml:980`、`packages/studio/tests/e2e/perf-ceilings.json:2` 是上游 Linux 的 studio 視窗閘門釘 Chrome 版本；本線 `ci.yml` 是 Windows-only，補丁無法套用。 |
+| `cffd70f2f` | #7173 Miguel Ángel | **已於 `9f61d82ce` 先行移植**。 |
+| `73e65e2c7` | #6972 Miguel Ángel | **採用**。`73e65e2c7:packages/engine/src/services/frameCapture.ts` 讓永遠不完成解碼的背景圖逾時並報告（URL 去憑證、去 query），不再卡住整格；本線 `frameCapture.ts:457 decodeDynamicCssBackgroundImages` 無逾時，卡死時整格停住。補丁原樣套用。 |
+| `00ea86570` | #7184 Miguel Ángel | **採用**。`00ea86570:packages/cli/src/utils/projectLock.ts` 等待專案鎖數秒後印出持有者，逾時訊息說「再執行一次」；本線 `projectLock.ts:74` 靜默等待。補丁原樣套用。 |
+| `be8122d0c` | #7183 Miguel Ángel | **採用（手工適配）**。`be8122d0c:packages/cli/src/utils/checkPipeline.ts:758` 新增 `craftStride`，craft 取樣在慢速時變稀、步幅上限 12、預算 90 秒；本線 `checkPipeline.ts:760` 逐格取樣無預算。因本線 `seekGeometry(time)` 沒有 `{ draws: true }` 參數，hunk 無法機械套用，改手工加入同樣的迴圈與常數。 |
+| `21e203859` | #7186 Miguel Ángel | **不適用**。`21e203859:packages/cli/src/heygen/reverse.ts`、`reverse.test.ts` 在本線不存在（沒有 reverse 指令）。 |
+| `c6f87f59b` | #7182 Miguel Ángel | **延後**。`c6f87f59b:packages/studio-server/src/helpers/proxyTranscoder.ts:694,928,1153` 與測試需要上游的長來源分段複本（`PIECE_SECONDS`、`proxyWindowSeconds`、`limitSeconds`）；本線 `proxyTranscoder.ts` 沒有這套，`git apply --reject` 在 `checkBrowser.ts:1,168,186`、`checkPipeline.ts:3`、`proxyTranscoder.ts` 與其測試共 8 個 hunk 失敗。試套的乾淨檔案已全數還原。條件：先同步分段複本或另寫適配後成組採用。 |
+| `2f321e0b0` | #7187 Miguel Ángel | **不適用**。同 #7180（`ci.yml:981`、`perf-ceilings.json:2`）。 |
+| `c3eb05254` | #7131 Ular Kimsanov | **不適用**。`c3eb05254:README.md:27,37`、`docs/faq.mdx:20` 是 HeyGen Studio app 的免費／Pro 方案行銷與價格；本線 README 不推廣該 app，`git apply --check` 於 `README.md:27` 失敗。 |
+| `97b805dcb` | #7132 Ular Kimsanov | **採用（文件）**。`97b805dcb:docs/packages/cli.mdx:1145` 把 `open` 交接改為「macOS、Windows、Linux 都可」。本線 `packages/cli/src/utils/desktopApp.ts:122-127,198-205` 已有 win32／linux 的啟動路徑，`docs/packages/cli.mdx:1071` 仍寫「僅 macOS」，文件落後於程式；`docs/studio-app/edit-with-the-agent.mdx:66` 同步移除已隱藏的加入轉場按鈕。補丁原樣套用。 |
+| `054cf4f11` | #7133 Ular Kimsanov | **不適用**。`054cf4f11:docs/docs-menu-label.js:1` 是上游文件站導覽按鈕的自訂腳本，與 #7146／#7055 同類（文件站外觀）。 |
+| `b2b034fcd` | #7147 Ular Kimsanov | **不適用**。`b2b034fcd:docs/snippets/catalog-gallery.jsx:251`、`docs/catalog-gallery.css:79` 的搜尋框建在上游 catalog 卡片版面上，補丁在本線失敗；與 #7146 同類。 |
+| `2ac011422` | #7188 Miguel Ángel | **與 #7189 淨零**。移除 OpenRouter vision provider，隨即被 #7189 還原。 |
+| `af0c815c7` | #7166 Miguel Ángel | **採用**。`af0c815c7:packages/core/src/fonts/deterministicFonts.ts` 讓 `var()` 簡寫、`font-X-400` 形式的 class 名稱不再讓 fail-closed 雲端 render 失敗；`packages/producer/src/services/htmlCompiler.ts:1751 projectStylesheetFontFamilies` 讀專案自帶的 `@font-face` 樣式表（只讀 family 名、不抓取）並先內嵌遠端字型表。本線 `htmlCompiler.ts:2179` 沿用先抓後查，專案樣式表字型會被判為未解析。前置：#6665、#7168 的簡寫解析（見下）。import 區塊 hunk 因本線已有 `readFileSync` 而不需套用。 |
+| `60ca970ed` | #7185 Miguel Ángel | **不適用**。`60ca970ed:packages/cli/src/commands/billing.ts` 本線沒有 billing 指令。 |
+| `4d9a4e4e8` | #7189 Miguel Ángel | **與 #7188 淨零**。`git diff 2ac011422^ 4d9a4e4e8 -- packages/cli/src/capture/contentExtractor.ts` 只剩一段註解改寫；本線 `contentExtractor.ts:248-299` 一直保留 OpenRouter，無需動。 |
+| `fa318d972` | #7178 Michael Wang | **不適用**。`fa318d972:packages/cli/src/utils/sourceTag.ts:1` 為連結加上來源歸因（`README.md:17`、`docs/docs.json:326` 等），只影響上游流量統計，與 #7153 同判斷。 |
+| `b503e5509` | #7176 Michael Wang | **延後**。`b503e5509:scripts/check-core-skills.mjs:11` 與各 `skills/*/SKILL.md` 要求每個技能回報自己的執行，屬遙測；與 #6839 同條件（先決定遙測政策）。 |
+| `a6e6717f2` | #7177 Michael Wang | **不適用**。`a6e6717f2:packages/cli/src/commands/billing.ts`、`reverse/start.ts`、`templates.ts`、`heygen/plan.ts` 本線皆不存在。 |
+| `bd6cff815` | #7196 James Russo | **採用（文件）**。`bd6cff815:docs/guides/skills.mdx` 說明 `skills update <repo>` 被當成技能名的錯誤與 YAML 修復；本線 `commands/skills.ts:29` 的 `hyperframes skills update` 行為與文件一致（核心集合加已安裝者）。補丁原樣套用。 |
+| `15b1de4ae` | #7192 發行提交 | **不適用**。v0.9.14 版本與發行記錄（21 檔），同 `06722eb9b`：不宣稱整版發行。 |
+
+### #7168 分項裁決與適配
+
+| 部分 | 裁決與證據 |
+| --- | --- |
+| effect scan 與 session 開啟逾時 | **採用，本線適配**。`riskFrames.ts` 新增 `withinBudget`（`d4e4b07e3:riskFrames.ts:65`），一個 chunk 超過 120 秒預算即回 null 改走截圖，而不是等 CDP 協定逾時（最長 30 分鐘）；`captureStreamingStage.ts` 的效果畫格 session 開啟與 session 初始化各有自己的 60／300 秒無進度視窗，遲到才開好的 session 會被關閉。上游「逾時後在新 session 重試」依賴 #7104 的 sequential resume 迴圈，本線已延後（見 2026-11-04 清冊），所以這裡逾時直接以 `SequentialCaptureStallError` 失敗，與本線其他 sequential 停滯一致。先決：#6697（`e1a8c7f17`，`ScanOptions`／budget／progress）補丁乾淨套用，一併採用。 |
+| 一次只跑一個本機 render | **採用，本線適配**。新增 `utils/renderLock*.ts`、`commands/render/renderSlot.ts`、`--wait/--no-wait`、`HYPERFRAMES_RENDER_LOCK=off`，文件寫入 `docs/packages/cli.mdx`。本線 `execute.ts` 自己解析 variables，故 `executeHeldRender` 保留原順序，並把註記拆成 `reportSingleRenderNotes`（fallow 複雜度閘門逼出）。先決：`@hyperframes/core/cache-dir`（#6716）——只採其 helper（`cacheDir.ts`＋exports＋2 個單元測試），**不採** 17 檔的路徑遷移與全套 guard 測試（該測試對本線 17 個檔失敗），遷移延後，仍須對齊 Windows 私有快取根。 |
+| lint 的字型簡寫與 `font_face_local_only` | **採用**。`parsers/src/fontShorthand.ts`（含 spaced `/ line-height`、`var()` 規則）、`lint/src/rules/fonts.ts`、`docs/reference/lint-rules.mdx`、`skills/hyperframes/references/format.md`。先決：#6665（`67c7ec27d`，核心字型簡寫與 linked stylesheet）原樣套用，唯獨**不採** 3 個 `producer/tests/*/output/*` 黃金輸出（含 mp4，需 Chrome 重產）。 |
+| 雲端字型失敗點名專案檔案 | **採用**。`cloud/fontFailure.ts`＋`handleFailedRender` 傳入專案目錄。 |
+| 套件預算 | 上游把 lint packed 預算調到 191022、engine 到 490452；本線 `npm pack --dry-run` 實測 lint 179116、engine 453284，仍在現有預算內，**不調整**。 |
+
+### PR 裁決（PR 水位 #7164 → #7189）
+
+| PR | 狀態 | 裁決 |
+| --- | --- | --- |
+| #7165、#7166、#7168、#7183、#7184 | merged | 見 commit 表。 |
+| #7169–#7173、#7179 | merged | 前輪已處理。 |
+| #7167、#7198 | closed | 產生型別 resync，同 #7162：不適用。 |
+| #7174 | closed，未合併 | Opper 作 vision provider（Felixkw12），已關閉；不採用。 |
+| #7175、#7192 | merged | 發行提交，不適用。 |
+| #7176、#7177、#7178、#7180、#7182、#7185–#7189 | merged | 見 commit 表。 |
+| #7181 | open，head `b055f760a2334d1c369dd5d9ac5e15dfdc4a7a70` | Märten Tropp：screenshot 模式啟動加 `--disable-partial-raster`，修 #7111（1／3 workers 畫格不一致），改 `engine/src/services/browserManager.ts`。與本線已觀察的 #7111／#7223 驗收直接相關。**釘選**，合併後依 commit 採用並以 1／多 workers RGBA 比對驗收。 |
+
+### Monitored 重審（91 → 92 筆）
+
+| PR | 前 → 後 | 裁決 |
+| --- | --- | --- |
+| #6695 | `21ab00f49…`／open → `8aa9967f3b8bb8c776f7555d065d8ebd939ebe66`／open | Renovate 的 undici 7.30.1 安全更新，diff 僅 `bun.lock`、`cli/package.json`、`engine/package.json` 的 undici 與版號；本線沒有直接 undici 依賴。仍觀察，重釘新 head。 |
+| #6972 | `194f9a607…`／open → `bb149a880257d3947d632472dc3d1ce7edfaf5b8`／closed（merged `73e65e2c7`） | 已採用，重釘。 |
+| #7181 | 新增 `b055f760a…`／open | 如上。 |
+| #6983 | 不重釘 | 對應 commit 是第 25 個，尚在水位外：`git apply --check` 在 `motion-blur.mdx:28`、`filterTier.ts:8`、`index.ts:38` 失敗，`frames.test.ts` 與 `cli/src/docs/motion-blur.md` 本線不存在，下輪處理。 |
+
+### 採用與驗證
+
+採用項與上游作者（供 Co-authored-by）：#7165、#7166、#6665、#6697、#6716（僅 helper）、#6972、#7183、#7184 為 Miguel Ángel；#7168 為 WaterrrForever；#7132 為 Ular Kimsanov；#7196 為 James Russo。
+
+紅燈做法：把來源檔還原成 `2f575f082` 版本（新增檔移開）後跑同批測試，確認失敗，再還原。
+
+| 項目 | 舊碼 | 新碼 |
+| --- | --- | --- |
+| #7165＋#6665＋#7168 core 字型與 bundler（`src/fonts`、`htmlBundler.test.ts`、`cacheDir.test.ts`） | 11 failed／474 passed，另 `cacheDir`、`sfntNames` 兩檔載入失敗 | `src/fonts` 等 25 檔 491 passed |
+| parsers `fontShorthand.test.ts` | 檔案不存在而無法載入 | 21 passed |
+| lint `rules/fonts.test.ts` | 3 failed／61 passed | 64 passed |
+| engine `riskFrames.test.ts`（#6697＋#7168） | 3 failed／15 passed | 18 passed |
+| producer `captureStreamingStage.test.ts`＋`planValidation.test.ts`（bun） | 3 failed／64 passed | 67 passed |
+| cli `renderLock`、`fontFailure`、`fontPreflight`、`render.fonts` | 3 檔載入失敗、1 failed | 4 檔 28 passed／3 skipped |
+| #7166 core `fieldFamilies`、producer `htmlCompiler.projectFonts`（vitest） | 1 failed；5 failed | 3 passed；5 passed（先 `bun run --cwd packages/core build`） |
+| #6972 engine `frameCapture*` 3 檔；#7184 cli `projectLock` | 5 failed／82 passed；2 failed／7 passed | 87 passed；9 passed |
+| #7183 cli `check.test.ts` | 1 failed：expected 480 to be less than 120 | 154 passed |
+
+測試改動：#6697 的 `riskFrames.test.ts` 有一例以位置參數傳 `60_000, now`（上游寫法，執行期被忽略），改成 `{ budgetMs, now }`，同一斷言。
+
+已知環境失敗（與本輪無關）：cli `offload.undecodableTrack.test.ts` 2 例、parsers `assetResolution` 與 lint `projectShaders` 的 symlink 類失敗。
+
+### 水位與剩餘範圍
+
+commit 連續區段 `cba66f20a..15b1de4ae`（24 個，兩端含）逐筆有裁決，水位 `15b1de4aeba2a375931c13542fa2d1e6500174db`；PR 水位 #7189；issue 維持 #7223；monitored 92 筆。下一個 commit 為 `aace91b5e`（#6983）；之後第 26 個起（#7199、#7194、#7195 等）未讀。審查不代表整版同步或完整產品驗收。
+
+### 收尾 strict 快照（本節為剩餘數量的單一記錄處）
+
+`python tools/check_upstream_updates.py --strict` exit 1，上游 tip `35cbca992`：commit 水位以上 55 筆（含本輪期間新進者）、PR #7190 起 62 筆、issue 無新項、92 筆 monitored 中 1 筆移動（#6983，待第 25 個 commit）。已先行處理但在水位外的 commit（#7179、#7173）見前節。下一個 commit 是 `aace91b5e`（#6983）。ROADMAP 的接續列保留。
+
+交付驗證：core 全套 259 檔 5540 passed／0 failed；lint 1243 passed／1 failed（symlink EPERM）；parsers 1388 passed／1 failed（symlink 類，`assetResolution`）；engine 單獨重跑原本在整批壓力下失敗的 7 檔 150 passed，剩 `audioMixer.undecodableTrack`（乾淨 HEAD 同樣失敗）；cli 整批受壓力與環境影響（symlink EPERM、`git` exit 128、Chrome process 測試），逐檔重跑後 `check.test.ts` 通過，其餘失敗檔未被本輪修改；producer 單元 lane 的 `renderDirOwner`、`segmentManifest`（Windows 路徑分隔）在乾淨 HEAD 同樣失敗，另 3 檔在壓力下逾時、單獨重跑 58 passed。`pwsh -NoProfile -File tools/dev_check.ps1` 結尾 `WINDOWS DEV CHECK GREEN`；`npx fallow audit --base origin/main --fail-on-issues` exit 0；變更程式 oxlint 0 warnings／0 errors；cli `tsc` 只剩既有的 `check.test.ts(2264)`。
+
+套件大小上限：`d4e4b07e3`（#7168）在上游把 engine packed 提高 28032、lint packed 提高 11684（量測值超出原上限）。本線移植同一批程式，照相同增量調整：engine `456397→484429`、lint `179338→191022`。本機缺 pnpm，無法跑 `verify:packed-manifests` 實測；發版流程（`publish.yml` 的 `verify:packed-manifests`）會實測把關。

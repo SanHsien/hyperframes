@@ -9,6 +9,7 @@ import { seedProjectAuthoringSkill } from "../utils/projectConfig.js";
 import { deliveryFlagArgs } from "../utils/deliveryFlags.js";
 import type { CatalogUsage } from "../utils/catalogUsage.js";
 import { presentRenderPlan } from "./render/present.js";
+import { acquireRenderSlot } from "./render/renderSlot.js";
 import { executeRenderPlan, renderLintContinuationHint, runRenderLint } from "./render/execute.js";
 // Test-only seams retained at the command boundary for render behavior tests.
 export { resolveBrowserGpuForCli, renderLintContinuationHint, runRenderLint };
@@ -300,6 +301,15 @@ export default defineCommand({
         "Allow output with structured capture-readiness warnings (default). Use --no-best-effort to fail on missing or unready media.",
       default: true,
     },
+    wait: {
+      type: "boolean",
+      description:
+        "Wait while another render of this user account runs, then start (default): renders side by " +
+        "side starve each other. Use --no-wait to fail at once instead. Env: HYPERFRAMES_RENDER_LOCK=off " +
+        "lets renders run side by side; HYPERFRAMES_CACHE_DIR set to a shared folder shares the slot " +
+        "across user accounts.",
+      default: true,
+    },
     strict: {
       type: "boolean",
       description: "Fail render on lint errors",
@@ -459,6 +469,7 @@ export default defineCommand({
           renderDocker,
           renderLocal,
           checkResolution: checkRenderResolutionPreflight,
+          acquireRenderSlot,
         },
         cancellation,
       );

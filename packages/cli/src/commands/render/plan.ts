@@ -95,6 +95,7 @@ export interface RenderCommandArgs {
   quiet?: boolean;
   debug?: boolean;
   "best-effort"?: boolean;
+  wait?: boolean;
   strict?: boolean;
   "strict-all"?: boolean;
   "lint-verbose"?: boolean;
@@ -160,6 +161,7 @@ export interface RenderPlan {
   /** Segmented capture: keep the segment directory after success. */
   keepSegments: boolean;
   bestEffort: boolean;
+  waitForRenderSlot: boolean;
   batchJson: boolean;
   effectiveQuiet: boolean;
   strictAll: boolean;
@@ -584,6 +586,7 @@ export function createRenderPlan(args: RenderCommandArgs, now = new Date()): Ren
     resumeSegments: args.resume ?? false,
     keepSegments: args["keep-segments"] ?? false,
     bestEffort: args["best-effort"] ?? true,
+    waitForRenderSlot: args.wait ?? true,
     batchJson,
     effectiveQuiet: quiet || (batchPath != null && batchJson),
     strictAll: args["strict-all"] ?? false,

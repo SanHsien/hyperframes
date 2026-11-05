@@ -1,7 +1,7 @@
 # 路線圖
 
 > 本 repo 後續工作的單一真相源。做完一項，就在同一個 commit 刪掉那一列；新工作只加在這裡。
-> 上游審查於 2026-11-05 接續到 commit `06722eb9b90834beee636d1a9d41cd22452bd7fd`（PR #7164、issue #7223）；逐筆裁決見 [接續缺口清冊](docs/UPSTREAM_REVIEW_2026-11-04_CONTINUED.md)。CI／告警保留現況段既有日期快照。
+> 上游審查於 2026-11-06 接續到 commit `15b1de4aeba2a375931c13542fa2d1e6500174db`（PR #7189、issue #7223）；逐筆裁決見 [接續缺口清冊](docs/UPSTREAM_REVIEW_2026-11-04_CONTINUED.md)。CI／告警保留現況段既有日期快照。
 
 ## 現況
 
@@ -20,6 +20,8 @@ HyperFrames 將 HTML、CSS 與動畫渲染為影片，本線保留 Windows 渲�
 2026-11-05 以 fork `b604b39eb` 接續：上游新進 77 個 commit、72 筆 PR，只審連續前綴 `b3b6a8116..370f886aa` 共 14 個 commit 與 #7161–#7164；採用 #7158（管線提早關閉時失敗的 run 改 exit 1，完成原中期列）、#7161、#7163、#7171、#7172、#7169 六筆獨立修正，先行移植 #7179、#7173，#7160 與 #7108 延後、#7153 不採用。水位推進到 commit `370f886aa`、PR #7164，issue 維持 #7113，monitored 維持 91 筆；剩餘 65 個 commit（從 `fb738015a` #7170 起，含起始檢查之後新進的 2 個）、#7165 起的 70 筆 PR、3 筆 issue 與 10 筆 monitored 重審，以 strict 檢查為準。逐筆證據與紅綠結果見 [接續缺口清冊](docs/UPSTREAM_REVIEW_2026-11-04_CONTINUED.md)。
 
 2026-11-05 以 fork `9f61d82ce` 接續至 commit `06722eb9b`，PR 維持 #7164、issue 至 #7223；#7170 採用部分修正與 #7148 社群連結，裁決和最新剩餘範圍見 [接續清冊](docs/UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-05接續至-06722eb9b拆分-7170)。CLI 擴大回歸 397 passed／1 skipped／0 failed、ESM／DTS build 成功；產品 Quick 仍有乾淨 HEAD 可重現的兩例 symlink EPERM，不能視為完整產品驗收。
+
+2026-11-06 以 fork `2f575f082` 接續至 commit `15b1de4ae`（上游順序第 1–24 個），PR 水位 #7189、issue 維持 #7223；採用 #7165（雲端 render 帶系統字型）、#7168（逾時看門狗、單一本機 render 槽、lint 字型簡寫）、#7166、#6972、#7183、#7184 與先決的 #6665、#6697、#6716（僅 cache-dir helper），文件採 #7132、#7196；#7182、#7176 延後，其餘不適用。monitored 由 91 增為 92 筆（新增 #7181，#6695 換 head，#6972 重釘 closed）。下一個 commit 是 `aace91b5e`（#6983），逐筆證據見 [接續清冊](docs/UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-06接續至-15b1de4ae移植-716571687166與先決修正)。
 
 ## 近期：可以直接動手
 
