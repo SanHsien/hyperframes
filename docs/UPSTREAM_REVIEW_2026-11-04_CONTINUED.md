@@ -716,3 +716,59 @@ commit 連續區段 `cba66f20a..15b1de4ae`（24 個，兩端含）逐筆有裁�
 交付驗證：core 全套 259 檔 5540 passed／0 failed；lint 1243 passed／1 failed（symlink EPERM）；parsers 1388 passed／1 failed（symlink 類，`assetResolution`）；engine 單獨重跑原本在整批壓力下失敗的 7 檔 150 passed，剩 `audioMixer.undecodableTrack`（乾淨 HEAD 同樣失敗）；cli 整批受壓力與環境影響（symlink EPERM、`git` exit 128、Chrome process 測試），逐檔重跑後 `check.test.ts` 通過，其餘失敗檔未被本輪修改；producer 單元 lane 的 `renderDirOwner`、`segmentManifest`（Windows 路徑分隔）在乾淨 HEAD 同樣失敗，另 3 檔在壓力下逾時、單獨重跑 58 passed。`pwsh -NoProfile -File tools/dev_check.ps1` 結尾 `WINDOWS DEV CHECK GREEN`；`npx fallow audit --base origin/main --fail-on-issues` exit 0；變更程式 oxlint 0 warnings／0 errors；cli `tsc` 只剩既有的 `check.test.ts(2264)`。
 
 套件大小上限：`d4e4b07e3`（#7168）在上游把 engine packed 提高 28032、lint packed 提高 11684（量測值超出原上限）。本線移植同一批程式，照相同增量調整：engine `456397→484429`、lint `179338→191022`。本機缺 pnpm，無法跑 `verify:packed-manifests` 實測；發版流程（`publish.yml` 的 `verify:packed-manifests`）會實測把關。
+
+## 2026-11-06：接續至 `aace91b5e`，採用 #6983
+
+起點為 fork `94c048ba7734cfe84b5becde2f8760c7eb3a0731`，commit 水位 `15b1de4ae`、PR #7189、issue #7223。先執行 `python tools/check_upstream_updates.py --strict`，exit 1；只推進下表有完整裁決及回歸證據的一個連續 commit。PR／issue 軸沒有重新裁決，不推進。
+
+### Commit 與逐檔裁決
+
+| Commit／PR／作者                                                                                                        | 上游證據                                                                                                                                                                              | 本線證據與裁決                                                                                                                                                                                                                                                                                                                                                                                                            |
+| ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `aace91b5ec0d937772f66ab06e63c5755e579646`／[#6983](https://github.com/heygen-com/hyperframes/pull/6983)／Vance Ingalls | `aace91b5e:packages/core/src/motionBlurSettings.ts:6,14,23,47,66`、`runtime/captureMotionBlur/frames.ts:119,138`、`filterTier.ts:189,232`、`index.ts:99,282,565,705`、`tier.ts:19,37` | **採用，手工適配**。本線 `packages/core/src/motionBlurSettings.ts:6,14,23,47,66` 增加 -360 至 360 度的 phase，null 保持原先置中的取樣算式；`runtime/captureMotionBlur/frames.ts:30,49` 共用快門時間計算，`filterTier.ts:184,226`、`index.ts:97,272,553,694` 與 `tier.ts:19,36` 同步 capture／filter 及 report。兩個 tier 均驗證 phase 0 與未設定時的時間。無網路、時鐘或隨機來源；不改現有擷取、復原或 Windows 路徑政策。 |
+
+`aace91b5e:packages/core/src/runtime/captureMotionBlur/frames.test.ts:234` 的 phase 測試可獨立採用；該檔較前面的 overflow、scene 及 restore 測試需要本線沒有的 `contentBox`／`holdFrame`，不能整檔覆蓋。新增本線 `packages/core/src/runtime/captureMotionBlur/frames.test.ts:6`，只收集前 `reads` 次 seek；本線最後仍以 `seek(t)` 復原，不引入上游的 restore 契約。`aace91b5e:index.test.ts:2026` 的 tier 測試追加到本線 `index.test.ts:1800`，settings 與 Studio panel 的測試照補丁採用（`aace91b5e:packages/studio/src/components/panels/motionBlurPanelModel.test.ts:117` 對應本線同檔）。
+
+文件採用 `aace91b5e:docs/guides/motion-blur.mdx:31` 的 phase 屬性說明，本線同檔 `:31`。`aace91b5e:packages/cli/src/docs/motion-blur.md:9` 不另建整份舊 CLI 文件：本線不存在該頁，使用者入口為上述已更新的 guide；不引入無入口的文件複本。
+
+### Monitored 與既有延後
+
+唯讀 `gh pr view 6983 --repo heygen-com/hyperframes --json number,state,mergedAt,headRefOid,mergeCommit` 確認 merged，merge SHA 即上列 commit。#6983 從 head `08896bea3af5ccd491a0fdddef5605574ea2a679`／open 重釘為 `a3eec9fad7ee690fb706fc872466d161d640949d`／closed，monitored 維持 92 筆。其他項目不改釘選。
+
+#6983 不依賴以下項目，維持原裁決：#7182 需先有長來源分段 proxy 契約及 Windows 回歸；#7176 需先決定技能執行遙測政策；#7104 與 #7168 的 retry 部分需 sequential resume／新 session 的可重現停滯與取消驗收；#6716 的 17 檔快取遷移需對齊 Windows 私有快取根及整套 guard，現有 helper 保留。對應上游與本線位置沿用前節分項表，不因 phase 功能而擴大移植。
+
+### Golden 與作者
+
+`94c048ba7` 已採用 #6665 的三組 golden（compiled.html 與 MP4 的 LFS pointer），取代前節未採 golden 的歷史裁決；不再次重生或更動這些 fixture。此區段不新增 LFS 物件，無新增待上傳清單。#6983 不含套件大小預算變更；保留現有預算。
+
+Co-authored-by 作者為 Vance Ingalls；email 由上游 Git metadata 提供提交者，不寫入文件。
+
+### 驗證
+
+證據命令與輸出存於忽略目錄 `tmp/upstream-20261106/`。#6983 測試先套在舊來源碼，失敗後才移植；另將最終測試搭配 HEAD 來源碼重跑，得到相同 14 failed，最後完整還原新碼。
+
+| 驗證                                                                                            | 結果                                                                                                                                                                                                                                                                                                 |
+| ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bun run --cwd packages/core test src/motionBlurSettings.test.ts src/runtime/captureMotionBlur` | 舊碼 exit 1：14 failed／185 passed；新碼 exit 0：9 檔 199 passed／0 failed。包含 phase 0、正負邊界、未設定／無效值、置中時間完全相同、負時間截斷及 capture／filter 兩路。                                                                                                                            |
+| `bun run --cwd packages/studio test src/components/panels/motionBlurPanelModel.test.ts`         | exit 0：11 passed／0 failed。                                                                                                                                                                                                                                                                        |
+| `bun run --cwd packages/core build`                                                             | exit 0，runtime artifacts 與 TypeScript build 完成。                                                                                                                                                                                                                                                 |
+| lefthook 三組 `tsc --noEmit -p`（core、studio、scripts）                                        | 全數 exit 0；此 hook 不含 CLI 的既有 `check.test.ts(2264)` 錯誤。                                                                                                                                                                                                                                    |
+| `node_modules/.bin/fallow audit --base origin/main --fail-on-issues`                            | exit 0：10 changed files，dead code 0／complexity 0／duplication 0，No issues。                                                                                                                                                                                                                      |
+| 變更 TypeScript 的 oxlint                                                                       | exit 0：0 warnings／0 errors。                                                                                                                                                                                                                                                                       |
+| 乾淨 HEAD 產品 Quick                                                                            | 還原至 `94c048ba7`，`git status --porcelain` 空，再執行 `pwsh -NoProfile -File tools/test_product.ps1`，exit 1：parsers 1388 passed／1 failed／7 skipped／3 todo；lint 1243 passed／1 failed。失敗皆 symlink EPERM，位於 `assetResolution.test.ts` 與 `projectShaders.test.ts`；測試後完整還原移植。 |
+
+`pwsh -NoProfile -File tools/dev_check.ps1` exit 0：39 passed／0 failed，compileall／Ruff 通過，相對連結 12 份文件 0 錯誤，結尾 `WINDOWS DEV CHECK GREEN`。
+
+`pwsh -NoProfile -File tools/test_product.ps1 -Full` 的 wrapper exit 1，**未完成且未通過**。同時啟動 workspace 測試後記錄到 216 筆 `Failed to start forks worker`，部分測試逾時；停止該命令所啟動的程序樹並保留全部輸出，沒有終止其他工作。已完成摘要的小計為 14158 passed／401 failed，這不是完整套件總數。除上述乾淨 HEAD 已重現的 symlink EPERM，其他失敗沒有逐一在乾淨 HEAD 重現，不能一概歸為既有環境問題，也不據此宣稱產品回歸。
+
+受影響 core 改用獨立程序 `bun run --cwd packages/core test --maxWorkers=2`，exit 0：260 檔、5552 passed／11 skipped／0 failed（207.56 秒）。未重跑其他已通過項目，未把該 core 結果冒充跨 workspace Full 綠燈。producer 由 Full 原有 `scripts/run-test-lane.mjs` 執行，沒有自行混用 runner。
+
+已執行變更 Markdown 的 oxfmt；`docs/` 在 `.prettierignore`，另以空 ignore 檔格式化追加節，保留既有清冊前綴原樣。`mint validate` 無法啟動（找不到 Mintlify CLI）；`mint broken-links` 也因相同工具缺失未執行。維護相對連結 gate 通過不等於 Mintlify 驗證通過，MDX 的網站建置仍未驗證。
+
+### 水位與剩餘範圍
+
+commit 水位為 `aace91b5ec0d937772f66ab06e63c5755e579646`；PR #7189、issue #7223、monitored 92 筆。下一個 commit 是 `f6ae9bfb4`（#7199）；閱讀其補丁不等於完成裁決或採用。ROADMAP 接續列保留，審查水位不代表整版同步或完整產品驗收。
+
+### 收尾 strict 快照（剩餘數量的單一記錄處）
+
+`python tools/check_upstream_updates.py --strict --output tmp/upstream-20261106/strict-final.md` exit 1；固定上游 tip `256b84a41bc32913870953c06e05f4ab25e963f8`，commit 水位以上 62 筆（包含檢查期間新進者）、PR #7190 起 73 筆、issue #7259 一筆；monitored 92 筆全部維持釘選 head／state，移動數為 0。不以水位變更掩蓋其餘待審軸，ROADMAP 接續列保留。

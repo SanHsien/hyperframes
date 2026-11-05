@@ -1025,3 +1025,11 @@ commit 水位連續推進到 `370f886aa`，PR 水位到 #7164，issue 維持 #71
 
 三軸水位為 commit `15b1de4aeba2a375931c13542fa2d1e6500174db`、PR #7189、issue #7223。monitored 由 91 增為 92 筆：新增 #7181（`--disable-partial-raster`，修 #7111，合併後以 1／多 workers RGBA 驗收）、#6695 換 head、#6972 重釘 closed。已知本機環境失敗（symlink EPERM、`offload.undecodableTrack`）在乾淨碼同樣出現，不宣稱完整產品驗收通過。
 
+
+## 2026-11-06：採用 #6983 與連續水位 `aace91b5e`
+
+依 [逐檔清冊](UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-06接續至-aace91b5e採用-6983) 採用 #6983 的 shutter phase。其設定、時間計算與兩個 tier 可獨立適配；本線缺少上游 overflow／restore 前置鏈，因此只移植 phase 相關程式與測試，保留原 seek 復原行為。未設定 phase 的時間序列以完全相等斷言驗證；不因可選屬性改變既有預設。
+
+#7182、#7176、#7104／#7168 retry、#6716 的 17 檔遷移維持前節條件，#6983 沒有依賴它們。`94c048ba7` 已補入 #6665 的 golden LFS pointer，前節「未採 golden」只代表歷史快照；保留其修正，不重生輸出。
+
+commit 水位僅推進一個有證據的連續 commit 至 `aace91b5ec0d937772f66ab06e63c5755e579646`，PR #7189、issue #7223 不動；monitored 維持 92 筆，#6983 重釘 `a3eec9fad7ee690fb706fc872466d161d640949d`／closed。其餘軸與後續 commit 仍由 ROADMAP 接續列追蹤。
