@@ -275,3 +275,9 @@ commit 水位 `3e3ba8d0d076f1487b4e0aa9261ed148c26936eb`，PR #7258、issue #722
 以 fork `48f5654de` 接續，審完最後 2 個 commit（commit 軸再次到達上游 tip）並把 PR 軸推進到 #7265。採用 #7284 的 Studio Storyboard 分頁與 `hyperframes open` 的 `doc: "storyboard"` 交接（適配本線沒有 #6897 的 Desktop builds 結構），以及 #7324 的 drawElement 閘門（`webgl_unavailable`、`beginframe_no_self_verify`，手工移植 `frameCapture.ts`）；PR #7260–#7265 六筆全為 MERGED 且合併 commit 在 baseline 內，沿用各自原節裁決並重新核對 fork 行號。#6695、#6816 重釘新 head，#7150 因 #5746 已取代而重釘 closed。逐筆來源／fork 行號、上游動到的全部檔案逐檔判定與雙樹比較見 [接續清冊](UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-07接續至-18fc75dcd審查最後-2-個-commit-與-6-筆-pr)。
 
 commit 水位 `18fc75dcd7b453ab10d0834bc9e8d2265353121c`，PR #7265、issue #7223，monitored 維持 99 筆。#7191、#7295／#7080、#6967／#7302、#6912、#7182、#7176、#7104／#7168 retry、#6716 的 17 檔遷移、#7134、#7246 與 #7247 依清冊條件維持延後。沒有 golden／LFS pointer 變更或新增上傳物件；套件大小預算只有 CLI packed 一筆上游同 commit 增量（+79036）；剩餘數字僅記於清冊最新節，ROADMAP 接續列保留。
+
+## 2026-11-07：PR 水位 `#7288`
+
+以 fork `6f7d25030` 接續，commit 軸已在上游 tip（`18fc75dcd`，無新 commit、99 筆釘選無移動），只把 PR 軸從 #7266 連續推進到 #7288（15 筆）。其中 9 筆為 MERGED 且合併 commit 在 baseline 內（#7267、#7268、#7270、#7271、#7280、#7283、#7284、#7287、#7288），沿用各自原節裁決並重新核對 fork 行號與反向套用結果，沒有需要新移植的內容；6 筆為 open（#7266、#7269、#7281、#7282、#7285、#7286）釘 monitored 與重訪條件。逐筆來源／fork 行號見 [接續清冊](UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-07接續-pr-軸至-7288審查-15-筆-pr)。
+
+commit 水位 `18fc75dcd7b453ab10d0834bc9e8d2265353121c`，PR #7288、issue #7223，monitored 由 99 增為 105 筆。#7191、#7295／#7080、#6967／#7302、#6912、#7182、#7176、#7104／#7168 retry、#6716 的 17 檔遷移、#7134、#6897、#7246 與 #7247 依清冊條件維持延後。沒有 golden／LFS pointer 變更、沒有預算增量、沒有採用上游程式碼；剩餘數字僅記於清冊最新節，ROADMAP 接續列保留。

@@ -1874,10 +1874,67 @@ core `tsc --noEmit -p tsconfig.runtime.json` exit 0（在 packages/core；本批
 
 逐名比對失敗清單後，只在移植樹失敗的 11 個名稱都是負載相關的逾時或啟動競態，各自隔離重跑皆通過，所以不當作回歸，也不宣稱由本批修正或造成：engine 的 `browserManager-vulkanEnv`、`browserManager-wslEnv` 與 `parallelCoordinator-peerAbort` 三例（隔離重跑 4 files／18 tests passed，同次也包含 `frameCapture-softwareWebGpu`）；studio 的 `Timeline.virtualization.test.tsx` 兩例（隔離重跑兩棵樹各 11／11 passed）；CLI 的 `audio/read/read.test.ts`、`cloud/offload.test.ts`、`registry/registryComponents.test.ts`、`utils/artifactCapture.test.ts`（隔離重跑 4 files／50 tests passed）。兩邊都失敗的既有環境失敗與前幾節一致：engine 的 `audioMixer.undecodableTrack` 與 Chrome 啟動競態、studio 的 localStorage／Dock／TimelineToolbar 一批（`--localstorage-file` 警告所屬環境）、CLI 的 symlink／inode 與 `checkDeadline.process` 的 Chrome 啟動逾時。乾淨樹多出的 `vite.browserVersion.test.ts` 同屬環境逾時。兩棵樹的 `parallelCoordinator-peerAbort` 失敗名稱互不相同，證明該檔隨負載飄動。沒有執行 `tools/test_product.ps1 -Full`，不宣稱完整產品驗收綠燈。
 
-### 最新剩餘快照（水位 `18fc75dcd`）
+### 剩餘快照（水位 `18fc75dcd`）
 
 2026-11-07、fork HEAD `48f5654de`（工作樹未提交）以寫入後的 `tools/upstream_baseline.json` 重跑 `python tools/check_upstream_updates.py --strict` 仍 exit 1，但只剩 PR 與 issue 軸：commit 軸 0 個（`No new upstream commits`，baseline 與上游 tip `18fc75dcd` 相同）；PR #7265 以上 50 筆待審（下一個是 #7266）；issue #7223 以上 11 筆；monitored 99 筆，沒有移動的釘選（#6695、#6816 重釘新 head，#7150 重釘 closed）。現行剩餘數字只在此維護。
 
 ### 維護 gate 收尾
 
 2026-11-07、fork HEAD `48f5654de`（工作樹未提交）的 `pwsh -NoProfile -File tools/dev_check.ps1` 結果：exit 0，39 passed／0 failed，結尾 `WINDOWS DEV CHECK GREEN`，12 份維護文件、0 個斷鏈；`docs/UPSTREAM.md`、`docs/DECISIONS.md`、`ROADMAP.md` 與 baseline 已同步（commit 水位 `18fc75dcd7b453ab10d0834bc9e8d2265353121c`、PR #7265、issue #7223、monitored 99）。
+
+## 2026-11-07：接續 PR 軸至 7288，審查 15 筆 PR
+
+以 fork `6f7d25030` 為起點。起始 `python tools/check_upstream_updates.py --strict` exit 1：commit 軸已在上游 tip，`git fetch upstream main` 後 `No new upstream commits`（baseline 與 tip 同為 `18fc75dcd`），99 筆釘選全部「still at the head and state it was judged at」，沒有移動；PR #7265 以上 53 筆、issue #7223 以上 11 筆待審。本節只動 PR 軸：從 #7266 連續審到 #7288（共 15 筆，其間 #7272–#7279 是 issue 軸項目），沒有採用任何上游程式碼，所以沒有紅綠測試與套件雙樹比較。
+
+### PR 軸
+
+先用唯讀 `gh pr view --repo heygen-com/hyperframes --json state,mergeCommit,headRefOid` 取狀態：9 筆 MERGED 且合併 commit 全在 baseline 以內（`git merge-base --is-ancestor <合併 commit> 18fc75dcd` 為真），6 筆 OPEN。MERGED 的裁決承接各自原清冊節，這裡重新核對 fork 端行號，並用上游合併 commit 的補丁逐檔對 fork 做反向套用檢查（`git show <commit> --format= -- <檔案> | git apply -R --check`，不用 `--reject`）。反向檢查不全等的檔案都能對應到後續已採用的 commit 或原節記載的適配，逐檔說明在表中。
+
+| PR | 裁決與理由 | 上游證據 | fork 證據 |
+| --- | --- | --- | --- |
+| [#7266](https://github.com/heygen-com/hyperframes/pull/7266) | monitored（open，釘 head `952fd2bb3c099f10c8df088a658a4ec7512afe32`，外部貢獻者，修 issue #7259）：`check` 的 geometry-only seek 把 `texImage2D`、`texSubImage2D`、`copyTexImage2D` 與兩個 compressed 變體也納入 draw gate，避免 macOS 硬體 GPU 上 `data-color-grading` 圖片每個 overlap sample 重傳紋理而吃滿 GPU 記憶體。本線 gate 清單只有 draw 類方法，缺陷存在；但 PR 未合併，review 尚未通過。重訪條件：合併後視為獨立小修正採用（補丁只加五個方法名與 `captureCompositionFrame.webglDraws.browser.test.ts` 的 upload 計數；該測試只在 CI 跑，要一併採）；macOS 專屬症狀本線 Windows 不重現，不阻塞。 | OPEN；`gh pr diff 7266`：`packages/cli/src/capture/captureCompositionFrame.ts:491` 一帶加五個方法；`...webglDraws.browser.test.ts:11` 加 upload 計數 | `packages/cli/src/capture/captureCompositionFrame.ts:486`（清單止於 `blitFramebuffer`）；`captureCompositionFrame.webglDraws.browser.test.ts` 存在、無 upload 計數 |
+| [#7267](https://github.com/heygen-com/hyperframes/pull/7267) | 已採用（原節 2026-11-06 `b4cc674f7`）：gain 被 ceiling／true-peak 限制而不寫檔時，回報實際保持的 LUFS。兩個檔案反向套用皆乾淨。 | MERGED `4935d6736`；`4935d6736:packages/cli/src/commands/normalize-audio.ts:203`（`heldByLimit`） | `packages/cli/src/commands/normalize-audio.ts:190,198,203`、`:233`（`Stays at`／`Reaches`） |
+| [#7268](https://github.com/heygen-com/hyperframes/pull/7268) | 已採用（原節）：render 等待的 lint 保持正常優先權，只有 `input.background` 才降低。`preview.ts`、`studioServer.ts` 反向乾淨；`renderSetupWorker.ts` 與 `renderSetupWorker.priority.test.ts` 不全等，是因為同一檔後來又採了 #7301（Chrome 安裝以 `PRIORITY_ABOVE_NORMAL` 執行，抽出共用的 `setOwnPriority`），不是缺漏。 | MERGED `72326a3ac`；`72326a3ac:packages/cli/src/renderSetupWorker.ts:40`（`if (input.background) lowerPriority()`） | `packages/cli/src/renderSetupWorker.ts:42`（`if (input.background) setOwnPriority(constants.priority.PRIORITY_LOW, "Lint runs")`）、`:24` |
+| [#7269](https://github.com/heygen-com/hyperframes/pull/7269) | monitored（open，釘 head `7f3931eaf028d2aa69205652a8d040fa1715fdd9`）：`templates pull` 的暫存資料夾改放 `.hyperframes/template-pulls/`，避免 Windows 上 Desktop 開著專案時最後 rename 遇 EPERM。本線沒有 `commands/templates.ts`（付費樣式範本功能整組不採，見 #6842、#7084、#7116 的原判定），所以目前無可移植內容；PR 也還帶著 CI 探針 workflow 與測試（原文標明「removed before review」）。重訪條件：本線引入 `templates pull` 時，且該 PR 已合併、探針已移除，採用 staging 目錄改法。 | OPEN；`gh pr diff 7269`：`packages/cli/src/commands/templates.ts:175` 一帶 `removeAbandonedParts(stage, dest)`、`unpack(..., stage, ...)` | `git ls-tree HEAD` 無 `packages/cli/src/commands/templates.ts`；`pullTemplate` 全 `packages/cli/src` 零引用 |
+| [#7270](https://github.com/heygen-com/hyperframes/pull/7270) | 不適用（整版 release v0.9.18）：版本號、plugin manifest、changelog、發行說明；不發佈 npm、不改版本，承接 2026-11-06 原節。 | MERGED `cbe5dcb2d`；21 個檔案皆為版本／發行說明 | 20 個 manifest 反向套用皆不全等（本線版本不同）；`releases/v0.9.18.md` 不存在；`packages/cli/package.json` 版本不變 |
+| [#7271](https://github.com/heygen-com/hyperframes/pull/7271) | 已採用（原節 2026-11-06 `66cbabc39`）：掃描／eventful pose read 暫停 GSAP 離散 callback，finally 恢復。`gsap.mute.test.ts` 反向乾淨；`gsap.ts`、`discover.ts`、`filterTier.ts`、`index.ts`、`tier.ts`、`init.ts`、`index.test.ts` 不全等，是同一批檔案後來又採了 #7288、#7292、#7293、#7294 的修改與原節記載的適配（沿用本線 discovery 與 seek 復原），不是缺漏。engine 的三個 `captureMotionBlur.callbacks*.browser.test.ts`、兩個 `__fixtures__/motionBlur` 檔、producer `blurDifferential.integration.test.ts` 本線不存在，屬 #6967／#7302 成組延後的 harness（見依賴段），未被順手搬入。 | MERGED `cd7e93baa`；`cd7e93baa:packages/core/src/runtime/adapters/gsap.ts:505`（`muteDiscreteCallbacks`） | `packages/core/src/runtime/adapters/gsap.ts:466`（`muteDiscreteCallbacks`）、`:453`（`DISCRETE_CALLBACKS`）；`packages/core/src/runtime/captureMotionBlur/index.ts:253` |
+| [#7280](https://github.com/heygen-com/hyperframes/pull/7280) | 不採用（原節）：上游 queue 的 stale 自動關閉政策與 Renovate label 配套，非產品修正；本 fork 使用 Dependabot。 | MERGED `5259fd112`；新增 `.github/workflows/stale.yml`、改 `.github/renovate.json`、`TRIAGE.md` | `.github/workflows/stale.yml` 不存在；`renovate.json`、`TRIAGE.md` 反向套用不全等（本線文件不同） |
+| [#7281](https://github.com/heygen-com/hyperframes/pull/7281) | monitored（open，釘 head `aaf4a0217d8b4f523903fc0e1338f636135ed353`，外部貢獻者，修 issue #7277）：`hyperframes docs` 的終端 renderer 渲染 `**bold**`，不再印出標記。本線缺陷存在，但上游同時有 #7327、#7328 兩筆針對同一 issue 的 PR（在本批之外，輪到時一併判定），不在此先挑。重訪條件：其中一筆合併後以 commit 進入審查，採用最終合併的那一版（改動只在 `docs.ts` 的 inline formatter 與 `docs.test.ts`）。 | OPEN；`gh pr diff 7281`：`packages/cli/src/commands/docs.ts:67` 一帶 `formatInline` 取代 `formatInlineCode` | `packages/cli/src/commands/docs.ts:58`（`formatInlineCode` 只處理反引號）、`:86`、`:92` |
+| [#7282](https://github.com/heygen-com/hyperframes/pull/7282) | monitored（open，釘 head `951cee8ca7279c0940df4436b431be99a0c68e9f`，外部貢獻者，修 issue #7279）：`scripts/lint-registry-items.mjs` 先安裝 manifest 宣告的 assets 再 lint，修 `yt-lower-third`、`texture-mask-text` 因素材缺失而誤報。本線腳本只掛載 `<name>.html`，缺陷存在；這是維護用腳本而非產品路徑，不阻塞。重訪條件：合併後採用（附 `scripts/lint-registry-items.test.mjs` 新測試檔）。 | OPEN；`gh pr diff 7282`：`scripts/lint-registry-items.mjs:17,74,96`；新增 `scripts/lint-registry-items.test.mjs` | `scripts/lint-registry-items.mjs:76`、`:98`（只複製 `item.html`）；`scripts/lint-registry-items.test.mjs` 不存在 |
+| [#7283](https://github.com/heygen-com/hyperframes/pull/7283) | 已採用，連同 #7061（原節 2026-11-06 `b4cc674f7`）：每一次 render landing（包括 replay）都 settle 已結束的 overlap。`gsap.ts` 反向乾淨；`gsap.order.test.ts` 不全等，是同檔後來又加了 #7318 與 #6851 的測試。 | MERGED `6abc62a17`；`6abc62a17:packages/core/src/runtime/adapters/gsap.ts:263`（`settleOverlapsEndedBetween`） | `packages/core/src/runtime/adapters/gsap.ts:64`、`:235`、`:279` |
+| [#7284](https://github.com/heygen-com/hyperframes/pull/7284) | 已採用並適配（原節 2026-11-07 `18fc75dcd` 的 commit 軸）：Studio Storyboard 分頁與 `hyperframes open` 的 `doc: "storyboard"` 交接。25 個檔案中 20 個反向套用乾淨；`desktopApp.ts`、`EditorShell.tsx` 是原節記載的手工適配，`skills-manifest.json`、`package-size-budgets.json` 是重生或取增量，`skills/style-sampling/references/remix.md` 不適用。 | MERGED `318724f5f`；`318724f5f:packages/studio/src/components/storyboard/PreviewStage.tsx:15`、`packages/cli/src/utils/desktopApp.ts:229` | `packages/studio/src/components/storyboard/PreviewStage.tsx:15`、`packages/cli/src/utils/desktopApp.ts:173,212,219` |
+| [#7285](https://github.com/heygen-com/hyperframes/pull/7285) | monitored（open，釘 head `00b85568cf7b2e67655ca2ac7343e9a3aeb54b3b`，外部貢獻者，修 issue #7276）：lint 的 `non_deterministic_code` 規則加 `crypto.randomUUID()`。本線規則只有 `Math.random` 與 `crypto.getRandomValues`，缺陷存在。同一 issue 在上游另有 #7322、#7325 兩筆重複 PR（本批之外）。重訪條件：三筆其中一筆合併後以 commit 進入審查，採用最終合併的版本（改動只在 `packages/lint/src/rules/core.ts` 規則表與 `core.test.ts`）。 | OPEN；`gh pr diff 7285`：`packages/lint/src/rules/core.ts:964` 一帶加 pattern | `packages/lint/src/rules/core.ts:963`（`crypto.getRandomValues` 為最後一個 pattern，無 `randomUUID`） |
+| [#7286](https://github.com/heygen-com/hyperframes/pull/7286) | monitored（open，釘 head `7f372305b8675cbe335ab7f4e155b6ef4444033d`，外部貢獻者，修 issue #7272）：composition lint 規則把 parser 的 `invalid-duration` 診斷當 error 回報。本線只轉出 `deprecated-layer`、`conflicting-end` 等診斷，`invalid-duration` 會靜默得到不同 duration；parser 端 `invalid-duration` 已存在，缺陷成立。同一議題上游另有 #7319、#7323（本批之外，後者含 `invalid-track-index`）。重訪條件：其中一筆合併後以 commit 進入審查，採用最終合併的版本（含 `docs/reference/lint-rules.mdx` 的規則說明）。 | OPEN；`gh pr diff 7286`：`packages/lint/src/rules/composition.ts:1102` 一帶新增診斷轉出；`docs/reference/lint-rules.mdx:102` | `packages/lint/src/rules/composition.ts:1067`、`:1081`（只處理 `deprecated-layer`、`conflicting-end`）；`packages/parsers/src/compositionContract.ts:41`（`invalid-duration` 型別） |
+| [#7287](https://github.com/heygen-com/hyperframes/pull/7287) | 已採用（原節 2026-11-06 `b4cc674f7`）：缺少的本機字型不再中止 cloud render，加空 face 走 fallback 並點名，JSON 列 `swapped_fonts`。`fontPreflight.ts` 與兩個測試檔反向乾淨；`commands/cloud/render.ts` 不全等，是同檔後來採了其他 PR 的修改（例如 #7262 的進度輸出），不是缺漏。 | MERGED `b56e2c036`；`b56e2c036:packages/cli/src/cloud/fontPreflight.ts:86,126`（空 face 與 `describeSwappedFonts` 的說明） | `packages/cli/src/cloud/fontPreflight.ts:86`、`:127`；`packages/cli/src/commands/cloud/render.ts:324,370,661,816`（`swapped_fonts`、`describeSwappedFonts`） |
+| [#7288](https://github.com/heygen-com/hyperframes/pull/7288) | 已採用（原節 2026-11-06 `66cbabc39`）：auto 一律走 filter tier，capture 維持明確 opt-in。`tier.ts`、`checkMotionBlur.ts`、`MotionBlurPanel.tsx`、`motion.md`、`captureMotionBlur.pixels.browser.test.ts` 等 10 個檔案反向乾淨；`discover.ts`、`index.ts` 不全等，是後續 #7271、#7292、#7293 的修改；`motion-blur.mdx` 為本線繁中版與手工合併；`skills-manifest.json` 為重生。`packages/cli/src/docs/motion-blur.md`（`hyperframes docs motion-blur` 的頁面）與五個 engine differential／fixtures browser 測試本線不存在：前者依 2026-11-06 原節判定不另建整份舊 CLI 文件（使用者入口是已更新的 guide），後者屬 #6967／#7302 成組延後的 harness。 | MERGED `e2bb7da25`；`e2bb7da25:packages/core/src/runtime/captureMotionBlur/tier.ts:70`（`chooseTier`） | `packages/core/src/runtime/captureMotionBlur/tier.ts:70`；`docs/guides/motion-blur.mdx:46` |
+
+PR 水位推進到 #7288，連續且每筆有證據（#7272–#7279 為 issue 軸項目）。九筆 MERGED（#7267、#7268、#7270、#7271、#7280、#7283、#7284、#7287、#7288）沒有需要新移植的內容；六筆 OPEN 全部釘 monitored（見下）。
+
+### 新釘選
+
+| 釘選 | head | 狀態 | 重訪條件 |
+| --- | --- | --- | --- |
+| #7266 | `952fd2bb3c099f10c8df088a658a4ec7512afe32` | open | 合併後採用 texture upload gate 與 CI 專用的 `webglDraws.browser.test.ts` upload 計數 |
+| #7269 | `7f3931eaf028d2aa69205652a8d040fa1715fdd9` | open | 本線引入 `templates pull` 且該 PR 已合併、探針已移除 |
+| #7281 | `aaf4a0217d8b4f523903fc0e1338f636135ed353` | open | #7281、#7327、#7328 任一合併後採用最終版本 |
+| #7282 | `951cee8ca7279c0940df4436b431be99a0c68e9f` | open | 合併後採用（含新測試檔） |
+| #7285 | `00b85568cf7b2e67655ca2ac7343e9a3aeb54b3b` | open | #7285、#7322、#7325 任一合併後採用最終版本 |
+| #7286 | `7f372305b8675cbe335ab7f4e155b6ef4444033d` | open | #7286、#7319、#7323 任一合併後採用最終版本 |
+
+monitored 由 99 增為 105 筆。這六筆都是未合併的 open PR，依慣例只釘 head 與條件，不在 fork 先行移植；其中 #7285、#7286 是小而獨立的 lint 修正，但同一議題在上游有多筆重複 PR，等其中一筆合併才不會與最終版本分歧。
+
+### 依賴、延後與對外邊界
+
+#7191、#7295／#7080、#6967／#7302、#6912（#7309 的先決）、#7182、#7176、#7104／#7168 retry、#6716 的 17 檔遷移、#7134、#6897、#7246（#6940 limiter）、#7247（#6621）維持原延後條件；本批沒有新的延後項目，也沒有 commit 依賴它們。沒有 golden 或 LFS pointer 變更，需上傳的新 LFS 物件：無。沒有預算增量。本批沒有採用任何上游程式碼，所以沒有 Co-authored-by 對象。
+
+### 驗證
+
+沒有產品程式碼變更：不需要 core runtime typecheck、lefthook typecheck、fallow 或套件雙樹比較。變更檔案限於 `tools/upstream_baseline.json`（PR 水位 7288、新增 6 筆 monitored）與四份文件。反向套用檢查與 `gh` 查詢皆為唯讀；沒有使用 `git apply --reject`，沒有執行 `tools/test_product.ps1 -Full`。
+
+### 最新剩餘快照（水位 `18fc75dcd`）
+
+2026-11-07、fork HEAD `6f7d25030`（工作樹未提交）以寫入後的 `tools/upstream_baseline.json` 重跑 `python tools/check_upstream_updates.py --strict` 仍 exit 1：commit 軸 0 個（`No new upstream commits`）；PR #7288 以上 38 筆待審（下一個是 #7289）；issue #7223 以上 11 筆；monitored 105 筆，沒有移動的釘選。現行剩餘數字只在此維護。
+
+### 維護 gate 收尾
+
+2026-11-07、fork HEAD `6f7d25030`（工作樹未提交）的 `pwsh -NoProfile -File tools/dev_check.ps1` 結果：exit 0，ruff `All checks passed!`、39 passed，結尾 `WINDOWS DEV CHECK GREEN`，12 份維護文件、0 個斷鏈；`docs/UPSTREAM.md`、`docs/DECISIONS.md`、`ROADMAP.md` 與 baseline 已同步（commit 水位 `18fc75dcd7b453ab10d0834bc9e8d2265353121c`、PR #7288、issue #7223、monitored 105）。
