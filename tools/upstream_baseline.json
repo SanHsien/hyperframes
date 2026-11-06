@@ -3,7 +3,7 @@
   "branch": "main",
   "reviewed_through": "6fab2191423165436f20ec5e057d0d025f34cffb",
   "reviewed_date": "2026-11-07",
-  "reviewed_pr_through": 7303,
+  "reviewed_pr_through": 7335,
   "reviewed_issue_through": 7313,
   "decision_log": "docs/DECISIONS.md",
   "monitored": [
@@ -555,6 +555,56 @@
     {
       "item": "pr#7300",
       "head": "df21718e3e3f0c38b9f73eb1203474dd421d99e0",
+      "state": "open"
+    },
+    {
+      "item": "pr#7304",
+      "head": "5a3e258a343bd390cce99a5cc3b6656a3d58d528",
+      "state": "open"
+    },
+    {
+      "item": "pr#7308",
+      "head": "bf3e88529c80b56571347105a0b91585d927691a",
+      "state": "open"
+    },
+    {
+      "item": "pr#7311",
+      "head": "ed8a035b7d6acc62391f2091386c7776d0173292",
+      "state": "open"
+    },
+    {
+      "item": "pr#7331",
+      "head": "8b0d18d42e160ed2d3de1cf0bc2f3e22f0eeb085",
+      "state": "open"
+    },
+    {
+      "item": "pr#7332",
+      "head": "2f2f6248f1f82a6fbadfd90b0a87803738d2ef09",
+      "state": "open"
+    },
+    {
+      "item": "pr#7315",
+      "head": "8d984979406c4bf0f238dc708d5ab3b5a765f789",
+      "state": "open"
+    },
+    {
+      "item": "pr#7321",
+      "head": "3fccf55f618d023d4d9be9aea73c2ad2bcc761a8",
+      "state": "draft"
+    },
+    {
+      "item": "pr#7330",
+      "head": "075ad69ed4a6ef11e57df6dc47af1372f6c2c792",
+      "state": "draft"
+    },
+    {
+      "item": "pr#7333",
+      "head": "80387ab610a838bf83c0c2cb6e59679c64b0ba25",
+      "state": "open"
+    },
+    {
+      "item": "pr#7334",
+      "head": "57e09a5d64259b6b72a58fdefa3620136ebca638",
       "state": "open"
     }
   ]
