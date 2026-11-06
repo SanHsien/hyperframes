@@ -1599,10 +1599,86 @@ lefthook 三組 `node node_modules/typescript/bin/tsc --noEmit -p <packages/core
 
 CLI 模組私有化發生在兩樹 CLI 全套啟動前；產品來源在全套啟動後只有 oxfmt 的非語意格式調整，沒有新增、移除或改寫測試。CLI 最終 dist 在全套執行期間再建置，其封裝數字取最後一次輸出；不把全套起始的 `suite-inputs.json` 冒稱為最終 bytes 快照。最終 changed／untracked hash 另存 `delivery-inputs.json`。producer／engine 沒有產品或測試變更，不擴大執行其 lane；#7302 的 producer serial lane 條件明確保留在 ROADMAP，沒有用其他 runner 取代該驗收。
 
-### 最新剩餘快照（水位 `9e2510bda`）
+### 剩餘快照（水位 `9e2510bda`）
 
-2026-11-06、fork HEAD `537b88dbe` 的最後 `python tools/check_upstream_updates.py --strict --baseline tmp/upstream-20261106-601/candidate-baseline.json --output tmp/upstream-20261106-601/strict-final.md` exit 1。候選 baseline 與驗證後寫入的正式 `tools/upstream_baseline.json` 逐 byte 相同；只推進已逐筆審查的連續 commit 水位，不改 PR／issue／monitored。上游 tip `410a516ce`；尚有 3 個 commit，下一個是 `f3e45b492`／#7310；PR #7242 以上 62 筆、issue #7223 以上 11 筆，96 筆 monitored 中 #6695 一筆 open head 差異（原釘 `8aa9967f3b8bb8c776f7555d065d8ebd939ebe66`，查詢 `3b2321c`）。現行剩餘數字只在此維護，歷史日期快照保留。沒有為 strict 歸零越過指定八筆，ROADMAP 近期列保留。
+2026-11-06、fork HEAD `537b88dbe` 的最後 `python tools/check_upstream_updates.py --strict --baseline tmp/upstream-20261106-601/candidate-baseline.json --output tmp/upstream-20261106-601/strict-final.md` exit 1。候選 baseline 與驗證後寫入的正式 `tools/upstream_baseline.json` 逐 byte 相同；只推進已逐筆審查的連續 commit 水位，不改 PR／issue／monitored。上游 tip `410a516ce`；尚有 3 個 commit，下一個是 `f3e45b492`／#7310；PR #7242 以上 62 筆、issue #7223 以上 11 筆，96 筆 monitored 中 #6695 一筆 open head 差異（原釘 `8aa9967f3b8bb8c776f7555d065d8ebd939ebe66`，查詢 `3b2321c`）。這是水位 `9e2510bda` 時點的歷史快照，現行剩餘數字見本檔最新節。沒有為 strict 歸零越過指定八筆，ROADMAP 近期列保留。
 
 ### 維護 gate 收尾
 
 2026-11-06、fork HEAD `537b88dbe` 的 `pwsh -NoProfile -File tools/dev_check.ps1` exit 0：39 passed／0 failed，12 份維護文件、0 個斷鏈，結尾 `WINDOWS DEV CHECK GREEN`（`dev-check.log`）。Markdown／MDX 新增內容以 `node_modules/.bin/oxfmt --ignore-path <empty-ignore>` 格式化；歷史段落保留原格式，只改舊節「最新」標題與快照定位，沒有整檔重排。`git diff --check` exit 0。
+
+## 2026-11-06：接續至 `4cf26b5b4`，審查 5 個連續 commit
+
+以 fork `4cf9a241d` 為起點。起始 `python tools/check_upstream_updates.py --strict` exit 1：baseline `9e2510bda` 之後上游已有 5 個 commit（前一節記錄時為 3 個，其後上游又合併 #7316、#7317），PR #7242 以上 67 筆。本節審完這 5 個 commit（`f3e45b492..4cf26b5b4`）並把 PR 軸推進到 #7250。五筆的唯讀 `gh pr view --repo heygen-com/hyperframes` 均為 MERGED，commit 軸每筆都以 `git show --stat` 列出上游動到的全部檔案並逐檔判定。
+
+### commit 軸
+
+| Commit／PR                                                                | 裁決與理由                                                                                                                                                                                                                                                                                                              | 上游證據                                                                  | fork 證據                                                           |
+| ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| `f3e45b492`／[#7310](https://github.com/heygen-com/hyperframes/pull/7310) | 採用：MPEG-4 Part 2 與 MJPEG 影片 Chrome 不能解碼，加入 browser-hostile 表（`representativeMime: null`、預先轉出可播放副本），與 prores 同路徑。                                                                                                                                                                         | `f3e45b492:packages/studio-server/src/helpers/mediaCodecMap.ts:71`        | `packages/studio-server/src/helpers/mediaCodecMap.ts:71`            |
+| `cb8e02e82`／[#7309](https://github.com/heygen-com/hyperframes/pull/7309) | 延後：修的是 #6912（`e181d34ed`）引入的 `releaseRouted` handover，本線沒有 #6912，`webAudioTransport.ts` 沒有 `_handedOver`／`releaseRouted`，補丁（`_handedOver` 改 Set、`dispose(routed,false)`、`reconnectHandedOver`）無處可套。沿用既有條件：與 #6912／#7225／#7232 的 WebKit 接管管線、記憶體預算與 Safari 音訊時鐘驗收成組採用。 | `cb8e02e82:packages/core/src/runtime/webAudioTransport.ts:1056`           | `packages/core/src/runtime/webAudioTransport.ts:1091`（無 handover） |
+| `410a516ce`／[#7314](https://github.com/heygen-com/hyperframes/pull/7314) | 不適用：只改 `skills/reverse-any-video`（HeyGen 付費方案與帳戶流程的技能）與其 manifest／檢查，本線沒有該技能，沿用 2026-11-02 對 reverse-any-video／billing 的不採邊界。                                                                                                                                                | `410a516ce:skills/reverse-any-video/references/start.md:4`                | `skills/`（七個技能，無 reverse-any-video）                         |
+| `de2d21a8a`／[#7316](https://github.com/heygen-com/hyperframes/pull/7316) | 採用並適配：check_report 帶「必要副本」總數、等待毫秒、未完成數（僅計數與毫秒）；副本等待逾時仍是 browserSkipped，只在逾時造成未完成時才計 unfinished。本線 `preResolveHostileMediaProxies` 沒有上游後續的 copy window／百分比，所以只移植 `record` callback 與 keepPartial，不搬入 `limits`／`heartbeat.percent`。          | `de2d21a8a:packages/cli/src/utils/checkBrowser.ts:337`                    | `packages/cli/src/utils/checkBrowser.ts:275`                        |
+| `4cf26b5b4`／[#7317](https://github.com/heygen-com/hyperframes/pull/7317) | 採用並適配：render 讀 `data-composition-src` 與 preview 一致（`%xx` 解碼、前導 `/` 視為專案根），任何離開專案資料夾的路徑（`..`、`%2e%2e%2f`）一律拒絕，並改寫 `%20` 資料夾下的 sibling asset 路徑。本線入口 HTML 仍用 `readFileSync(htmlPath, "utf-8")`（沒有上游 `readTextFile`），只在其後套 `normalizeCompositionSrcs`。 | `4cf26b5b4:packages/producer/src/utils/paths.ts:141`                      | `packages/producer/src/utils/paths.ts:141`                          |
+
+#### 上游動到的檔案逐檔判定
+
+| Commit    | 檔案                                                                                          | 判定                                                                                                                                                                                  |
+| --------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `f3e45b492` | `packages/studio-server/src/helpers/mediaCodecMap.ts`、`mediaCodecMap.test.ts`                | 兩檔皆採用；同目錄沒有 `*.browser.test.ts`／`*.chromium.test.ts` 依賴此表。                                                                                                       |
+| `cb8e02e82` | `packages/core/src/runtime/webAudioTransport.ts`、`webAudioTransport.test.ts`                | 兩檔皆不動（先決 #6912 未採）；core runtime 無變更，因此 `tsconfig.runtime.json` 型別檢查不適用。                                                                                  |
+| `410a516ce` | `scripts/check-core-skills.test.mjs`、`skills-manifest.json`、`skills/reverse-any-video/{SKILL.md,references/start.md}` | 全部不適用；`skills-manifest.json` 不能單獨改（本線七技能的 hash 與上游不同）。                                                                                                     |
+| `de2d21a8a` | `packages/cli/src/commands/check.test.ts`、`telemetry/events.ts`、`telemetry/events.test.ts`、`utils/checkBrowser.ts`、`utils/checkPipeline.ts`、`utils/checkTypes.ts` | 六檔皆採用（`checkBrowser.ts`、`check.test.ts` 手工適配）。fork 有而上游未動的 `utils/checkBrowser.test.ts`、`utils/checkDeadline.process.test.ts` 等不引用新欄位，不需改。 |
+| `4cf26b5b4` | `packages/producer/src/services/htmlCompiler.ts`、`htmlCompiler.test.ts`、`utils/paths.ts`   | 三檔皆採用（`htmlCompiler.ts` 手工適配入口讀檔）。上游沒有動任何 `*.browser.test.ts`／`*.chromium.test.ts`；fork 的 producer 瀏覽器／整合測試不涉及 composition src 解析，不需同步。 |
+
+本批五筆上游補丁均未觸及 `*.browser.test.ts` 或 `*.chromium.test.ts`，fork 端也沒有需要跟著改的此類檔案，因此沒有重蹈上一批漏改引擎瀏覽器測試的覆轍。
+
+### PR 軸
+
+| PR                                                                        | 裁決與理由                                                                                                                                                                                                                                               | 上游證據                                                                                       | fork 證據                                                                       |
+| ------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| [#7243](https://github.com/heygen-com/hyperframes/pull/7243)              | 不適用：作者於 2026-11-05 自行關閉未合併（head `4abccc7297f6e50d3c615abef7c341e4cdeec20b`）。關閉留言說明 20 次觸發實驗中有無此修正皆沒有 in-play 換源，Windows 預覽卡頓回報另待可重現的新修正。沒有可移植的合併補丁，也沒有重訪條件，不釘 monitored。 | `gh pr view 7243`：state CLOSED、mergeCommit null                                              | `packages/core/src/runtime/mediaProxy.ts`（未動）                               |
+| [#7244](https://github.com/heygen-com/hyperframes/pull/7244)              | 已採用（`0a6746e1d` 那節）：只靜默 EPERM／EACCES 的 lint 優先權錯誤。                                                                                                                                                                                      | `c1977fab3:packages/cli/src/renderSetupWorker.ts:23`                                           | `packages/cli/src/renderSetupWorker.ts:22`                                      |
+| [#7245](https://github.com/heygen-com/hyperframes/pull/7245)              | 已採用並補副本取消先決（`0a6746e1d` 那節）：`check --budget` 與 partial report。                                                                                                                                                                          | `b7d72c947:packages/cli/src/utils/checkDeadline.ts:28`                                         | `packages/cli/src/commands/check.ts:334`                                        |
+| [#7246](https://github.com/heygen-com/hyperframes/pull/7246)              | 維持延後：需要 #6940 的 `audioDeliveryLimit`／true-peak limiter，本線沒有該檔。條件不變：成組採用 limiter 後驗真實 AAC -1.2 至 -1 dBTP、重複輸出 bytes 與分散式 loudness。                                                                                  | `d40d0b251:packages/producer/src/services/render/audioDeliveryLimit.ts:31`                     | `packages/producer/src/services/render/`（無 `audioDeliveryLimit*`）            |
+| [#7247](https://github.com/heygen-com/hyperframes/pull/7247)              | 維持延後：依賴未採的 #6621 unknownSubcommand／path／presented-error 契約，本線沒有 `didYouMean.ts`。條件不變：與解析契約成組採用，驗 exit 2、精簡 stderr、JSON hint 與 skill 路徑。                                                                          | `0a6746e1d:packages/cli/src/utils/didYouMean.ts:17`                                            | `packages/cli/src/utils/`（無 `didYouMean.ts`）                                  |
+| [#7248](https://github.com/heygen-com/hyperframes/pull/7248)              | 已採用並補 #6829（`b108f8512` 那節）：bundler StaticGuard 與 lint 共用 `linkedSources`。                                                                                                                                                                  | `0b3559824:packages/core/src/compiler/staticGuard.ts:1`                                        | `packages/core/src/compiler/staticGuard.ts:1`、`packages/lint/src/project.ts:160` |
+| [#7249](https://github.com/heygen-com/hyperframes/pull/7249)              | monitored（open，釘 head `4dc886748172c5ccd1e378df7ae977a575356617`）：`isTemplateEntry` 改以結構判斷（完整 HTML 文件內含 `<template>` 的場景檔）。重訪條件：合併後連同 `locateSceneRoot`、`compileStage` 測試與 core packed 預算增量一併審；尚未合併不移植。 | `gh pr diff 7249`：`htmlDocument.ts` 新增 `locateSceneRoot`、`isTemplateEntry` 改用它          | `packages/core/src/compiler/htmlDocument.ts:19`（仍以開頭 `<template` 判斷）    |
+| [#7250](https://github.com/heygen-com/hyperframes/pull/7250)              | 已採用（`b108f8512` 那節）：SVG stroke dash 納入 motion signature paint channel。對應 `motion-signature.browser.chromium.test.ts` 已同步。                                                                                                                  | `644b166e7:packages/cli/src/commands/motion-signature.browser.js:179`                          | `packages/cli/src/commands/motion-signature.browser.js:175`                     |
+
+#7244、#7245、#7246、#7247、#7248、#7250 的唯讀 `gh pr view` 均為 MERGED，合併 commit（`c1977fab3`、`b7d72c947`、`d40d0b251`、`0a6746e1d`、`0b3559824`、`644b166e7`）全在 baseline 以內，裁決與紅綠證據保留在原清冊節，本節只重新核對 fork 端檔案行號後引用，不重寫。PR 軸從 #7242 連續推進到 #7250，沒有越過 #7249 去釘後面的項目。
+
+### 依賴、延後與對外邊界
+
+#6912（#7309 的先決）、#7182、#7176、#7104／#7168 retry、#6716 的 17 檔遷移、#7134、#7295、#7302 與 #7246（#6940 limiter）、#7247（#6621）維持原延後條件；#7316 沒有搬入依賴 #7182 的 copy window，故不影響該延後。#7314 與 reverse-any-video 屬 HeyGen 帳戶流程，沿用不採邊界。
+
+沒有 golden 或 LFS pointer 變更，需上傳的新 LFS 物件：無。沒有 `scripts/package-size-budgets.json` 的增量（上游這五筆都沒有動它）。
+
+採用產品的上游作者為 Miguel Ángel（#7310、#7316、#7317）；email 僅供 Co-authored-by，不寫入文件。
+
+### 聚焦紅綠
+
+#7310：`mediaCodecMap.test.ts` 在舊碼 4 failed／37 passed（mpeg4／mjpeg 的 representativeMime 與 prewarm 斷言），新碼 41 passed。#7316：`events.test.ts` 的 copy facts 測試與 `check.test.ts` 的「copy wait 逾時仍是 browserSkipped 並送出 copy facts」在舊碼各 1 failed，新碼綠。#7317：`htmlCompiler.test.ts` 在舊碼 7 failed（`%20` 名稱、前導 `/`、`%20` 資料夾 sibling asset、四種逃出專案的寫法），新碼 180 passed／0 failed。
+
+### 靜態閘門與驗證
+
+core／studio／scripts 三組 `node node_modules/typescript/bin/tsc --noEmit -p <...>` 均 exit 0；`oxfmt --check` 與 `oxlint` 對 11 個變更 TypeScript 檔 0 錯誤；`node_modules/.bin/fallow audit --base origin/main --fail-on-issues` exit 0（`No issues in 12 changed files`，1 筆既有 finding 被 new-only gate 排除）。producer 與 studio-server 的 `tsc --noEmit -p tsconfig.json` exit 0；cli 同指令只剩既有三筆 `check.test.ts` 錯誤（TS18048 `deadline` 可能 undefined、兩筆 TS2554），乾淨 HEAD 同三筆，僅因本批在檔內新增行而行號平移。core runtime 沒有變更，`tsconfig.runtime.json` 檢查不適用。
+
+套件完整比較（port 樹對乾淨 `4cf9a241d` 樹，逐名比對失敗清單，兩邊各跑一次）：
+
+| 套件                    | port 樹                             | 乾淨 HEAD                           | 只在 port 樹失敗 |
+| ----------------------- | ----------------------------------- | ----------------------------------- | ---------------- |
+| studio-server（vitest） | 1494 passed／23 failed／61 skipped  | 1490 passed／23 failed              | 0                |
+| producer bun lane 逐檔  | 916 passed／8 failed（55 檔，3 檔非零） | 909 passed／8 failed            | 0                |
+| producer vitest lane    | 1166 passed／4 failed               | 1166 passed／4 failed               | 0                |
+| CLI 完整（vitest）      | 6250 passed／31 failed／307 skipped | 6248 passed／31 failed／307 skipped | 0                |
+
+port 樹多出的通過數正是新增測試（studio-server 4、producer bun 7、CLI 2）。既有環境失敗在乾淨 HEAD 一樣出現：studio-server 23；producer bun 8（`chunkAudio`、`projectHash` 的 symlink、`captureSegmentedStage` 零補位）；producer vitest 4（`noNetworkNode` 兩例、`renderDirOwner`、`segmentManifest`）；CLI 31（`offload.undecodableTrack`、`clean`／`transcribe`／`describeProject`／`optionalPackages` 的 symlink 與 inode 0、`lambda/videoImage`、`warmCheck.process` 的 Chrome 啟動）。聚焦跑（telemetry、`check.test.ts`、`utils`）另出現 `checkDeadline.process` 兩例與 `staticProjectServer.charset.browser` 的 Chrome 30 秒啟動逾時，這三個檔在乾淨 HEAD 同樣 5 例失敗。這批沒有重建 dist，也沒有跑 `tools/test_product.ps1 -Full`。
+
+### 最新剩餘快照（水位 `4cf26b5b4`）
+
+2026-11-06、fork HEAD `4cf9a241d`（工作樹未提交）以寫入後的 `tools/upstream_baseline.json` 重跑 `python tools/check_upstream_updates.py --strict` 仍 exit 1：上游 tip 已前進到 `3e3ba8d0d`，commit 軸尚有 2 個，下一個是 `a874a6324`（#7306，motion blur 報告計數）與 `3e3ba8d0d`（#7318，interrupting set 在 render 的 worker 數不變）；PR #7250 以上 61 筆待審，下一個是 #7251；issue #7223 以上 11 筆；monitored 97 筆（由 96 新增 #7249 open），#6695 的 open head 差異維持原釘選。PR #7251 以後有數筆（#7251、#7252、#7262、#7265 等）已隨 commit 軸有裁決，但 PR 水位依連續規則逐筆核對後才推進，不跳號。現行剩餘數字只在此維護。
+
+### 維護 gate 收尾
+
+2026-11-06、fork HEAD `4cf9a241d`（工作樹未提交）的 `pwsh -NoProfile -File tools/dev_check.ps1` exit 0，39 passed／0 failed，結尾 `WINDOWS DEV CHECK GREEN`，12 份維護文件、0 個斷鏈；`docs/UPSTREAM.md`、`docs/DECISIONS.md`、`ROADMAP.md` 與 baseline 已同步（commit 水位 `4cf26b5b49e6c4f2b42fb28738a1fb576e7494de`、PR #7250、issue #7223、monitored 97）。

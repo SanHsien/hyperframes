@@ -1098,3 +1098,9 @@ commit 水位 `66cbabc39aefc91cc3f82b102499c37a2d546ff8`，PR #7242、issue #722
 以 fork `537b88dbe` 接續，只審 `6011d9d0d..9e2510bda` 八筆連續 commit。採用 #7299、#7301、#7262（CLI 進度部分）、#7265 與 #7305；#7261、#7263 因本線沒有 HeyGen generation／templates／style-sampling consumer 不適用，#7302 與缺少的 #6967 blur differential harness 成組延後。逐筆來源／fork 行號、紅綠與雙樹驗證見 [接續清冊](UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-06接續至-9e2510bda審查-8-個連續-commit)。
 
 commit 水位 `9e2510bdabc3955183235e47dc6215069bf20882`，PR #7242、issue #7223、monitored 96 筆保持；指定八筆沒有到達 monitored，#6695 未讀的 open head 差異保留原釘選。#7246 的 #6940 limiter 先決未出現；#7182、#7176、#7104／#7168 retry、#6716 的 17 檔遷移、#7134 與 #7295 依清冊條件維持延後。沒有 golden／LFS pointer 變更或新增上傳物件；剩餘數字僅記於清冊最新節，ROADMAP 接續列保留。
+
+## 2026-11-06：連續水位 `4cf26b5b4`
+
+以 fork `4cf9a241d` 接續，審完 `f3e45b492..4cf26b5b4` 五個連續 commit 並把 PR 軸推進到 #7250。採用 #7310（MPEG-4 Part 2／MJPEG 預先轉出可播放副本）、#7316（check_report 帶副本計數，適配本線沒有 copy window 的 `preResolveHostileMediaProxies`）與 #7317（render 讀 `data-composition-src` 與預覽一致、拒絕離開專案資料夾的路徑）；#7309 因先決 #6912 未採而延後，#7314 屬 reverse-any-video 帳戶流程不適用。PR #7243 為作者自行關閉而不適用，#7249 open 釘 monitored，#7244、#7245、#7246、#7247、#7248、#7250 沿用既有裁決。逐筆來源／fork 行號、上游動到的全部檔案逐檔判定與雙樹比較見 [接續清冊](UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-06接續至-4cf26b5b4審查-5-個連續-commit)。
+
+commit 水位 `4cf26b5b49e6c4f2b42fb28738a1fb576e7494de`，PR #7250、issue #7223，monitored 由 96 增為 97 筆（新增 #7249 open）。#6912、#7182、#7176、#7104／#7168 retry、#6716 的 17 檔遷移、#7134、#7295、#7302、#7246 與 #7247 依清冊條件維持延後。沒有 golden／LFS pointer 變更或新增上傳物件，也沒有套件大小預算增量；剩餘數字僅記於清冊最新節，ROADMAP 接續列保留。

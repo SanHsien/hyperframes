@@ -1,7 +1,7 @@
 # 路線圖
 
 > 本 repo 後續工作的單一真相源。做完一項，就在同一個 commit 刪掉那一列；新工作只加在這裡。
-> 上游審查於 2026-11-06 接續到 commit `9e2510bdabc3955183235e47dc6215069bf20882`（PR #7242、issue #7223）；逐筆裁決見 [接續缺口清冊](docs/UPSTREAM_REVIEW_2026-11-04_CONTINUED.md)。CI／告警保留現況段既有日期快照。
+> 上游審查於 2026-11-06 接續到 commit `4cf26b5b49e6c4f2b42fb28738a1fb576e7494de`（PR #7250、issue #7223）；逐筆裁決見 [接續缺口清冊](docs/UPSTREAM_REVIEW_2026-11-04_CONTINUED.md)。CI／告警保留現況段既有日期快照。
 
 ## 現況
 
@@ -40,6 +40,8 @@ HyperFrames 將 HTML、CSS 與動畫渲染為影片，本線保留 Windows 渲�
 2026-11-06 以 fork `46d98d9bd` 接續審完 `a81b34410..66cbabc39` 八筆連續 commit，採用六筆獨立產品修正；#7134 與 #7295 依分享 host／#7080 crop 管線條件延後。commit 水位至 `66cbabc39`，PR #7242／issue #7223、monitored 96 筆維持；逐筆證據及本機驗證見 [接續清冊](docs/UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-06接續至-66cbabc39審查-8-個連續-commit)。core 全套 5618 passed／0 failed，CLI／Studio 完整套件均有乾淨 HEAD 可重現的失敗，三套逐名差集皆為 0；strict 仍有指定八筆以外的未審項目，近期接續列保留；既有日期快照不變。
 
 2026-11-06 以 fork `537b88dbe` 接續審完 `6011d9d0d..9e2510bda` 八筆連續 commit，採用五筆 core／CLI 修正；#7302 與缺少的 blur differential harness 成組延後，#7261／#7263 不適用。commit 水位至 `9e2510bda`，PR #7242／issue #7223、monitored 96 筆保持；逐筆證據見 [接續清冊](docs/UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-06接續至-9e2510bda審查-8-個連續-commit)。core 全套 5625 passed／0 failed，CLI 與乾淨 HEAD 的完整套件逐名失敗差集為 0；lefthook 三組 typecheck 與 fallow 通過。CLI 仍有既有測試與型別錯誤，封裝大小與 strict 仍有缺口，不宣稱完整產品驗收通過，近期接續列保留；既有日期快照不變。
+
+2026-11-06 以 fork `4cf9a241d` 接續審完 `f3e45b492..4cf26b5b4` 五個連續 commit 並把 PR 軸推進到 #7250，採用 #7310、#7316、#7317；#7309 因先決 #6912 未採而延後，#7314 不適用，#7243 作者自行關閉、#7249 open 釘 monitored（96 增為 97 筆）。逐筆證據、上游動到的檔案逐檔判定與雙樹比較見 [接續清冊](docs/UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-06接續至-4cf26b5b4審查-5-個連續-commit)。studio-server、producer、CLI 完整套件逐名失敗差集為 0，lefthook 三組 typecheck 與 fallow 通過；既有環境失敗與 CLI 既有型別錯誤仍在，strict 尚未轉綠，不宣稱完整產品驗收通過；近期接續列保留，既有日期快照不變。
 
 ## 近期：可以直接動手
 
