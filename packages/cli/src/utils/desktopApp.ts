@@ -5,7 +5,7 @@ import { basename, isAbsolute, join, relative, win32 } from "node:path";
 import { isHyperframesProject } from "@hyperframes/core";
 import { addCatchUpNote, markSeen, readSeen, seenPath } from "./appHistory.js";
 import { createProjectConfig } from "./projectConfig.js";
-import { writeRecord } from "./projectRecords.js";
+import { readRecord, removeRecord, writeRecord } from "./projectRecords.js";
 
 // The HyperFrames desktop app (not "Studio"): `open -b` on macOS, its executable elsewhere; released, then Canary.
 const DESKTOP_BUNDLE_IDS = ["dev.hyperframes.desktop", "dev.hyperframes.desktop.canary"] as const;
@@ -170,10 +170,12 @@ export function openInDesktop(
     installed = () => desktopInstalled({ platform }),
     env = process.env,
     cta,
+    doc,
     src = "cli",
     ...where
   }: AppLookup & {
     cta?: string;
+    doc?: "storyboard";
     src?: DownloadSource;
     ready?: boolean;
     open?: (bundleId: string, dir: string) => boolean;
@@ -188,26 +190,50 @@ export function openInDesktop(
     reason,
     downloadUrl: desktopDownloadUrl(platform, src) ?? STUDIO_PAGE,
   });
-  const opened = (canary: boolean): DesktopOpenResult => {
-    if (cta) writeRecord(dir, DESKTOP_CTA_RECORD, JSON.stringify({ cta, at: Date.now() }));
-    return {
-      opened: true,
-      app: canary ? "HyperFrames Canary" : "the HyperFrames desktop app",
-      handedOver: leaveHandoff(dir, agentSession(env)),
-    };
+  const opened = (canary: boolean): DesktopOpenResult => ({
+    opened: true,
+    app: canary ? "HyperFrames Canary" : "the HyperFrames desktop app",
+    handedOver: leaveHandoff(dir, agentSession(env)),
+  });
+  const dispatch = (): DesktopOpenResult => {
+    if (platform === "darwin") {
+      const bundleId = DESKTOP_BUNDLE_IDS.find((id) => open(id, dir));
+      if (!bundleId) return notOpened(installed() ? "open-failed" : "not-installed");
+      return opened(bundleId.endsWith(".canary"));
+    }
+    const apps = desktopApps({ platform, env, ...where });
+    if (!apps) return notOpened("unsupported-platform");
+    if (!apps.length) return notOpened("not-installed");
+    const app = apps.find(({ executable }) => launch(executable, dir));
+    return app ? opened(app.canary) : notOpened("open-failed");
   };
   if (!ready) return notOpened("handoff-unavailable");
   markBareIndexAsProject(dir);
-  if (platform === "darwin") {
-    const bundleId = DESKTOP_BUNDLE_IDS.find((id) => open(id, dir));
-    if (!bundleId) return notOpened(installed() ? "open-failed" : "not-installed");
-    return opened(bundleId.endsWith(".canary"));
-  }
-  const apps = desktopApps({ platform, env, ...where });
-  if (!apps) return notOpened("unsupported-platform");
-  if (!apps.length) return notOpened("not-installed");
-  const app = apps.find(({ executable }) => launch(executable, dir));
-  return app ? opened(app.canary) : notOpened("open-failed");
+  const undoIntent = leaveIntent(dir, cta, doc);
+  const result = dispatch();
+  if (!result.opened) undoIntent();
+  return result;
+}
+
+/** Written before the folder is sent, since a running app reads it on arrival; the undo puts back what was there. */
+function leaveIntent(dir: string, cta?: string, doc?: "storyboard"): () => void {
+  const before = readRecord(dir, DESKTOP_CTA_RECORD, 4096);
+  const earlier = ((): { doc?: unknown } | null => {
+    try {
+      return JSON.parse(before);
+    } catch {
+      return null;
+    }
+  })();
+  if (cta || doc)
+    writeRecord(dir, DESKTOP_CTA_RECORD, JSON.stringify({ cta, at: Date.now(), doc }));
+  else if (earlier?.doc !== undefined)
+    writeRecord(dir, DESKTOP_CTA_RECORD, JSON.stringify({ ...earlier, doc: undefined }));
+  else return () => {};
+  return () => {
+    if (!before) removeRecord(dir, DESKTOP_CTA_RECORD);
+    else writeRecord(dir, DESKTOP_CTA_RECORD, before);
+  };
 }
 
 /** The `hyperframes open` line for a project, relative to where the person is. */

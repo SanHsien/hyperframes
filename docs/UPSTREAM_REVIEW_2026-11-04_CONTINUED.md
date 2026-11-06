@@ -1773,10 +1773,111 @@ core `tsc --noEmit -p tsconfig.runtime.json` exit 0（在 packages/core）；cor
 
 既有環境失敗兩邊一致：engine 的 `audioMixer.undecodableTrack` suite；producer bun 的 `chunkAudio`、`projectHash` symlink、`captureSegmentedStage` 零補位，vitest 的兩例；CLI 31 例（symlink／inode、`checkDeadline.process` 與 browser 的 Chrome 啟動逾時等）。乾淨樹多出的 7 個失敗（`colorGradingShaderStages.browser`、`snapshot.lateImages.browser` 四例、`checkDeadline.process` 兩例）是 Chrome 啟動逾時，移植樹同檔通過，不宣稱由本批修正。移植樹多出的通過數為新增測試。沒有執行 `tools/test_product.ps1 -Full`，封裝大小與 CLI 既有失敗未消除，不宣稱完整產品驗收綠燈。
 
-### 最新剩餘快照（水位 `3e3ba8d0d`）
+### 剩餘快照（水位 `3e3ba8d0d`）
 
 2026-11-07、fork HEAD `21158b212`（工作樹未提交）以寫入後的 `tools/upstream_baseline.json` 重跑 `python tools/check_upstream_updates.py --strict` 仍 exit 1：commit 水位 `3e3ba8d0d`，上游 tip 已再前進到 `18fc75dcd`，commit 軸尚有 2 個，下一個是 `318724f5f`（#7284，Studio Storyboard 分頁）與 `18fc75dcd`（#7324，engine drawElement 無 GPU Linux 後備）；PR #7258 以上 55 筆待審；issue #7223 以上 11 筆；monitored 99 筆，其中 3 筆有移動且尚未讀補丁：#6695（原釘 `8aa9967f3b8bb8c776f7555d065d8ebd939ebe66`，查詢 `3b2321c`）、#6816（原釘 `870f4d952a848d781b11a41ebdb0a7648e20ffb2`，查詢 `9732a8b`）、#7150（原釘 `0e2396e4bbb9353d4bccb830f63b8280bfcc7429` open，現 closed）；這三筆不藉重釘消除。現行剩餘數字只在此維護。
 
 ### 維護 gate 收尾
 
 2026-11-07、fork HEAD `21158b212`（工作樹未提交）的 `pwsh -NoProfile -File tools/dev_check.ps1` 結果：exit 0，39 passed／0 failed，結尾 `WINDOWS DEV CHECK GREEN`，12 份維護文件、0 個斷鏈；`docs/UPSTREAM.md`、`docs/DECISIONS.md`、`ROADMAP.md` 與 baseline 已同步（commit 水位 `3e3ba8d0d076f1487b4e0aa9261ed148c26936eb`、PR #7258、issue #7223、monitored 99）。
+
+## 2026-11-07：接續至 `18fc75dcd`，審查最後 2 個 commit 與 6 筆 PR
+
+以 fork `48f5654de` 為起點。起始 `python tools/check_upstream_updates.py --strict` exit 1：baseline `3e3ba8d0d` 之後上游有 2 個 commit（`318724f5f`、`18fc75dcd`，上游 tip 即 `18fc75dcd`），PR #7258 以上 55 筆、issue #7223 以上 11 筆，99 筆釘選中 3 筆有移動（#6695、#6816、#7150）。本節審完這 2 個 commit，commit 軸再次到達上游 tip；PR 軸從 #7260 連續審到 #7265（#7259 是 issue 軸項目）；3 筆移動的釘選逐一重讀。每個 commit 以 `git show --stat` 列出上游動到的全部檔案並逐檔判定；補丁先用 `git apply --check` 預演（不用 `--reject`），整體不適用的檔案才手工移植。
+
+### commit 軸
+
+| Commit／PR | 裁決與理由 | 上游證據 | fork 證據 |
+| --- | --- | --- | --- |
+| `318724f5f`／[#7284](https://github.com/heygen-com/hyperframes/pull/7284) | 採用並適配：Studio 預覽面板在專案有 `storyboard.html`（根目錄或 `boards/`）時多一個 Storyboard 分頁，以 `DOMParser` 讀出 frame（惰性文件，頁面腳本不執行），board 以 `sandbox=""` 的 iframe 呈現；檔案變更經新的 `fileChangeFanout` 廣播給分頁重讀；Approve 只複製一句話給使用者貼給自己的 agent，不呼叫任何服務。CLI 的 `hyperframes open` 與 `/desktop` 路由新增 `doc: "storyboard"`，在交出資料夾之前寫入 `desktop-cta.json`，app 沒接手就還原舊記錄。不採：`skills/style-sampling/references/remix.md`（本線沒有 style-sampling 技能，見 #7263）。 | `318724f5f:packages/studio/src/components/storyboard/PreviewStage.tsx:15`、`packages/cli/src/utils/desktopApp.ts:229` | `packages/studio/src/components/storyboard/PreviewStage.tsx:15`、`packages/cli/src/utils/desktopApp.ts:219` |
+| `18fc75dcd`／[#7324](https://github.com/heygen-com/hyperframes/pull/7324) | 採用並適配：drawElement 的初始化閘門改為純函式 `drawElementGate`，在 `swiftshader` 之外新增 `webgl_unavailable`（完全沒有 WebGL 的主機）與 `beginframe_no_self_verify`（BeginFrame 啟動的瀏覽器沒有 self-verify 真值頁，不再掛住）；`detectGpuBackend` 的軟體 GL 判斷與 `isSoftwareWebGlRenderer` 共用 `SOFTWARE_WEBGL_RENDERER_TOKENS`，`getContext` 丟例外視為無 WebGL。`HF_FORCE_DRAWELEMENT` 只繞過 BeginFrame 閘門。Windows 與 macOS 有 GPU 的主機行為不變。 | `18fc75dcd:packages/engine/src/services/drawElementService.ts:88` | `packages/engine/src/services/drawElementService.ts:88`、`packages/engine/src/services/frameCapture.ts:1139` |
+
+#### #7284 的適配
+
+本線的 `desktopApp.ts` 沒有上游 #6897 的「從設定讀 Desktop builds」結構（2026-11-02 清冊判定不採，依賴 HeyGen 帳戶設定），所以上游把 `opened` 與平台分派搬進 `dispatch()` 的 diff 不能整段套。改動限於相同行為：`openInDesktop` 新增 `doc` 參數，保留本線的 `DESKTOP_BUNDLE_IDS`／`opened(canary)`，把原有 darwin／其他平台分派原樣收進 `dispatch()`，前後加上游的 `leaveIntent`（先寫 `{ cta, at, doc }`；`cta` 與 `doc` 都沒有而舊記錄有 `doc` 時清掉舊 `doc`；app 沒接手時還原）。`EditorShell.tsx` 的 hunk 因本線沒有 #6966 的 `matchesKey` import 而 context 不合，只手工加 `PreviewStage` import 與包裹。`skills-manifest.json` 不套上游雜湊（本線 hyperframes 技能其他檔案內容不同），改用 `bun packages/cli/scripts/gen-skills-manifest.ts` 重生，只有 hyperframes 一列變（`32f78e32adf32c02 → 5d86420d991b3a95`，來源是 `storyboard.md` 的一行說明）。`scripts/package-size-budgets.json`：CLI packed `7902966 → 7982002`，與上游同 commit 的增量（+79036）一致；此預算只由 publish workflow 檢查，本機未打包驗證。
+
+#### 上游動到的檔案逐檔判定
+
+| Commit | 檔案 | 判定 |
+| --- | --- | --- |
+| `318724f5f` | `packages/studio/src/components/storyboard/` 的 `PreviewStage.tsx`、`StoryboardBoardView.tsx`、`ApproveBoardButton.tsx`、`useStoryboardBoard.ts`、`storyboardBoard.ts` 與四個測試檔（`PreviewStage.dom.test.tsx`、`PreviewStage.player.dom.test.tsx`、`ApproveBoardButton.dom.test.tsx`、`storyboardBoard.test.ts`）；`hooks/fileChangeFanout.ts`、`fileChangeFanout.test.ts` | 全部新檔，採用（經 `oxfmt`）。 |
+| `318724f5f` | `useExternalFileChangeCoordinator.ts`、`DesktopGuideCard.tsx`、`OpenInDesktopButton.tsx`、`OpenInDesktopButton.dom.test.tsx` | 補丁原樣套用。 |
+| `318724f5f` | `packages/studio/src/components/EditorShell.tsx` | 手工適配（見上）。 |
+| `318724f5f` | `packages/cli/src/server/desktopRoutes.ts`、`desktopRoutes.test.ts`、`utils/projectRecords.ts`、`utils/desktopApp.test.ts` | 原樣套用。 |
+| `318724f5f` | `packages/cli/src/utils/desktopApp.ts` | 手工適配（見上）。 |
+| `318724f5f` | `skills/hyperframes/references/storyboard.md`、`skills-manifest.json`、`scripts/package-size-budgets.json` | 前者原樣套用；後兩者見上，重生／取增量。 |
+| `318724f5f` | `skills/style-sampling/references/remix.md` | 不適用（檔案不存在）。 |
+| `18fc75dcd` | `packages/engine/src/services/browserManager.ts`、`drawElementService.ts`、`drawElementService.test.ts`、`types.ts`；`packages/producer/src/services/render/observability.ts`、`renderOrchestrator.ts`、`windowedFrames.integration.test.ts` | 原樣套用。 |
+| `18fc75dcd` | `packages/engine/src/services/frameCapture.ts` | 手工適配：本線 import 區塊沒有 `forcePreservedDrawingBuffer`，hunk 不合；加 `drawElementGate`／`DrawElementGateReason`、移除 `resolveDrawElementCaptureMode` import，其餘同上游。 |
+
+兩個 commit 的上游補丁都沒有動 `*.browser.test.ts` 或 `*.chromium.test.ts`。fork 有但沒跟著改的相關檔：`drawElementService.integration.test.ts` 整檔是 `describe.skip`，只有註解提到 `resolveDrawElementCaptureMode`（該函式仍匯出且有單元測試），不需同步；`frameCapture-freshFallback.test.ts` 的 `vi.mock` 用 `importOriginal` 展開，真實的 `drawElementGate` 保留；`windowedFrames.integration.test.ts` 屬 producer integration lane（需要 Chrome 與 ffmpeg，列在 `packages/producer/scripts/integration-tests.json:39`），上游補丁原樣套用，其依賴的 `HF_SEGMENT_BROWSER_RECYCLE`（`segmentRecycle.ts`）、`perfSummary` 的 `verifyArmed`／`selfVerifyFallback`、`Segmented capture complete` 紀錄的 `browserRecycles` 欄位在本線都已存在。沒有 CI-only 的瀏覽器測試被遺漏。
+
+### PR 軸
+
+起點 #7260（#7259 為 issue，歸 issue 軸）。六筆的唯讀 `gh pr view --repo heygen-com/hyperframes --json state,mergeCommit,headRefOid` 都是 MERGED，合併 commit 全在 baseline 以內（`git merge-base --is-ancestor` 為真），裁決承接各自原清冊節；這裡重新核對 fork 端行號，並用上游合併 commit 的 diff 對 fork 做反向套用檢查（`git apply -R --check`）。
+
+| PR | 裁決與理由 | 上游證據 | fork 證據 |
+| --- | --- | --- | --- |
+| [#7260](https://github.com/heygen-com/hyperframes/pull/7260) | 不適用（整版 release）：版本號、plugin manifest、changelog、`releases/v0.9.17.md`；不發佈 npm、不改版本，承接 2026-11-06 `32eb4c358` 節。 | MERGED `32eb4c358`；22 個檔案皆為版本／發行說明／預算 | `packages/cli/package.json` 版本不變 |
+| [#7261](https://github.com/heygen-com/hyperframes/pull/7261) | 不適用：`commands/media-use/{voices,generate}.ts`、`heygen/generate.ts` 在本線不存在，也沒有 style-sampling 技能。 | MERGED `fc0b53361`；改 `packages/cli/src/commands/media-use/voices.ts` | `packages/cli/src/commands/media-use/`、`packages/cli/src/heygen/` 目錄不存在；`skills/` 只有 7 個技能 |
+| [#7262](https://github.com/heygen-com/hyperframes/pull/7262) | 部分採用（原節）：cloud render 在 non-TTY 每次狀態改變或持續一分鐘時輸出進度，JSON 保持靜默。反向檢查 `render.ts` 可乾淨反套用；`render.test.ts` 不全等，是本線測試檔 context 不同。style-sampling remix／manifest 不適用。 | MERGED `41b7aeeaf`；`41b7aeeaf:packages/cli/src/commands/cloud/render.ts:1023`（`STILL_RUNNING_EVERY_MS = 60_000`） | `packages/cli/src/commands/cloud/render.ts:997` |
+| [#7263](https://github.com/heygen-com/hyperframes/pull/7263) | 不適用（原節）：本線沒有 templates pull 的五個 plan-gated style-sampling packs，也沒有對應 pinned digest；不新建沒有入口的指紋清單。 | MERGED `9e2510bda`；只改 `packages/cli/src/commands/templates.ts` | `packages/cli/src/commands/templates.ts` 無 style-sampling pack 清單 |
+| [#7264](https://github.com/heygen-com/hyperframes/pull/7264) | 已採用（原節）：CLI no-draw seek 的 draw gate 同時阻止 color-grading source texture 上傳。反向檢查 `colorGrading.ts` 可乾淨反套用；`colorGrading.chromium.test.ts` 不全等，是原節刻意保留 Chromium 測試並另補 mock WebGL 性質測試，不是缺漏。 | MERGED `256b84a41`；`256b84a41:packages/core/src/runtime/colorGrading.ts:3350` | `packages/core/src/runtime/colorGrading.ts:3343,3355` |
+| [#7265](https://github.com/heygen-com/hyperframes/pull/7265) | 已採用並適配（原節）：video 在 cut 前最多一秒隱藏播放並追上。反向檢查四個測試檔可乾淨反套用；`media.ts`、`mediaSteer.ts` 不全等，是原節記載的最小適配（本線以固定 `VIDEO_PREROLL_SECONDS` 取代 learned start-latency，保留本線 out-point／audio 契約），不是缺漏。 | MERGED `3e86def58`；`3e86def58:packages/core/src/runtime/mediaSteer.ts` | `packages/core/src/runtime/media.ts:310`（`VIDEO_PREROLL_SECONDS = 1`）、`:388`（`startsEarly`） |
+
+PR 水位推進到 #7265，連續且每筆有證據。
+
+### 移動的釘選
+
+| 釘選 | 原釘 | 現況 | 裁決 |
+| --- | --- | --- | --- |
+| #6695 | `8aa9967f3b8bb8c776f7555d065d8ebd939ebe66`／open | `3b2321c0bcca0edcc40fce84dbaa11af9d8bb6b1`／open | 讀完整補丁：3 檔（`bun.lock`、`packages/cli/package.json`、`packages/engine/package.json`）只有各 workspace 版號 `0.9.10 → 0.9.19` 與 undici `7.25.0 → 7.30.1` 的重排，本體不變。維持延後：本線兩份 package.json 沒有直接 undici（`bun.lock:2146` 為 jsdom 的傳遞依賴 7.25.0），不能只套 manifest 就宣稱修了安全漏洞；PR 仍 open，合併後再評估是否把 undici 提升為直接依賴。重釘新 head。 |
+| #6816 | `870f4d952a848d781b11a41ebdb0a7648e20ffb2`／open | `9732a8b62dd414f369432f3688defc96829d6cfd`／open | 九個檔案不變，新增的 commit 都是 `Merge remote-tracking branch 'upstream/main'`；本線有這些 media-use 檔案（`packages/cli/src/media-use/lib/local-models.mjs`、`tts-local-provider.mjs`、`skills/media-use/audio/scripts/audio.mjs`），但 PR 尚未合併，延後不變，合併後以 commit 進入審查。重釘新 head。 |
+| #7150 | `0e2396e4bbb9353d4bccb830f63b8280bfcc7429`／open | 同 head／closed（2026-11-06，作者自行關閉） | 已解決：作者留言說明 #5746 的 `BuildReadyRejection`／`recordBuildReadyRejection` 通道已做同一件事。#5746 合併 commit `071ec1fdd` 在 baseline 內且本線已採（`packages/core/src/runtime/init.ts:3943,3953` 的 `BuildReadyRejection`、`packages/core/src/runtime/diagnostics.ts:59` 的 `recordBuildReadyRejection`），所以 #7150 無可移植內容。重釘為 closed。 |
+
+### 依賴、延後與對外邊界
+
+#7191（`scanMovers`、silent／loud 讀取事件偵測）、#7295／#7080、#6967／#7302、#6912（#7309 的先決）、#7182、#7176、#7104／#7168 retry、#6716 的 17 檔遷移、#7134、#7246（#6940 limiter）、#7247（#6621）維持原延後條件；#6897（Desktop builds 設定）維持不採，#7284 的 Desktop 交接只用到 `doc` 欄位，沒有引入帳戶或設定讀取。#7246 的 limiter 前置沒有出現在這兩個 commit。
+
+沒有 golden 或 LFS pointer 變更，需上傳的新 LFS 物件：無。預算增量：CLI packed +79036（上游 #7284 同 commit）。
+
+採用產品的上游作者為 WaterrrForever（#7284）與 Vance Ingalls（#7324）；email 僅供 Co-authored-by，不寫入文件。
+
+### 聚焦紅綠
+
+舊碼為乾淨 HEAD 樹（`git archive HEAD`，依賴以 junction 共用，gitignored 的 `packages/core/src/generated` 複製進去），只把新測試檔複製進去，各套件 cwd 的 `bun x vitest run <files>`。
+
+| 範圍 | 舊碼 pass／fail | 移植 | 失敗原因（舊碼） |
+| --- | --- | --- | --- |
+| engine `drawElementService.test.ts`（#7324） | 10／12 | 22／0 | 無 `drawElementGate`、無 `webglAvailable`；`getContext` 丟例外與軟體 GL token 不被辨識 |
+| CLI `desktopApp.test.ts`＋`desktopRoutes.test.ts`（#7284） | 37／6（1 skipped） | 43／0（1 skipped） | `doc: "storyboard"` 不寫入記錄、路由不轉送 `doc`、後來的標頭或一般開啟會重用舊 `doc` |
+| studio `OpenInDesktopButton.dom.test.tsx`（#7284） | 11／12 | 23／0 | `placement` 不存在：storyboard 版卡片文字、`doc` 送出與 `storyboard-open-in-desktop` 測試 id |
+| studio `storyboard/*` 四檔與 `fileChangeFanout.test.ts`（#7284） | 模組不存在，編譯層紅燈 | 與上列合計 6 files／45 tests passed | 新檔，不當行為重現 |
+| producer `windowedFrames.integration.test.ts` 的 drawElement 案例（#7324，bun lane，`-t "captures with drawElement"`） | 舊測試無此案例 | 1 pass／0 fail（12 filtered） | 本機 Windows 有 GPU，案例真的走了 drawElement：`mode=drawelement`、`verifyArmed=8`、`selfVerifyFallback=false`、`recycles=1`、`onDemandWithFrames=8`、`left=[]` |
+
+「puts the earlier record back when the app didn't take the folder」在舊碼也通過（舊碼只在成功後才寫入，沒有需要還原的狀態），它守的是新的先寫後還原流程不退步。
+
+### 靜態閘門與驗證
+
+core `tsc --noEmit -p tsconfig.runtime.json` exit 0（在 packages/core；本批沒有改 core）；core／studio／scripts 三組 lefthook `tsc --noEmit` 均 exit 0；engine、producer `tsc --noEmit -p tsconfig.json` exit 0；CLI 同指令只剩既有三筆 `check.test.ts` 錯誤（TS18048、兩筆 TS2554）。`node_modules/.bin/fallow audit --base origin/main --fail-on-issues` exit 0（32 changed files，5 筆既有 finding 被 new-only gate 排除）。變更的 TypeScript／JSON／Markdown 檔 `oxfmt --check` 皆通過。producer `test:classification` 通過（180 檔已分類）；producer `observability.test.ts`＋`perfSummary.test.ts` 27 passed。
+
+套件完整比較（移植樹對乾淨 `48f5654de` 樹，逐名比對失敗清單，兩邊各跑一次）：
+
+| 套件 | 移植 pass／fail／skip | 乾淨 HEAD pass／fail／skip | 只在移植樹失敗 |
+| --- | --- | --- | --- |
+| engine（vitest 全套） | 2624／13／53 | 2617／10／53 | 5（見下，隔離重跑 4 files／18 tests 全過） |
+| studio（vitest 全套） | 7952／241／2（16 todo） | 7929／240／2（16 todo） | 2（見下，隔離重跑 11／11 全過） |
+| CLI（vitest 全套） | 6255／35／307 | 6253／32／307 | 4（見下，隔離重跑 4 files／50 tests 全過） |
+| producer | 聚焦：`observability`＋`perfSummary` 27 passed；drawElement 案例 1 pass | 不需比較 | 0 |
+
+本批沒有重新跑完整的 producer bun lane 與 core 全套：producer 只改了兩處註解與一個 integration 測試，core 沒有改動。
+
+逐名比對失敗清單後，只在移植樹失敗的 11 個名稱都是負載相關的逾時或啟動競態，各自隔離重跑皆通過，所以不當作回歸，也不宣稱由本批修正或造成：engine 的 `browserManager-vulkanEnv`、`browserManager-wslEnv` 與 `parallelCoordinator-peerAbort` 三例（隔離重跑 4 files／18 tests passed，同次也包含 `frameCapture-softwareWebGpu`）；studio 的 `Timeline.virtualization.test.tsx` 兩例（隔離重跑兩棵樹各 11／11 passed）；CLI 的 `audio/read/read.test.ts`、`cloud/offload.test.ts`、`registry/registryComponents.test.ts`、`utils/artifactCapture.test.ts`（隔離重跑 4 files／50 tests passed）。兩邊都失敗的既有環境失敗與前幾節一致：engine 的 `audioMixer.undecodableTrack` 與 Chrome 啟動競態、studio 的 localStorage／Dock／TimelineToolbar 一批（`--localstorage-file` 警告所屬環境）、CLI 的 symlink／inode 與 `checkDeadline.process` 的 Chrome 啟動逾時。乾淨樹多出的 `vite.browserVersion.test.ts` 同屬環境逾時。兩棵樹的 `parallelCoordinator-peerAbort` 失敗名稱互不相同，證明該檔隨負載飄動。沒有執行 `tools/test_product.ps1 -Full`，不宣稱完整產品驗收綠燈。
+
+### 最新剩餘快照（水位 `18fc75dcd`）
+
+2026-11-07、fork HEAD `48f5654de`（工作樹未提交）以寫入後的 `tools/upstream_baseline.json` 重跑 `python tools/check_upstream_updates.py --strict` 仍 exit 1，但只剩 PR 與 issue 軸：commit 軸 0 個（`No new upstream commits`，baseline 與上游 tip `18fc75dcd` 相同）；PR #7265 以上 50 筆待審（下一個是 #7266）；issue #7223 以上 11 筆；monitored 99 筆，沒有移動的釘選（#6695、#6816 重釘新 head，#7150 重釘 closed）。現行剩餘數字只在此維護。
+
+### 維護 gate 收尾
+
+2026-11-07、fork HEAD `48f5654de`（工作樹未提交）的 `pwsh -NoProfile -File tools/dev_check.ps1` 結果：exit 0，39 passed／0 failed，結尾 `WINDOWS DEV CHECK GREEN`，12 份維護文件、0 個斷鏈；`docs/UPSTREAM.md`、`docs/DECISIONS.md`、`ROADMAP.md` 與 baseline 已同步（commit 水位 `18fc75dcd7b453ab10d0834bc9e8d2265353121c`、PR #7265、issue #7223、monitored 99）。

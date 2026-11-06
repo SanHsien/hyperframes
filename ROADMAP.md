@@ -1,7 +1,7 @@
 # 路線圖
 
 > 本 repo 後續工作的單一真相源。做完一項，就在同一個 commit 刪掉那一列；新工作只加在這裡。
-> 上游審查於 2026-11-07 接續到 commit `3e3ba8d0d076f1487b4e0aa9261ed148c26936eb`（PR #7258、issue #7223）；逐筆裁決見 [接續缺口清冊](docs/UPSTREAM_REVIEW_2026-11-04_CONTINUED.md)。CI／告警保留現況段既有日期快照。
+> 上游審查於 2026-11-07 接續到 commit `18fc75dcd7b453ab10d0834bc9e8d2265353121c`（PR #7265、issue #7223）；逐筆裁決見 [接續缺口清冊](docs/UPSTREAM_REVIEW_2026-11-04_CONTINUED.md)。CI／告警保留現況段既有日期快照。
 
 ## 現況
 
@@ -44,6 +44,8 @@ HyperFrames 將 HTML、CSS 與動畫渲染為影片，本線保留 Windows 渲�
 2026-11-06 以 fork `4cf9a241d` 接續審完 `f3e45b492..4cf26b5b4` 五個連續 commit 並把 PR 軸推進到 #7250，採用 #7310、#7316、#7317；#7309 因先決 #6912 未採而延後，#7314 不適用，#7243 作者自行關閉、#7249 open 釘 monitored（96 增為 97 筆）。逐筆證據、上游動到的檔案逐檔判定與雙樹比較見 [接續清冊](docs/UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-06接續至-4cf26b5b4審查-5-個連續-commit)。studio-server、producer、CLI 完整套件逐名失敗差集為 0，lefthook 三組 typecheck 與 fallow 通過；既有環境失敗與 CLI 既有型別錯誤仍在，strict 尚未轉綠，不宣稱完整產品驗收通過；近期接續列保留，既有日期快照不變。
 
 2026-11-07 以 fork `21158b212` 接續審完最後 2 個 commit（`a874a6324`／#7306、`3e3ba8d0d`／#7318，commit 軸到達上游 tip）與 PR #7251–#7258：採用 #7306 的 blur composition 計數遙測（適配本線 `discoverMovers`）與 #7318（連同先決 #6851），#7253／#7257 open 釘 monitored（97 增為 99 筆）。逐筆證據、上游動到的檔案逐檔判定與雙樹比較見 [接續清冊](docs/UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-07接續至-3e3ba8d0d審查最後-2-個-commit-與-8-筆-pr)；core 全套 5655 passed／0 failed，engine、producer、CLI 與乾淨 HEAD 的完整套件逐名失敗差集為 0；lefthook 三組 typecheck、core runtime typecheck 與 fallow 通過。strict 尚未轉綠（上游又新增 #7284、#7324 兩個 commit，PR 還有 55 筆），不宣稱完整產品驗收通過；近期接續列保留，既有日期快照不變。
+
+2026-11-07 以 fork `48f5654de` 接續審完最後 2 個 commit（`318724f5f`／#7284、`18fc75dcd`／#7324，commit 軸再次到達上游 tip）、PR #7260–#7265 與三筆移動的釘選：採用 #7284 的 Studio Storyboard 分頁與 `hyperframes open` 的 `doc: "storyboard"` 交接（適配本線沒有 #6897 結構的 `desktopApp.ts`）與 #7324 的 drawElement 閘門（手工移植 `frameCapture.ts`）；PR 六筆沿用原節裁決，#6695、#6816 重釘新 head，#7150 重釘 closed，monitored 維持 99 筆。逐筆證據、上游動到的檔案逐檔判定與雙樹比較見 [接續清冊](docs/UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-07接續至-18fc75dcd審查最後-2-個-commit-與-6-筆-pr)。strict 尚未轉綠（commit 軸已清空，PR 還有 50 筆、issue 11 筆），不宣稱完整產品驗收通過；近期接續列保留，既有日期快照不變。
 
 ## 近期：可以直接動手
 

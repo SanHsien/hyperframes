@@ -1,5 +1,6 @@
 import { memo, useCallback, type ReactNode } from "react";
 import { PreviewPane } from "./nle/PreviewPane";
+import { PreviewStage } from "./storyboard/PreviewStage";
 import { TimelinePane } from "./nle/TimelinePane";
 import { PreviewOverlays } from "./nle/PreviewOverlays";
 import { PreviewReadOnlyProvider } from "./editor/previewReadOnlyContext";
@@ -312,13 +313,15 @@ function EditorShellBody({
       <StudioAgentTools />
       <Dock.Root projectId={projectId}>
         <Dock.Panel id="preview">
-          <div className="relative flex h-full w-full min-w-0 flex-col">
-            <PreviewPane
-              previewOverlay={previewOverlay}
-              onSelectTimelineElement={onSelectTimelineElement}
-              onPreviewBlockDrop={onPreviewBlockDrop}
-            />
-          </div>
+          <PreviewStage projectId={projectId}>
+            <div className="relative flex h-full w-full min-w-0 flex-col">
+              <PreviewPane
+                previewOverlay={previewOverlay}
+                onSelectTimelineElement={onSelectTimelineElement}
+                onPreviewBlockDrop={onPreviewBlockDrop}
+              />
+            </div>
+          </PreviewStage>
         </Dock.Panel>
         <Dock.Panel id="timeline">
           <TimelinePane
