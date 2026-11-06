@@ -147,6 +147,17 @@ afterEach(() => {
 });
 
 describe("motion-signature.browser media and geometry channels", () => {
+  it("sees an SVG stroke drawing on without a box or color change", () => {
+    document.body.innerHTML =
+      '<div id="root" data-composition-id="main"><svg><path id="line" /></svg></div>';
+    const style = { stroke: "rgb(0, 0, 0)", strokeDasharray: "600", strokeDashoffset: "600" };
+    installFixture({ rects: { root: ROOT, line: ROOT }, styles: { line: style } });
+    const collect = installScript();
+    const before = collect();
+    style.strokeDashoffset = "300";
+    expect(collect()).not.toBe(before);
+  });
+
   it("changes the sweep fingerprint when visible video pixels advance", () => {
     document.body.innerHTML = `
       <div id="root" data-composition-id="main" data-width="640" data-height="360">

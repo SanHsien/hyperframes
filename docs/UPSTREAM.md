@@ -225,3 +225,11 @@ commit 水位 `659ef568d71442a3e4f1b919cf03a547c79e7005`，PR 維持 #7190、iss
 commit 水位 `0a6746e1d6fabab6178ef8ead0e6da1593a1e59a`、PR #7231、issue #7223。monitored 由 92 增為 96 筆，新增 open #7208、#7209、#7215、#7227 的 head／條件，既有釘選保留。#7225 等 #6912／#7232 的 WebKit 音訊接管與記憶體契約，#7247 等 #6621 的 CLI 解析契約；billing 與整版 release 不適用。#7182、#7176、#7104／#7168 retry、#6716 的 17 檔遷移維持條件，採用部分不依賴它們。沒有 golden／LFS pointer 變更；最新剩餘數量僅在接續清冊的新節記錄。
 
 #6904 的 open head 移動至 `fa3302b927d8c4542a276c199d1620978797b718`；完整 3 檔 diff 已重審並重釘，維持合併後再驗 element-identity 幾何與 capture/filter 像素的條件，monitored 總數仍 96。細節見接續清冊的新節。
+
+## 2026-11-06：連續水位 `b108f8512`
+
+以 fork `2e34275fc` 接續，逐筆審完 `644b166e7..b108f8512` 的 8 個連續 commit；採用 #7250、#7248（含已合併 #6829 先決）、#7252、#7238、#7237、#7251。來源與 fork 行號、依賴裁決、紅綠及雙樹驗證見 [接續清冊](UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-06接續至-b108f8512審查-8-個連續-commit)。
+
+commit 水位 `b108f851201dc22f5d4974ee7f1c9d19b472cc1e`，PR 軸沿既有採用證據連續至 #7238，issue 維持 #7223，monitored 維持 96 筆。#7246 等 #6940 limiter 與真實 AAC／分散式 loudness 成組驗收；#7232 等 #6912／#7225 WebKit 接管管線與記憶體／Safari 音訊時鐘驗收。#7182、#7176、#7104／#7168 retry、#6716 的 17 檔遷移保留原條件，所採六筆不依賴它們。沒有 golden／LFS pointer 變更。
+
+#6695 的 open head 差異未到對應 commit 軸，不重釘未讀補丁；其餘監控釘選保留。剩餘數量僅記於接續清冊的新節，ROADMAP 保留接續計畫。

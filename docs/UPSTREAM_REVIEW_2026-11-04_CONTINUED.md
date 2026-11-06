@@ -1023,7 +1023,7 @@ core／engine／CLI／studio-server／studio／lint 分別執行 `bun run test -
 
 `python tools/check_upstream_updates.py --strict` exit 1：2026-11-06 收尾快照剩 36 個 commit（從 `b96d3c8` #7231 起）、85 筆 PR（#7190 以上）、9 筆 issue（#7223 以上）；92 筆 monitored 無差異。commit 只推進連續 15 筆至 `659ef568d`；PR／issue 水位不以已審 commit 的 PR 清單代替連續審查。ROADMAP 近期列保留。
 
-上游作者：Miguel Ángel（#7214、#7212、#7221、#7222、#7228）、WaterrrForever（#7089）、Vance Ingalls（#7191）、James Russo（#7211）。Co-authored-by email 僅在交付回報提供，不寫入文件。
+上游作者：Miguel Ángel（#7214、#7212、#7221、#7222、#7228）、WaterrrForever（#7089）、Vance Ingalls（#7191）、James Russo（#7211）。作者 email 只放在提交訊息的 Co-authored-by，不寫入文件。
 
 ## 2026-11-06：接續至 `0a6746e1d`，審查 15 個連續 commit
 
@@ -1110,7 +1110,7 @@ monitored 由 92 增為 96 筆，新增以下 4 筆；既有 92 筆不因推進 
 | #7215 | `85309fdbdd814186638df3e8ade5fe7f2d35b53d`／open | 上游合併後驗帶 MIME 參數／換行 base64 的拒絕與正常相對路徑                                   |
 | #7227 | `9b646ef59ffaa140f4f908331461ded47614cad1`／open | 目前 open；#7231 已採替代修正，若此 PR 合併或 head 變動再比對重疊 DOM tween／proxy 像素      |
 
-上游作者：Miguel Ángel、Jerrai。Co-authored-by email 僅在交付回報提供，不寫入文件。
+上游作者：Miguel Ángel、Jerrai。作者 email 只放在提交訊息的 Co-authored-by，不寫入文件。
 
 ### 聚焦回歸、先紅後綠與建置
 
@@ -1182,8 +1182,95 @@ strict 快照發現 #6904 由 `843a29d0aa44bed346fbf425e25339dbeec9beb3` 變為 
 
 2026-11-06、fork HEAD `d599288fdc62dfe1073210b1dd1dba1b2ade95d3` 的收尾記錄位於 `tmp/upstream-20261106-b96/closeout/`：`pwsh -NoProfile -File tools/dev_check.ps1` exit 0（39 passed、0 failed；`WINDOWS DEV CHECK GREEN`）；lefthook 的 core、studio、scripts 三組 `node node_modules/typescript/bin/tsc --noEmit -p <path>` 均 exit 0；`node_modules/.bin/fallow audit --base origin/main --fail-on-issues` exit 0（82 changed files，No issues；dead code／complexity／duplication 各 0）。只讀取／測試，沒有執行 lefthook 內會 staging 的 format job。
 
-### 最新剩餘快照（水位 `0a6746e1d`）
+### 水位 `0a6746e1d` 時點的剩餘快照
 
 2026-11-06 的 `python tools/check_upstream_updates.py --strict` exit 1；完整快照保存為 `closeout/strict-start.md`。上游 tip 為 `e2bb7da25da9d268e33d766683885ad69b088169`，水位以上 31 個 commit（自 `644b166` #7250 起）、PR #7232 起 58 筆、issue #7259 起 9 筆；96 筆 monitored 中 #6695 的 open head 又由 `8aa9967f3b8bb8c776f7555d065d8ebd939ebe66` 移動至 `3b2321c`。該新 diff 沒有裁決，保留原釘選，於 commit 軸到達後重審；不以未讀差異的 head 重釘讓 strict 歸零。
 
-這是最新剩餘數量的單一記錄處；較早各節只保留其日期快照。連續水位停在已具逐筆裁決的 15 個 commit（`git rev-list --count 659ef568d..0a6746e1d` 為 15），PR #7231、issue #7223 不變；不擴大至半成品以外的 commit。strict 與完整產品驗收尚未通過，ROADMAP 近期接續列保留。core 新增封裝超標也保留為驗收缺口；沒有調整容差或捏造上游預算增量。需上傳的新 LFS 物件：無。
+這是水位 `0a6746e1d` 的日期快照；較早各節只保留其日期快照。連續水位停在已具逐筆裁決的 15 個 commit（`git rev-list --count 659ef568d..0a6746e1d` 為 15），PR #7231、issue #7223 不變；不擴大至半成品以外的 commit。strict 與完整產品驗收尚未通過，ROADMAP 近期接續列保留。core 新增封裝超標也保留為驗收缺口；沒有調整容差或捏造上游預算增量。需上傳的新 LFS 物件：無。
+
+## 2026-11-06：接續至 `b108f8512`，審查 8 個連續 commit
+
+以 fork `2e34275fc` 為起點，只讀 `0a6746e1d..b108f8512` 的 8 個連續補丁，採用六筆獨立修正並補 #6829；另外兩筆依缺失子系統延後。唯讀 GraphQL 核對八個 PR 均 MERGED、mergeCommit 與指定 SHA 一致。原始補丁、PR JSON、測試 reporter 與命令 exit 保存在忽略目錄 `tmp/upstream-20261106-644/`。
+
+| Commit／PR                                                                | 裁決與重訪條件                                                                                                                                                                                                                               | 上游證據                                                                   | fork 證據                                                   |
+| ------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| `644b166e7`／[#7250](https://github.com/heygen-com/hyperframes/pull/7250) | 採用：motion signature 將 SVG strokeDashoffset／strokeDasharray 納入 paint channel，draw-on 不再被 check 判成靜止。                                                                                                                          | `644b166e7:packages/cli/src/commands/motion-signature.browser.js:174`      | `packages/cli/src/commands/motion-signature.browser.js:170` |
+| `0b3559824`／[#7248](https://github.com/heygen-com/hyperframes/pull/7248) | 採用並補已合併 #6829：bundler StaticGuard 與 lint 共用 linkedSources，讀本機 script 的 timeline 註冊；保留本線 template 遞迴、路徑解析及 1,000,000 字元掃描上限。                                                                            | `0b3559824:packages/core/src/compiler/staticGuard.ts:22`                   | `packages/core/src/compiler/staticGuard.ts:22`              |
+| `a664f99ec`／[#7252](https://github.com/heygen-com/hyperframes/pull/7252) | 採用：PostCSS 逐個展開逗號 selector，opacity:0 與 transform 衝突檢查都涵蓋每個 subject；不以最後一個 selector 代替整組。                                                                                                                     | `a664f99ec:packages/lint/src/rules/gsap.ts:1021`                           | `packages/lint/src/rules/gsap.ts:993`                       |
+| `d40d0b251`／[#7246](https://github.com/heygen-com/hyperframes/pull/7246) | 延後：本線沒有 #6940（d1d631f60）的 audioDeliveryLimit／browser true-peak limiter，現有 guard 是整體增益衰減；需連同 limiter 管線成組採用，驗真實 AAC 峰值 -1.2 至 -1 dBTP、重複輸出 bytes 與分散式 loudness。單搬重試上限不會修到現有流程。 | `d40d0b251:packages/producer/src/services/render/audioDeliveryLimit.ts:13` | `packages/producer/src/services/render/audioPadTrim.ts:386` |
+| `5377b756b`／[#7238](https://github.com/heygen-com/hyperframes/pull/7238) | 採用：render／preview／snapshot 共用 snapped clip window；snapshot 從 composition 讀 fps 並傳給現有內嵌 video frame resolver，沒有搬入上游本線尚缺的 activeVideoAt／blur-overlay 重構。                                                      | `5377b756b:packages/core/src/runtime/clipWindow.ts:29`                     | `packages/core/src/runtime/clipWindow.ts:29`                |
+| `600bfa451`／[#7232](https://github.com/heygen-com/hyperframes/pull/7232) | 延後：沿用 #7225／#6912（e181d34ed）的 WebKit decode-first 管線缺口；目前沒有 decodesFirst／isDecodedOrDecoding，不單獨加 256 MiB 估算。成組採用後驗 pending/cache 共用 source、650 秒／長來源、未知 duration、Safari 音訊時鐘與變速。       | `600bfa451:packages/core/src/runtime/webAudioTransport.ts:374`             | `packages/core/src/runtime/webAudioTransport.ts:231`        |
+| `f98218a22`／[#7237](https://github.com/heygen-com/hyperframes/pull/7237) | 採用：檔案與記憶體 ZIP 使用同一 socket 進度看門狗，60 秒停滯後中止，同一 presigned URL 最多三次重送；403、不可讀檔案及取消不重試，保留簽章 headers／checksum／complete retry。                                                               | `f98218a22:packages/cli/src/cloud/upload.ts:91`                            | `packages/cli/src/cloud/upload.ts:91`                       |
+| `b108f8512`／[#7251](https://github.com/heygen-com/hyperframes/pull/7251) | 採用：compiler 與 runtime 讓最外層 timed SVG scene 各有 id scope，第二幕重複的 gradient／clipPath／symbol 不再指向第一幕；共享 page-level 定義及既有 host scopes 保留。                                                                      | `b108f8512:packages/core/src/compiler/svgIdNamespacing.ts:421`             | `packages/core/src/compiler/svgIdNamespacing.ts:414`        |
+
+### 先決、延後與 LFS
+
+#6829 的 `0708f6ca7` 是已合併、有限且必要的先決：`0708f6ca7:packages/lint/src/project.ts:160` 的 collectExternalScripts、context 與 registry rules 一併採用；fork 對應 `packages/lint/src/project.ts:171`，本線沒有 projectFontFamilies bookkeeping，維持既有字型邏輯。外部 JS 僅作靜態掃描，不執行；沿用 `packages/parsers/src/assetResolution.ts:109` 的專案根路徑限制、模板走訪與 minified／過大檔案排除。新增 Classic／module 本機 script 兩例先紅後綠。
+
+#7182：長來源分段複本及離線長片測試齊備後重訪；#7176：維護者決定遙測政策後重訪；#7104／#7168 retry：新 session 所有權、取消及一次性重試契約齊備後重訪；#6716 的 17 檔遷移：Windows 私有快取根及全套 guard 測試齊備後重訪。六筆採用內容均不依賴這四項，沒有一併擴大移植。
+
+八個補丁及 #6829 均無 golden／LFS pointer 變更；保留 #6665 的既有 golden。需上傳的新 LFS 物件：無。
+
+### PR 軸與 monitored
+
+實際起始 PR 水位為 #7231，沒有退回 #7189。PR #7232–#7238 全部已合併：#7232 依上表延後；#7233（`2af37ac0c:packages/engine/src/utils/ffprobe.ts:1128` → fork `packages/engine/src/utils/ffprobe.ts:1099`）、#7234（`5ee9e928d:packages/core/src/hdrToneMap.ts:15` → fork 同檔 `:15`）、#7235（`df54f380c:packages/cli/src/commands/info.ts:100` → fork `packages/cli/src/commands/info.ts:100`）與 #7236（`f55990ebc:packages/cli/src/cloud/errors.ts:60` → fork 同檔 `:60`）沿用上一節完整補丁及既有採用裁決；#7237／#7238 見上表。PR 水位因此連續至 #7238，issue 維持 #7223。
+
+monitored 維持實際 baseline 的 96 筆；八個 PR 與 #6829 都不在該清單，沒有到達需重釘的項目。#6695 的 open head 變動保留既有釘選，於對應 commit 軸重審，不用未讀的新 head 消除 strict 差異。沒有加入未合併產品。
+
+上游作者：Miguel Ángel（八筆與 #6829）。作者 email 只放在提交訊息的 Co-authored-by，不寫入文件。
+
+### 聚焦回歸與紅綠證據
+
+| 範圍／命令（套件 cwd，reporter／outputFile 見忽略目錄的 result JSON）                                                                                                                                                                                                                                                                                         | 舊碼 pass／fail／skip                                           | 新碼 pass／fail／skip  | Exit 舊／新      |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- | ---------------------- | ---------------- |
+| core：`bun x vitest run src/cacheDir.test.ts src/compiler/htmlBundler.test.ts src/compiler/inlineSubCompositions.test.ts src/compositionReadiness.test.ts src/runtime/adapters/gsap.order.test.ts src/runtime/adapters/gsap.steps.test.ts src/runtime/compositionLoader.test.ts src/runtime/frameSources.test.ts src/runtime/timeline.test.ts --maxWorkers=2` | 515／18／0                                                      | 533／0／0              | 1／0             |
+| lint：`bun x vitest run src/project.test.ts src/rules/gsap.test.ts --maxWorkers=2`                                                                                                                                                                                                                                                                            | 301／4／0                                                       | 305／0／0              | 1／0             |
+| CLI stroke：`bun x vitest run src/commands/motion-signature.browser.test.ts --maxWorkers=2`                                                                                                                                                                                                                                                                   | 30／1／0                                                        | 含於下列 CLI 195／0／0 | 1／0             |
+| CLI 503 行為：`bun x vitest run src/cloud/upload.test.ts -t 'retries a server error before finalization' --maxWorkers=1`                                                                                                                                                                                                                                      | 0／1／17                                                        | 含於下列 CLI 195／0／0 | 1／0             |
+| CLI 最終聚焦：`bun x vitest run src/cloud/upload.test.ts src/commands/motion-signature.browser.test.ts src/commands/snapshot.test.ts src/registry/localSemantic.test.ts src/utils/autoUpdate.test.ts --maxWorkers=2`                                                                                                                                          | snapshot resolver 原先回 null；upload 的新增 API 四例原先缺介面 | 195／0／0              | 原負例 1／最終 0 |
+
+core 的 18 個紅燈包含 frameSources 移除舊 exportRenderSeek 參數後的介面不相容，不能全算成行為重現；獨立行為負例包括 StaticGuard local script、compiler／runtime 的 SVG references 及 timeline 在 100 秒邊界的可見性。#7237 另在 archive 舊碼跑 503→200 的網路測試，直接重現「收到 503 便拒絕」；該測試的臨時覆蓋隨後恢復原 bytes，不以 missing putTimings 介面單獨當作修復證據。#7250 保留上游 Chromium 測試，另用現有 happy-dom fixture 釘同一 paint-channel 性質，補足 Windows 預設不啟用 Chromium suite 的情況。
+
+兩個新增 snapshot browser fixture 的最初 focused 執行因 Chrome 30 秒啟動逾時失敗，serial maxWorkers=1 亦同；乾淨 HEAD 注入相同最終 fixture 後也是 0 passed／2 failed，明確診斷為 `The browser did not finish starting within 30000 ms`。該臨時注入隨後移除，沒有改舊碼。移植樹的完整 CLI suite 依 repo 的 unit→chrome 分組，兩個 fixture 最終均 passed：100 秒交界前後皆紅色，兩幕重複 SVG ids 皆解析為自身顏色且共享 page gradient 保持綠色。沒有改 assertion、延長 timeout 或改成 skip；保留先前啟動失敗紀錄，不拿它們冒充行為紅燈，也不重跑已達標像素驗收。
+
+`bun run build` 於 lint、core、CLI 均 exit 0；乾淨 HEAD 先重建 parsers／lint／core／studio-server／studio／inspector／player／CLI dist。首次乾淨樹缺 ignore 連結及前置 dist 的建置失敗，補齊依賴連結並按依賴順序建置後通過，沒有改產品略過。`archive-parity.json` 對 archive 內 packages／scripts 的原始碼及設定比對差異 0；第三方依賴只以 junction 共用，workspace links 指向乾淨樹自己的 package。
+
+新增／修改的產品檔皆在 `product-inputs.json` 記 HEAD 及 SHA-256，格式化後的最終聚焦命令與 reporter 為 `final-{core,lint,cli}.*`。完整套件先執行一次，未因已知平台失敗重跑；core／lint 的非語意格式化後另以聚焦回歸驗證，不把後補雜湊冒稱為完整套件啟動時的輸入證明。
+
+### 靜態閘門與套件大小
+
+lefthook 的三組 `node node_modules/typescript/bin/tsc --noEmit -p <packages/core/tsconfig.json|packages/studio/tsconfig.json|scripts/tsconfig.json>` 均 exit 0；額外 CLI typecheck 雙樹均 exit 2，同一三筆診斷逐字一致：`check.test.ts:2287` 的 deadline 可能 undefined、`:3834`／`:3835` 多傳一個參數。變更 33 檔 oxlint exit 0，0 warnings／0 errors；`bun run check:cli-process-ownership` exit 0。沒有執行 lefthook 會 staging 的 format job。
+
+雙樹使用相同 `pnpm pack --json --pack-destination <ignored directory>`，未改套件管理器、未安裝依賴或產生 pnpm lockfile。判定沿用 `listPackageSizeIssues` 的原 1% 容差。
+
+| 套件 | HEAD packed／unpacked | 移植 packed／unpacked | 判定                                           |
+| ---- | --------------------- | --------------------- | ---------------------------------------------- |
+| core | 1680858／4054737      | 1681470／4056731      | 雙樹 packed 超標，既有缺口持續；增量 612 bytes |
+| cli  | 8493414／24179350     | 8495279／24179414     | 雙樹 packed／unpacked 超標，既有缺口持續       |
+| lint | 180663／695324        | 181454／698678        | 通過                                           |
+
+指定八筆與 #6829 都沒有 `scripts/package-size-budgets.json` 的上游增量，因此保留原預算；沒有提高容差、捏造上游調整或用此段移植消除原有超標。#7246 未改產品，沒有執行 producer lane；受影響完整套件只包含 core、lint、CLI，沒有跑 `tools/test_product.ps1 -Full`。
+
+### 完整套件與乾淨 HEAD 的逐名比較
+
+三個受影響套件各樹只跑一次完整 suite；原始 Vitest JSON、命令與 exit 存於 `head-{core,lint,cli}.*`／`port-{core,lint,cli}.*`，逐名失敗清單與 SHA-256 差集為 `comparison.json`、`*.failures.json`。表內為 pass／fail／skip，不以 assertion 數字取代實際 runner exit。
+
+| 套件／命令（套件 cwd）                  | 乾淨 HEAD     | 移植樹        | Exit HEAD／移植 | 只在移植樹失敗 |
+| --------------------------------------- | ------------- | ------------- | --------------- | -------------- |
+| core：`bun x vitest run --maxWorkers=2` | 5594／0／11   | 5598／0／11   | 0／0            | 0              |
+| lint：`bun run test --maxWorkers=2`     | 1245／1／0    | 1249／1／0    | 1／1            | 0              |
+| cli：`bun run test --maxWorkers=2`      | 6221／35／305 | 6236／29／306 | 1／1            | 0              |
+
+lint 的共同失敗為 `does not read a linked shader outside the project through a symlink`；CLI 的逐名差集包含現有 Windows／瀏覽器啟動／媒體 fixture／optional packages 等失敗，詳見 reporter，沒有未解的移植樹獨有失敗。不把 CLI／lint 的非零失敗數宣稱成完整產品驗收綠燈。producer 未改檔，沒有擴大到不受影響的 lane 或跨 workspace Full。
+
+### 收尾閘門
+
+`pwsh -NoProfile -File tools/dev_check.ps1` exit 0：39 passed、0 failed，相對連結檢查 12 份文件、0 錯誤，結尾 `WINDOWS DEV CHECK GREEN`。Markdown 新節使用 `node_modules/.bin/oxfmt --ignore-path <empty-ignore>` 格式化，既有日期快照及表格不重排。
+
+lefthook 三組 typecheck 最終均 exit 0；`node_modules/.bin/fallow audit --base origin/main --fail-on-issues` 最終 exit 0，38 changed files，new-only gate 排除一組 inherited duplication，實際輸出見 `fallow-closeout.*`。PowerShell 可直接解析該本機入口，曾用 cmd 的 forward-slash 路徑呼叫則在啟動 audit 前失敗（0.04 秒），不計為產品 gate 結果。
+
+### 最新剩餘快照（水位 `b108f8512`）
+
+2026-11-06、fork HEAD `2e34275fc` 的 `python tools/check_upstream_updates.py --strict` exit 1，原始輸出為 `strict-final.md`。上游 tip `66cbabc39`；水位以上仍有 24 個 commit（下一筆 `35cbca992`／#7240）、PR #7238 以上 54 筆、issue #7223 以上 9 筆；96 筆 monitored 中 #6695 有一筆 open head 變動，原釘選保持 `8aa9967f3b8bb8c776f7555d065d8ebd939ebe66`。這是可變剩餘數量的單一記錄處，較早數字均保留為其水位日期快照。
+
+連續審查止於指定八筆的 `b108f851201dc22f5d4974ee7f1c9d19b472cc1e`，沒有讀入下一筆補丁或用新 head 消除未審缺口。PR 水位 #7238、issue #7223，baseline／UPSTREAM／DECISIONS／ROADMAP 現況一致。strict、CLI／lint 全套及既有封裝大小仍有缺口，ROADMAP 近期列保留。需上傳的新 LFS 物件：無。

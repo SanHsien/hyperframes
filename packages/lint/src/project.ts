@@ -138,7 +138,7 @@ function collectLocalStylesheets(
   return styles;
 }
 
-export function collectExternalStyles(
+function collectExternalStyles(
   projectDir: string,
   html: string,
   compSrcPath?: string,
@@ -153,6 +153,53 @@ export function collectExternalStyles(
     styles.push({ href, content, file: join(projectDir, rootRelativePath), rootRelativePath });
   }
   return styles;
+}
+
+const MAX_EXTERNAL_SCRIPT_BYTES = 1_000_000;
+
+export function linkedSources(
+  projectDir: string,
+  html: string,
+  compSrcPath?: string,
+): Pick<HyperframeLinterOptions, "externalStyles" | "externalScripts"> {
+  return {
+    externalStyles: collectExternalStyles(projectDir, html, compSrcPath),
+    externalScripts: collectExternalScripts(projectDir, html, compSrcPath),
+  };
+}
+
+function collectExternalScripts(
+  projectDir: string,
+  html: string,
+  compSrcPath?: string,
+): NonNullable<HyperframeLinterOptions["externalScripts"]> {
+  const scripts: NonNullable<HyperframeLinterOptions["externalScripts"]> = [];
+  const { document } = parseHTML(html);
+  for (const element of querySelectorAllIncludingTemplates(document, "script[src]")) {
+    const src = element.getAttribute("src") ?? "";
+    if (!isLocalStylesheetHref(src) || /\.min\.m?js(?:[?#]|$)/i.test(src)) continue;
+    const path = src.split(/[?#]/)[0] ?? src;
+    const besideFile = compSrcPath ? join(dirname(compSrcPath), path) : path;
+    const script =
+      resolveExistingLocalAsset(projectDir, besideFile) ??
+      (compSrcPath && staysInsideProjectRoot(path)
+        ? resolveExistingLocalAsset(projectDir, path)
+        : null);
+    if (!script) continue;
+    const read = readProjectFile(script.resolved);
+    if (read.kind !== "file" || read.text.length > MAX_EXTERNAL_SCRIPT_BYTES) continue;
+    const attrs = Array.from(element.attributes)
+      .map(({ name, value }) => `${name}="${value.replace(/&/g, "&amp;").replace(/"/g, "&quot;")}"`)
+      .join(" ");
+    scripts.push({
+      src,
+      attrs,
+      content: read.text,
+      file: join(projectDir, script.rootRelativePath),
+      rootRelativePath: script.rootRelativePath,
+    });
+  }
+  return scripts;
 }
 
 function collectCssSources(projectDir: string, html: string, compSrcPath?: string): CssSource[] {
@@ -220,7 +267,7 @@ export async function lintProject(
     ...hostOptions,
     filePath: indexPath,
     compSrcPath: rootFile,
-    externalStyles: collectExternalStyles(projectDir, rootHtml, rootCompSrcPath),
+    ...linkedSources(projectDir, rootHtml, rootCompSrcPath),
   });
   results.push({ file: rootFile, result: rootResult, contentHash: contentDigest(rootHtml) });
   totalErrors += rootResult.errorCount;
@@ -264,7 +311,7 @@ export async function lintProject(
         filePath,
         isSubComposition: true,
         compSrcPath,
-        externalStyles: collectExternalStyles(projectDir, html, compSrcPath),
+        ...linkedSources(projectDir, html, compSrcPath),
       });
       results.push({
         file: `compositions/${file}`,
