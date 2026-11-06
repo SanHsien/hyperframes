@@ -107,6 +107,7 @@ import {
   isDrawElementVerificationError,
   isDrawElementCaptureError,
   getDrawElementVerificationDetails,
+  displaySize,
   augmentProtocolTimeoutError,
   augmentPageNavigationTimeoutError,
   type MotionBlurOptions,
@@ -909,10 +910,7 @@ export function collectVideoReadinessSkipIds(
 
 interface ExtractedVideoReadinessInput {
   videoId: string;
-  metadata: {
-    width: number;
-    height: number;
-  };
+  metadata: Parameters<typeof displaySize>[0];
 }
 
 function hasUsableVideoDimensions(metadata: ExtractedVideoReadinessInput["metadata"]) {
@@ -929,11 +927,7 @@ export function collectVideoMetadataHints(
 ): CaptureVideoMetadataHint[] {
   return extractedVideos
     .filter((video) => hasUsableVideoDimensions(video.metadata))
-    .map((video) => ({
-      id: video.videoId,
-      width: video.metadata.width,
-      height: video.metadata.height,
-    }))
+    .map((video) => ({ id: video.videoId, ...displaySize(video.metadata) }))
     .sort((a, b) => a.id.localeCompare(b.id));
 }
 

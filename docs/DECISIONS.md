@@ -1042,3 +1042,13 @@ commit 水位僅推進一個有證據的連續 commit 至 `aace91b5ec0d937772f66
 #7199 適配本線既有 peak guard，不引入延後的 limiter；#7195 不引入本線沒有的 starts cache；#7190 不搬入缺 #7108 前置 fixture 的缺陷測試。#7182、#7176、#7104／#7168 retry、#6716 的 17 檔快取遷移仍維持既有條件。沒有 golden LFS pointer 變更或新增待上傳物件。
 
 commit 水位 `aa34cffe4b8d66053bc1bf999275b12265c22ab7`、PR #7190、issue #7223，monitored 維持 92 筆。最新剩餘數量只在接續清冊的此節記錄。審查水位不代表整版同步或完整產品驗收；ROADMAP 保留接續計畫。
+
+## 2026-11-06：採用 8 組修正與連續水位 `659ef568d`
+
+依 [逐筆清冊](UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-06接續至-659ef568d審查-15-個連續-commit) 採用 #7214（apply 檢查最終 overlap）、#7089 的 init 來源 identity／轉碼保護、#7191 的 motion blur DOM journal、#7212 的切割拒絕診斷、#7211 的 setup timeout 診斷、#7221 的取消 settle、#7222 的一次截圖重試與 #7228 的手機影片 display size。#7228 只補 #6772 的 metadata parser helper 先決，不導入其他渲染管線。
+
+延後 #7149／#7191 的缺失 browser fixture 鏈，條件沿用 #7108；#7219 等 Windows builder／manifest 路徑修正、版本無關斷言及 raster／path 的 seek／reload／多 worker 像素驗收；#7220 等隔離實體磁碟根目錄的舊紅新綠證據，SUBST 測試沒有重現。#7090、#7099、#7216、#7218 不適用於本線未提供的子系統或既有較明確的費用授權規則。#7182、#7176、#7104／#7168 retry、#6716 的 17 檔遷移不變；採用部分沒有依賴它們。
+
+#7191 的 `898d0fb00` DOM journal 在本線重建使 core packed 增加 1065 bytes（1677433 → 1678498），超出原預算的 1% 容差。只將 core packed 預算 1661748 → 1662813，保留原容差與 unpacked 預算。上游該 commit 沒有預算檔變動，這是同一產品變更在 fork 的實測增量，不宣稱上游曾調高預算。CLI 在乾淨 HEAD 已超出 packed／unpacked 預算，沒有以這段移植為由調高。
+
+commit 水位為 `659ef568d71442a3e4f1b919cf03a547c79e7005`，PR #7190、issue #7223 不變；monitored 維持 92 筆。#7038 的 head `4eaa2558213300972e495b0791036b02cd0c23fe` 未變、仍為 draft、狀態 closed、mergedAt 為 null；完整 diff 的 still-frame／scroll offset 優化不移植，若以新 PR 合併再驗同時間 GSAP 回呼與 Windows 像素一致性。沒有新增或修改 golden／LFS pointer。

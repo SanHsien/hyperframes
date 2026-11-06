@@ -1,3 +1,6 @@
+import gsap from "gsap";
+import { createGsapAdapter } from "../adapters/gsap";
+import type { RuntimeTimelineLike } from "../types";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   type CaptureMotionBlurHost,
@@ -139,6 +142,35 @@ function movingHost(attrs?: Record<string, string>) {
     el.style.transform = `matrix(1, 0, 0, 1, ${300 * t}, 0)`;
   });
   return { root, el, h: host(root, seek) };
+}
+
+function gsapCallsFilm(movesSlider = false) {
+  const { root, el, h } = movingHost({
+    "data-motion-blur": "on",
+    "data-motion-blur-events": "on",
+    "data-motion-blur-shutter": "360",
+  });
+  const label = root.appendChild(document.createElement("p"));
+  label.textContent = "A";
+  const tl = gsap.timeline({ paused: true });
+  tl.to(el, { x: 300, duration: 1, ease: "none" }, 0)
+    .call(() => void (label.textContent = "B"), [], 0.5)
+    .call(() => void label.classList.toggle("on"), [], 0.6);
+  if (movesSlider) tl.call(() => void (el.style.left = el.style.left ? "" : "40px"), [], 0.2);
+  const x = () => Number(gsap.getProperty(el, "x")) + (parseFloat(el.style.left) || 0);
+  el.getBoundingClientRect = () =>
+    ({ left: x(), top: 0, right: x() + 10, bottom: 10, width: 10, height: 10 }) as DOMRect;
+  const adapter = createGsapAdapter({ getTimeline: () => tl as unknown as RuntimeTimelineLike });
+  const seek = vi.fn((t: number, suppressEvents: boolean) =>
+    adapter.seek({ time: t, suppressEvents }),
+  );
+  initCaptureMotionBlur({ ...h, seek });
+  const paintAt = (t: number): string => {
+    seek(t, false);
+    void paintCaptureMotionBlur(t, PLAY);
+    return `${label.textContent}${label.className ? ` ${label.className}` : ""}`;
+  };
+  return Object.assign(paintAt, { seek });
 }
 
 const PLAY = { playing: true };
@@ -913,6 +945,27 @@ describe("two-phase frames", () => {
 });
 
 describe("painting", () => {
+  it.each([
+    [[0.3], ["A"]],
+    [[0.55], ["B"]],
+    [[0.7], ["B on"]],
+    [
+      [0.3, 0.7],
+      ["A", "B on"],
+    ],
+  ])("leaves real GSAP calls' DOM as a plain seek does when painting %j", (times, shown) => {
+    installHtmlInCanvas();
+    const paintAt = gsapCallsFilm();
+    expect(times.map(paintAt)).toEqual(shown);
+  });
+
+  it("leaves a call just past the frame unfired after reads that run callbacks", () => {
+    installHtmlInCanvas();
+    const paintAt = gsapCallsFilm(true);
+    expect(paintAt(0.49)).toBe("A");
+    expect(paintAt.seek.mock.calls.some(([t, quiet]) => t > 0.5 && t < 0.51 && !quiet)).toBe(true);
+  });
+
   it("captures the root on the next paint and settles the frame", async () => {
     installHtmlInCanvas();
     const { root, h } = movingHost();

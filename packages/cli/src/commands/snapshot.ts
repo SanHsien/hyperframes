@@ -6,6 +6,7 @@ import {
   isHdrColorSpace,
   sdrCanvasColourFilters,
 } from "@hyperframes/engine";
+import { screenshotOnceMore } from "../utils/screenshotOnceMore.js";
 import { parseTimeoutMs } from "../utils/timeoutArg.js";
 import type { Page } from "puppeteer-core";
 import { reportArtifacts } from "../utils/toolContext.js";
@@ -1121,7 +1122,7 @@ async function captureSnapshots(
           writeCaptureFileSync(
             framePath,
             await atStep(`capturing the frame at ${time}s`, () =>
-              page.screenshot({ type: "png", omitBackground: true }),
+              screenshotOnceMore(() => page.screenshot({ type: "png", omitBackground: true })),
             ),
           );
         }

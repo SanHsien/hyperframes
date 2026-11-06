@@ -36,7 +36,7 @@ import {
 import { swallow } from "../diagnostics";
 import { createCompositor, type MoverFrame } from "./composite";
 import { readMotionBlurSettings } from "../../motionBlurSettings";
-import { discoverMovers } from "./discover";
+import { discoverMovers, landThenUndoDom } from "./discover";
 import { createFilterTier } from "./filterTier";
 import { readMoverFrames, shutterTimes } from "./frames";
 import { createPoseReader } from "./pose";
@@ -251,14 +251,23 @@ function createInstance(host: CaptureMotionBlurHost, config: Config, form: HtmlI
     const duration = host.durationSeconds();
     const defects = createDefectScan(root, isAccelerated);
     const s0 = performance.now();
-    const found = discoverMovers({
-      scene: root,
-      durationSeconds: duration,
-      fps: host.fps,
-      seek,
-      onStep: (i, steps) => defects.sample(i, steps, (i / steps) * duration),
-    });
-    seek(restoreTo);
+    const landing = config.events ? landThenUndoDom(seek, document) : null;
+    let found: ReturnType<typeof discoverMovers>;
+    try {
+      found = discoverMovers({
+        scene: root,
+        durationSeconds: duration,
+        fps: host.fps,
+        seek,
+        onStep: (i, steps) => {
+          landing?.flush();
+          defects.sample(i, steps, (i / steps) * duration);
+        },
+      });
+      (landing?.land ?? seek)(restoreTo);
+    } finally {
+      landing?.stop();
+    }
     scanDefect = defects.result();
     faceNow = defects.facesNow;
     movers = found.movers;
@@ -270,18 +279,24 @@ function createInstance(host: CaptureMotionBlurHost, config: Config, form: HtmlI
 
   function frames(t: number, reads: number): { els: HTMLElement[]; frames: MoverFrame[] } {
     if (!reader) return { els: [], frames: [] };
-    return readMoverFrames({
-      movers,
-      reader,
-      seek,
-      t,
-      reads,
-      ...shutterTimes(config.shutterDeg, config.phaseDeg, host.fps),
-      taps: config.samples,
-      pads,
-      frameW: width,
-      frameH: height,
-    });
+    const landing = config.events ? landThenUndoDom(seek, document) : null;
+    try {
+      return readMoverFrames({
+        movers,
+        reader,
+        seek,
+        restore: landing?.land,
+        t,
+        reads,
+        ...shutterTimes(config.shutterDeg, config.phaseDeg, host.fps),
+        taps: config.samples,
+        pads,
+        frameW: width,
+        frameH: height,
+      });
+    } finally {
+      landing?.stop();
+    }
   }
 
   const capture = (): void => {

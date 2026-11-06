@@ -72,8 +72,9 @@ export async function runIds(args: Record<string, unknown>): Promise<void> {
   if (json) console.log(JSON.stringify(withMeta(result), null, 2));
   else console.log(`ids: stamped ${receipts.length} file${receipts.length === 1 ? "" : "s"}`);
 }
+type SettledClip = { verb: MutationVerb; ref: string };
 type ApplyEditResult =
-  | { ok: true; file: string; after: string }
+  | { ok: true; file: string; after: string; settled?: SettledClip }
   | { ok: false; reason: string; fix: string };
 
 const PLAN_VERBS = new Set<MutationVerb>(["move", "trim", "split", "delete", "set", "duplicate"]);
@@ -124,6 +125,10 @@ function preparePlanEdit(
     : { ok: true, edit, row: resolved.row, before, resolved };
 }
 
+function settledClip(verb: MutationVerb, overwrite: boolean, ref: string): SettledClip | undefined {
+  return (verb === "move" || verb === "trim") && !overwrite ? { verb, ref } : undefined;
+}
+
 function applyPlanEdit(
   edit: unknown,
   timeline: ProjectTimeline,
@@ -153,16 +158,31 @@ function applyPlanEdit(
   };
   const decision = decideMutation(verb, context, { ...planEdit, _: [planEdit.ref] });
   if (!decision.ok) return { ok: false, reason: decision.reason, fix: decision.fix };
+  const settled = settledClip(verb, planEdit.overwrite === true, row.ref);
   const conflict = mutationConflict(
     verb as MutationVerb,
-    planEdit.overwrite === true,
+    planEdit.overwrite === true || Boolean(settled),
     row,
     timeline,
     decision.nextStart,
     decision.nextDuration,
   );
   if (conflict) return { ok: false, reason: conflict.reason, fix: conflict.fix };
-  return { ok: true, file: row.file, after: decision.after };
+  return { ok: true, file: row.file, after: decision.after, ...(settled && { settled }) };
+}
+
+function overlapAtEnd(
+  settled: SettledClip[],
+  timeline: ProjectTimeline,
+): { reason: string; fix: string } | null {
+  for (const { verb, ref } of settled) {
+    const found = resolveRef(timeline, ref);
+    if (!found.ok) continue;
+    const { row } = found;
+    const conflict = mutationConflict(verb, false, row, timeline, row.start, row.duration);
+    if (conflict) return conflict;
+  }
+  return null;
 }
 
 type EditPlan = { ok: true; edits: unknown[] } | { ok: false; reason: string; fix: string };
@@ -199,13 +219,16 @@ async function applyPlanEdits(
   project: ReturnType<typeof resolveProject>,
   sourceByFile: Map<string, string>,
 ): Promise<{ ok: true } | { ok: false; reason: string; fix: string }> {
+  const settled: SettledClip[] = [];
   for (const edit of edits) {
     const result = applyPlanEdit(edit, timeline, project, sourceByFile);
     if (!result.ok) return result;
+    if (result.settled) settled.push(result.settled);
     sourceByFile.set(result.file, result.after);
     timeline = await describeProject(project.indexPath, undefined, sourceByFile);
   }
-  return { ok: true };
+  const conflict = overlapAtEnd(settled, timeline);
+  return conflict ? { ok: false, ...conflict } : { ok: true };
 }
 
 export async function runApply(args: Record<string, unknown>): Promise<void> {

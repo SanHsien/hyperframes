@@ -900,7 +900,7 @@ producer 聚焦採 repo `test-classification.mjs` 的 runner／lane 與 no-netwo
 
 core 的 package test wrapper 因 `check:position-edits-render` 使用 `git diff --exit-code`，對正當的 generated IIFE 變更回 exit 1；沒有以 staging 遮掉差異。改跑其底層完整 Vitest，並由 build 與重複產生的位元組一致性驗證 generated artifact。
 
-### 水位與 strict 快照（本節為最新剩餘數量的單一記錄處）
+### 水位與 strict 快照（水位 aa34cffe4 時點的剩餘數量）
 
 `python tools/check_upstream_updates.py --strict --output tmp/upstream-20261106-next/strict-final.md` exit 1；固定上游 tip `4935d6736b64ed3dd68524c1cb2c7f011171baef`。commit 水位以上 48 筆，從 `f3e5b81df`（#7149）開始；PR #7191 起 72 筆，issue #7259 一筆；monitored 92 筆全部仍在釘選 head／state，移動數 0。commit 連續前綴由 `git rev-list --count aace91b5e..aa34cffe4` 證明為 15，且 `aa34cffe4` 是該上游 tip 的 ancestor。strict 未綠，ROADMAP 近期接續列保留。
 
@@ -928,3 +928,99 @@ Chrome 代表案例在 HEAD 重建的舊 runtime 上執行：warmCheck 的 cold-
 完整 CLI 批次 1079.20 秒、Studio 批次 1138.48 秒，各自低於 1200 秒上限；沒有跑 `tools/test_product.ps1 -Full`，沒有重跑已通過的套件。core generated position-edits IIFE 重複產生 exit 0 且 SHA-256 相同（`a02104a8f122437a31386b940fbe8fc1fe2ca8e85315af4f94d0a59718ba7608`）。Markdown 的追加節以空 ignore 檔交給 oxfmt，保留各文件 HEAD 前綴；MDX 只格式化新增段落，避免覆蓋既有格式。
 
 完整產品驗收仍未通過，strict 也仍有未審範圍，ROADMAP 接續列保留。這份紀錄只認列有逐筆證據的 15 個連續 commit 與 11 項移植，不把審查水位當成產品驗收。
+
+## 2026-11-06：接續至 `659ef568d`，審查 15 個連續 commit
+
+以 fork `12c05b9ea32f737b1f410396171964304d29505a` 為起點，逐筆讀取 `aa34cffe4` 之後 `f3e5b81df..659ef568d` 的 15 個連續補丁；PR 的 merged 狀態、head 與 mergeCommit 以唯讀 `gh pr view --repo heygen-com/hyperframes` 逐筆核對。採用 8 組獨立修正；水位只表示已審查，包含下表的部分採用、不適用與有條件延後。
+
+| Commit／PR          | 裁決與條件                                                                                                                                                                                                                                                                                       | 上游證據                                                                            | fork 證據                                                     |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| `f3e5b81df` / #7149 | 延後：缺 #7108 的 blurPage／thresholds／oracle fixture 鏈。沿用既有延後；成組補齊離線差分 harness 並驗證 A–O 症狀後採用，不把缺陷症狀測試當修復。                                                                                                                                                | `f3e5b81df:packages/engine/src/services/captureMotionBlur.sweep.browser.test.ts:79` | `packages/core/src/runtime/captureMotionBlur/index.ts:249`    |
+| `fa1942d5a` / #7214 | 採用：apply 先折疊全部 move／trim，再驗最終 overlap；最終衝突仍不寫檔。抽出 settledClip 以符合 fallow 複雜度閘門；測試接受本線既有 stderr 診斷。                                                                                                                                                 | `fa1942d5a:packages/cli/src/timeline/a2Commands.ts:172`                             | `packages/cli/src/timeline/a2Commands.ts:174`                 |
+| `823cd126e` / #7090 | 不適用：本線沒有 measure 指令、readClip／readDrawn／person 子系統。奇數 crop 修正與該子系統一併採用時重審；不為未提供的命令引入整套付費量測。                                                                                                                                                    | `823cd126e:packages/cli/src/measure/media.ts:222`                                   | `packages/cli/src/cli.ts:190`                                 |
+| `6728b82e6` / #7089 | 部分採用：採用 init 的檔案 identity、來源保護與空閒轉碼名稱；reverse start／session 本線不存在，不導入。檔案 symlink 無權限時明確 skip，hard link 與目錄 junction 仍實跑。                                                                                                                       | `6728b82e6:packages/cli/src/commands/init.ts:286`                                   | `packages/cli/src/commands/init.ts:289`                       |
+| `1fecf5b82` / #7099 | 不適用：本線沒有 heygen/v3、measure、HyperFrames plan；auth status 亦沒有 s.plan／user.subscription 的該段資料流。保留現有 OAuth 身分顯示；帳戶功能成組採用時重審。                                                                                                                              | `1fecf5b82:packages/cli/src/heygen/v3.ts:102`                                       | `packages/cli/src/commands/auth/status.ts:184`                |
+| `060e6e4a1` / #7216 | 不適用：billing／plan／checkout 子系統不在本線；auth GET／token POST 已有 15 秒 timeout。補測的 OAuth timeout 不是此 commit 新增的產品行為，不導入付費工作流。                                                                                                                                   | `060e6e4a1:packages/cli/src/heygen/plan.ts:35`                                      | `packages/cli/src/auth/client.ts:35`                          |
+| `898d0fb00` / #7191 | 適配採用：journal 記錄 loud seek 改過的 DOM；先落回時間再復原。適配本線 discoverMovers，FrameRequest 加可選 restore；只在 config.events 開啟時使用，不導入未同步的 readEvents／holdFrame 鏈。缺上游 browser fixture 的部分維持 #7108 條件。                                                      | `898d0fb00:packages/core/src/runtime/captureMotionBlur/discover.ts:299`             | `packages/core/src/runtime/captureMotionBlur/discover.ts:278` |
+| `d452a6fad` / #7219 | 延後：上游原測試在 Windows 實跑 4 passed／1 failed：manifest 用 POSIX 路徑，relative() 回反斜線。builder 亦把 URL.pathname 當本機路徑。條件：修正 Windows 路徑、移除版本號斷言，並通過 raster／path seek、reload 與雙 worker 像素驗收後成組採用；不只搬入 911240-byte vendor。                   | `d452a6fad:registry/examples/path-traced-3d/source/build.mjs:9`                     | `scripts/file-url-paths.test.mjs:10`                          |
+| `d810bdbb2` / #7220 | 延後：舊碼在 repo 內暫時 SUBST 磁碟根目錄重現器 1 passed，Node 26.12.1 未重現 0xC0000409；映射測試不等同實體磁碟根目錄。未取得規定的舊碼紅燈，不移植或假稱修好。條件：在可隔離的實體 Windows 磁碟根目錄取得舊紅新綠，並驗證 Unicode／symlink 複製與既有檔案保留；保留本線 Node 非 ASCII filter。 | `d810bdbb2:packages/cli/src/utils/copyDir.ts:5`                                     | `packages/cli/src/utils/copyDir.ts:3`                         |
+| `7050b9b5b` / #7212 | 採用：切割拒絕分成 target-not-found、reference-without-range、no-duration、outside-clip；route 點名原因與檔案。保留本線既有精確邊界比較，不順帶引入未審 epsilon 行為。                                                                                                                           | `7050b9b5b:packages/studio-server/src/helpers/sourceMutation.ts:421`                | `packages/studio-server/src/helpers/sourceMutation.ts:381`    |
+| `b98718fe9` / #7211 | 部分採用：採 engine 的 setup timeout headline／hint／transient 分類；零時長只用於 runtime ready。上游 CLI COMPOSITION_SETUP_TIMEOUT wire 尚不存在於本線 content-free audio diagnostic，不另建診斷協定。                                                                                          | `b98718fe9:packages/engine/src/services/frameCapture.ts:1892`                       | `packages/engine/src/services/frameCapture.ts:1882`           |
+| `18513d46d` / #7221 | 採用：取消先改 cancelled，再有界等 adapter stop settle；最多 45000ms，回應反映 settle 後狀態，finally 清 timer。                                                                                                                                                                                 | `18513d46d:packages/studio-server/src/routes/render.ts:61`                          | `packages/studio-server/src/routes/render.ts:52`              |
+| `7bebcb9fc` / #7218 | 不適用：本線沒有 reverse-any-video／style-sampling；media-use 的 Cost 規則已要求代理主動選擇的付費呼叫先確認，沒有 Never tell prices 的禁止告知政策。不以措辭補丁覆蓋現行較明確的費用授權規則。                                                                                                  | `7bebcb9fc:skills/media-use/SKILL.md:40`                                            | `skills/media-use/SKILL.md:38`                                |
+| `ada71da92` / #7222 | 採用：capture plate／scroll tile 與一般 snapshot frame 共用一次 transient 重試；第二次失敗保留第一錯誤。未搬舊 snapshot 測試的 rename，因本線原無該檔；新增 helper 測試，不刪既有檔案。                                                                                                          | `ada71da92:packages/cli/src/utils/screenshotOnceMore.ts:4`                          | `packages/cli/src/utils/screenshotOnceMore.ts:4`              |
+| `659ef568d` / #7228 | 採用：ffprobe 讀 display matrix／rotate tag；先套 pixel aspect ratio 再換直向尺寸，producer hints 採 displaySize。只補 #6772 的 metadata parser helper 先決，不引入其餘渲染管線。                                                                                                                | `659ef568d:packages/engine/src/utils/ffprobe.ts:869`                                | `packages/engine/src/utils/ffprobe.ts:841`                    |
+
+### 依賴、monitored 與既有延後
+
+- #7182：等待長來源分段複本與本線管線的整合及長片驗收；這些修正不依賴它。
+- #7176：遙測仍等待既有政策決定，不順帶變更遙測邊界。
+- #7104／#7168 retry：仍需新的 session 重試與所有權／取消／deadline 回歸成組成立；setup timeout 診斷不需要該機制，因此獨立採用，逾時策略保持原判定。
+- #6716：只保留既有 cache-dir helper；17 檔路徑遷移仍待 Windows 私有快取根與 guard 測試對齊，沒有引入依賴它的新功能。
+- #7228 的先決僅為 `54c98b590:packages/engine/src/utils/ffprobe.ts:848` 的 `parseSampleAspectRatio` 與 metadata 欄位，不採用 #6772 的其他行為。
+- #7038 以唯讀 PR metadata 與完整 diff 重審：head `4eaa2558213300972e495b0791036b02cd0c23fe` 未變，仍為 draft，狀態由 open 改 closed，`mergedAt: null`；不移植未合併優化，若以新 PR 合併再驗 still-frame／scroll offset／GSAP 同時間回呼與 Windows 像素一致性。monitored 重釘 closed，總數維持 92。
+- 沒有新增、修改或重生 golden／LFS pointer；要上傳的 LFS 物件：無。保留已修正的 #6665 pointer。沒有採用上游 release、npm publish 或官方發布 guard 變更。
+
+### 回歸、完整套件與閘門
+
+乾淨對照由 `git archive HEAD` 建立，HEAD 為 `12c05b9ea32f737b1f410396171964304d29505a`；workspace junction 指向各自樹內套件，外部依賴沿用同一安裝。core、engine、studio-server、CLI、producer 的 dist 各自重建；乾淨樹另建 parsers／lint，未變更的 Studio 等 dist 沿用同一 HEAD 的既有建置。原生檔案 symlink 仍受 Windows 權限限制，archive 的兩筆目錄 symlink 以樹內 junction 還原。
+
+所有命令、exit code、開始時間、輸出與完整輸入 SHA256 在 `tmp/upstream-20261106/resume/`；`inputs.json` 保存開始狀態，`final-inputs.json` 保存交付狀態。測試輸出不納入版本控制。
+
+#### 舊碼紅／移植碼綠
+
+| 回歸                         | 舊碼 pass/fail/skip                                              | 移植碼 pass/fail/skip                 | 判讀                                                                                                                         |
+| ---------------------------- | ---------------------------------------------------------------- | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| #7191 DOM journal            | 109/4/0                                                          | 113/0/0                               | 4 例舊碼失敗，移植 exit 0                                                                                                    |
+| #7211、#7228 engine metadata | 203/6/0                                                          | 209/0/0                               | 6 例舊碼失敗，移植 exit 0                                                                                                    |
+| #7214、#7089、#7222 CLI      | 88/9/2，另 screenshotCapture 30/2/1                              | 129/0/3                               | 舊碼共 11 例失敗；移植 exit 0。首次紅燈樹缺 generated 模組的載入錯誤不作行為證據，補齊 HEAD generated 模組後只重跑受影響檔案 |
+| #7212、#7221 Studio server   | 249/11/0                                                         | 257/3/0                               | 8 例新增失敗消除；其餘 3 例 backup ENOTDIR 預期在兩樹均失敗。新增行為聚焦 41/0/219、exit 0                                   |
+| #7222 screenshot helper      | 舊碼由 screenshotCapture／coreExtractionPhase 的真實呼叫路徑重現 | 4/0/0                                 | 新 helper 測試 exit 0，不以缺新函式的 import 錯誤當紅燈                                                                      |
+| #7228 producer display hints | deepStrictEqual 失敗，exit 1                                     | `phone display hints: passed`，exit 0 | 同一輸入在舊碼為 1920×1080，移植碼為 1080×1920                                                                               |
+
+focused 命令為各 package 中 `bun x vitest run <上述 result.json 的完整檔案清單> --maxWorkers=1 --reporter=json --outputFile=<report>`；手機 hints 為 `bun tmp/upstream-20261106/resume/phone-hints.mjs head|port`。紅燈所用新增測試與移植樹相同；新碼綠燈後未改產品程式。
+
+#### 完整套件的雙樹逐名比較
+
+core／engine／CLI／studio-server／studio／lint 分別執行 `bun run test --maxWorkers=2 --reporter=json --outputFile=<report>`。producer Vitest 用 `node scripts/run-test-lane.mjs unit vitest`；Bun 用相同 `test-classification.mjs` discovery、unit no-network preload 與全新行程逐檔執行，失敗檔不會中止後續檔案。每個 suite overall cap 3600 秒、Bun 每檔 cap 300 秒；timeout 只表示未完成。
+
+| 套件            | 乾淨 HEAD pass/fail/skip | 移植 pass/fail/skip | exit HEAD/移植            | 原始僅移植失敗 | 覆驗後未解差異                          |
+| --------------- | ------------------------ | ------------------- | ------------------------- | -------------- | --------------------------------------- |
+| core            | 5578/0/11                | 5583/0/11           | 0/0                       | 0              | 0                                       |
+| engine          | 2609/3/53                | 2614/5/53           | 1/1                       | 5              | 0；2 檔雙樹皆 25/0/0                    |
+| cli             | 6183/35/303              | 6207/29/305         | 1/1                       | 0              | 0                                       |
+| studio-server   | 1487/23/61               | 1490/23/61          | 1/1                       | 0              | 0                                       |
+| studio          | 7936/231/2               | 7938/229/2          | 1/1                       | 0              | 0                                       |
+| lint            | 1244/1/0                 | 1244/1/0            | 1/1                       | 0              | 0                                       |
+| producer-vitest | 1136/2/5                 | 1136/3/5            | 1/1                       | 1              | 0；同名 stall 在 HEAD 6/1/0、移植 7/0/0 |
+| producer-bun    | 875/8/0                  | 875/8/0             | 3 檔 nonzero/3 檔 nonzero | 0              | 0                                       |
+
+完整套件有 fail／suite setup error，不能以聚焦覆驗替代完整套件綠燈；逐名原始差集與覆驗各自保留。engine 的原始 5 筆差異為 audioMixer.grouping 1 例、parallelCoordinator-peerAbort 4 例，雙樹單獨重跑均 25 passed；沒有修改程式或放寬 timeout。producer 的原始 1 筆 stall 差異在乾淨 HEAD 單獨重現相同 pending/completed 斷言失敗（6 passed／1 failed），移植樹單獨為 7 passed／0 failed。覆驗後沒有只在移植樹失敗的未解項目，這不把原始完整套件結果改為通過。
+
+失敗清單 SHA256（排序後每行一筆，含 suite setup error）：
+
+| 套件            | HEAD                                                               | 移植                                                               |
+| --------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------ |
+| core            | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+| engine          | `09f7fa3b48c777fa7d325b260c08540ae703fc8275850a722dfe48037e290dc1` | `d72259399024826bb41c3df0bd9b34d15daab8960addfe70567857eabbd7e9a1` |
+| cli             | `1a7a3899d0b71298d0cdf7cea3453d9ee502609fd340b1b4ff84be2b568d113c` | `569ef0a6c85b35b859edc7625bc41a9d24e762c6d3226e9743a4d341c274da6f` |
+| studio-server   | `90f4ced7bb29e78b3e7d6be8db7a6ef7d548b8f678be3cceea7125425d24d75c` | `90f4ced7bb29e78b3e7d6be8db7a6ef7d548b8f678be3cceea7125425d24d75c` |
+| studio          | `a84d10d3c5aecd4403d58b146a0225c3f320640cb721db78c93db85227ecdd99` | `85f011095edb5f83eb6e721503f151711046c48974714f93ca5df27e38cc1b28` |
+| lint            | `4c4f0ddbaea3c111a48bacd0214ba6cfde022835ff9fdbaeb534181faf1ddb06` | `4c4f0ddbaea3c111a48bacd0214ba6cfde022835ff9fdbaeb534181faf1ddb06` |
+| producer-vitest | `cf5bfa101f1a9759ba4ec24647c020fa65d26cf2d7d5ff7a15a9225bd9842897` | `c2aa35130ceea6cdaf1387a4afd8be65f20c96d4b4884661d4d50579b0822806` |
+| producer-bun    | `9d168bbad1412a45904a6c0945fb4b85f560fa8ccfade6e42d03b22f2cd177af` | `9d168bbad1412a45904a6c0945fb4b85f560fa8ccfade6e42d03b22f2cd177af` |
+
+#### 維護與靜態閘門
+
+- `pwsh -NoProfile -File tools/dev_check.ps1`：exit 0，39 passed，相對連結 0 錯誤，`WINDOWS DEV CHECK GREEN`。
+- lefthook 三組 `node node_modules/typescript/bin/tsc --noEmit -p packages/core/tsconfig.json`、`packages/studio/tsconfig.json`、`scripts/tsconfig.json`：全部 exit 0。
+- 額外 CLI typecheck：雙樹 exit 2，診斷逐字一致；`check.test.ts:2265` 的 deadline 可能 undefined，`:3760`／`:3761` 呼叫多傳參數。
+- `node_modules/.bin/fallow audit --base origin/main --fail-on-issues`：exit 0，`No issues`；變更 TS 的 oxlint exit 0，0 warnings／0 errors。
+- Markdown／MDX 使用空 ignore 檔明確執行 oxfmt，避免既有 `.prettierignore` 的 `docs/` 排除；僅保留新增段落的格式化，既有清冊與日期快照不重排。
+- core packed 預算只增加 #7191 在本線的 1065-byte 增量（1661748 → 1662813）；`listPackageSizeIssues` 對移植 core 回傳 `[]`。CLI packed／unpacked 在乾淨 HEAD 已超標，沒有調高其預算。
+
+#### 水位與最新剩餘範圍
+
+`python tools/check_upstream_updates.py --strict` exit 1：2026-11-06 收尾快照剩 36 個 commit（從 `b96d3c8` #7231 起）、85 筆 PR（#7190 以上）、9 筆 issue（#7223 以上）；92 筆 monitored 無差異。commit 只推進連續 15 筆至 `659ef568d`；PR／issue 水位不以已審 commit 的 PR 清單代替連續審查。ROADMAP 近期列保留。
+
+上游作者：Miguel Ángel（#7214、#7212、#7221、#7222、#7228）、WaterrrForever（#7089）、Vance Ingalls（#7191）、James Russo（#7211）。Co-authored-by email 僅在交付回報提供，不寫入文件。

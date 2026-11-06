@@ -1,7 +1,7 @@
 {
   "repo": "https://github.com/heygen-com/hyperframes.git",
   "branch": "main",
-  "reviewed_through": "aa34cffe4b8d66053bc1bf999275b12265c22ab7",
+  "reviewed_through": "659ef568d71442a3e4f1b919cf03a547c79e7005",
   "reviewed_date": "2026-11-06",
   "reviewed_pr_through": 7190,
   "reviewed_issue_through": 7223,
@@ -390,7 +390,7 @@
     {
       "item": "pr#7038",
       "head": "4eaa2558213300972e495b0791036b02cd0c23fe",
-      "state": "draft"
+      "state": "closed"
     },
     {
       "item": "pr#7042",

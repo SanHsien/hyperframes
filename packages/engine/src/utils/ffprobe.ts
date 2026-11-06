@@ -223,6 +223,8 @@ export interface VideoMetadata {
   colorSpace: VideoColorSpace | null;
   colorRange?: string;
   pixelFormat?: string;
+  sampleAspectRatio?: number;
+  rotation?: number;
   /** Decoded frame count from the video stream's `nb_frames`. Omitted when the
    * container does not surface a reliable count (still images, malformed
    * streams, or muxes that require `-count_packets` to populate). Callers
@@ -261,6 +263,7 @@ interface FFProbeStream {
   nb_frames?: string;
   nb_read_packets?: string;
   pix_fmt?: string;
+  sample_aspect_ratio?: string;
   r_frame_rate?: string;
   avg_frame_rate?: string;
   sample_rate?: string;
@@ -270,6 +273,7 @@ interface FFProbeStream {
   color_primaries?: string;
   color_space?: string;
   tags?: Record<string, string>;
+  side_data_list?: { rotation?: number }[];
   disposition?: { attached_pic?: number };
 }
 
@@ -825,6 +829,31 @@ export function parseFrameRate(frameRateStr: string | undefined): number {
   return rounded > 0 ? rounded : 0.01;
 }
 
+function displayRotation(stream: FFProbeStream): { rotation?: number } {
+  const turn = Number(
+    stream.side_data_list?.find((data) => data.rotation !== undefined)?.rotation ??
+      stream.tags?.rotate ??
+      0,
+  );
+  return Number.isFinite(turn) && turn % 360 !== 0 ? { rotation: turn } : {};
+}
+
+export function displaySize(
+  metadata: Pick<VideoMetadata, "width" | "height" | "sampleAspectRatio" | "rotation">,
+): { width: number; height: number } {
+  const width = Math.round(metadata.width * (metadata.sampleAspectRatio ?? 1));
+  return Math.abs(metadata.rotation ?? 0) % 180 === 90
+    ? { width: metadata.height, height: width }
+    : { width, height: metadata.height };
+}
+
+export function parseSampleAspectRatio(value: string | undefined): number | undefined {
+  const [num, den] = (value ?? "").split(":").map(Number);
+  if (!num || !den || !Number.isFinite(num) || !Number.isFinite(den)) return undefined;
+  const ratio = num / den;
+  return Math.abs(ratio - 1) < 1e-3 ? undefined : ratio;
+}
+
 /**
  * Whether the first frame decoded with `decoder` (alpha-aware) has an alpha pixel format; undefined on any
  * failure. ffprobe cannot pick a decoder, so ffmpeg writes the frame as rawvideo, which keeps its pix_fmt.
@@ -959,6 +988,7 @@ export async function extractMediaMetadata(filePath: string): Promise<VideoMetad
     const colorSpace =
       merged.colorTransfer || merged.colorPrimaries || merged.colorSpace ? merged : null;
     const pixelFormat = videoStream.pix_fmt || "";
+    const sampleAspectRatio = parseSampleAspectRatio(videoStream.sample_aspect_ratio);
     const hasAlpha = videoStreamHasAlpha(videoStream);
     const alphaDecoder = hasAlpha ? null : alphaDecoderFor(videoStream.codec_name);
     const alphaPlaneDecoded = alphaDecoder
@@ -1012,6 +1042,8 @@ export async function extractMediaMetadata(filePath: string): Promise<VideoMetad
       colorSpace,
       colorRange: videoStream.color_range,
       pixelFormat,
+      ...(sampleAspectRatio === undefined ? {} : { sampleAspectRatio }),
+      ...displayRotation(videoStream),
       frames,
     };
   })();

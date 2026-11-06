@@ -92,6 +92,10 @@ off the check, the install, and the notice.
 
 Scaffold a new composition project from an example.
 
+The destination may already contain `hyperframes.json` and the audio or video passed to
+`--audio` or `--video`. Other files still prevent non-interactive scaffolding. In-folder
+sources, including hard-linked aliases, are preserved; a transcode uses a free sibling name.
+
 ```bash
 # Default: centered Inter blank. Non-TTY skips the wizard.
 npx hyperframes init my-video
@@ -203,6 +207,9 @@ what stays on your machine: [How catalog search works](/developers/catalog-searc
 ### `capture`
 
 Pull a real website into a working folder an agent can build from.
+
+A transient Chrome screenshot refusal gets one retry. A second refusal reports the first
+error and names the missing screenshot while keeping the other captures.
 
 ```bash
 npx hyperframes capture https://stripe.com
@@ -1333,6 +1340,9 @@ nothing reports `motion_selector_missing` rather than quietly passing.
 
 Capture specific frames as PNGs, without waiting for a full render.
 
+A transient refusal of the frame screenshot gets one retry; a second failure retains the
+first error.
+
 Each sub-composition may reuse a local video ID such as `clip`. Snapshots keep each
 scene's footage separate without requiring you to rename those IDs across files.
 
@@ -1518,6 +1528,10 @@ use is refused before anything is written.
 | `--dir`       | all edit commands                                              | Project directory (default: current)                          |
 | `--json`      | all edit commands                                              | Machine-readable result, with the receipt `undo` takes        |
 
+For `apply`, moves and trims are checked for overlap in the plan's final state. Adjacent
+clips may move forward together even if an intermediate step overlaps. A final overlap
+without `overwrite: true` refuses the entire plan.
+
 A refused edit, such as a move that would overlap a neighbour, writes nothing,
 exits 2 and says how to fix it.
 
@@ -1661,7 +1675,15 @@ Low-memory detection reads **host** RAM, not cgroup or container limits, so
 containerised callers — including `--docker` — should set
 `PRODUCER_LOW_MEMORY_MODE` explicitly.
 
+Unsized phone video uses its display dimensions, including rotation metadata and pixel
+aspect ratio, when the renderer supplies intrinsic size hints.
+
 #### When a render times out
+
+If composition setup is still pending, the error says `Composition setup did not finish`
+and includes the readiness timeout. `Composition has zero duration` is reserved for a
+runtime that became ready. Setup must await library readiness promises rather than an
+animation frame or a clock that remains frozen during render.
 
 Three separate budgets can expire, and the error message tells you which. All
 three have environment fallbacks that take **milliseconds**, even where the flag
