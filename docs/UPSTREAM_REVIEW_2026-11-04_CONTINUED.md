@@ -1449,7 +1449,7 @@ CLI 逐名差集為 0；「只在移植樹失敗＝0」只代表未新增失敗�
 | `f54b2227f`／[#7134](https://github.com/heygen-com/hyperframes/pull/7134) | 延後新功能：新增分享 kernel，而非既有路徑的獨立修正。host 需綁帳戶、上傳、project fingerprint；本線 CLI 仍使用既有 publishProject，沒有 share consumer。等分享 host／帳戶政策及 #7135–#7140 接線成組驗收；包含 Windows portable lock、可信 upload origin、redirect 拒絕、owner／feedback recovery。 | `f54b2227f:packages/share/src/host.mjs:9`、`:32`；同 SHA `packages/share/src/projectLock.mjs:62`；`packages/share/src/signedInRequest.mjs:80`     | `packages/cli/src/commands/publish.ts:18`、`:33`；`package.json:8`（現行 workspace，無 share consumer）                                                |
 | `b6f2bec16`／[#7292](https://github.com/heygen-com/hyperframes/pull/7292) | 採用：有 viewport-fixed child 且尚非 containing block 的 mover 保持銳利，其他 mover 照常 blur；逐畫格判斷 transform／will-change／contain。256-node 上限直接保留在 filterTier，沒有引進 #7080 crop。                                                                                                | `b6f2bec16:packages/core/src/runtime/captureMotionBlur/filterTier.ts:97`                                                                          | `packages/core/src/runtime/captureMotionBlur/filterTier.ts:99`、`:229`                                                                                 |
 | `4bee04e4a`／[#7295](https://github.com/heygen-com/hyperframes/pull/7295) | 延後，與 #7080 成組：pseudoBox 是接在本線不存在的 grownBox／contentBox 上；只搬 helper 沒有作用。等 #7080 的 Range／overflow／SVG 管線與此修正一併驗 before／after、旋轉與 ancestor transform、overflow hidden、SVG mask／clip、正反 seek 及輸出 RGBA。                                             | `4bee04e4a:packages/core/src/runtime/captureMotionBlur/frames.ts:59`、`:82`；`d89bf35b1:packages/core/src/runtime/captureMotionBlur/frames.ts:79` | `packages/core/src/runtime/captureMotionBlur/frames.ts:43`、`:61`（仍以 offsetWidth／offsetHeight 取 crop）；原 #7080 裁決保留                         |
-| `e2bb7da25`／[#7288](https://github.com/heygen-com/hyperframes/pull/7288) | 採用：auto 一律 filter，capture 保持明確 opt-in，HDR／renderer-off 仍優先；移除 translationOnly hand-off。CLI finding、Beta label、guide／skill 同步；不把上游成本量測宣稱成本線重新量測。                                                                                                          | `e2bb7da25:packages/core/src/runtime/captureMotionBlur/tier.ts:70`；同 SHA `docs/guides/motion-blur.mdx:46`                                       | `packages/core/src/runtime/captureMotionBlur/tier.ts:69`；`packages/core/src/runtime/captureMotionBlur/index.ts:652`；`docs/guides/motion-blur.mdx:46` |
+| `e2bb7da25`／[#7288](https://github.com/heygen-com/hyperframes/pull/7288) | 採用：auto 一律 filter，capture 保持明確 opt-in，HDR／renderer-off 仍優先；移除 translationOnly hand-off。CLI finding、Beta label、guide／skill 同步；不把上游成本量測宣稱成本線重新量測。engine 端只有 `captureMotionBlur.pixels.browser.test.ts` 存在於本線，其 capture tier 明確指定由 `f6edc275d` 補採（Windows CI 曾因漏採而失敗）；其餘 engine fixture／sweep／differential 測試本線沒有。                                                                                                          | `e2bb7da25:packages/core/src/runtime/captureMotionBlur/tier.ts:70`；同 SHA `docs/guides/motion-blur.mdx:46`                                       | `packages/core/src/runtime/captureMotionBlur/tier.ts:69`；`packages/core/src/runtime/captureMotionBlur/index.ts:652`；`docs/guides/motion-blur.mdx:46` |
 | `66cbabc39`／[#7298](https://github.com/heygen-com/hyperframes/pull/7298) | 採用：Shift 只更新容器 data attribute，cursor 交由 CSS，不以 React state 重渲染 timeline；blur／keyup 清除 modifier。                                                                                                                                                                               | `66cbabc39:packages/studio/src/player/components/useTimelineShiftModifier.ts:4`                                                                   | `packages/studio/src/player/components/useTimelineShiftModifier.ts:4`；`packages/studio/src/player/components/timelineProviderStateBuilders.ts:79`     |
 
 ### 適配、依賴與延後條件
@@ -1496,9 +1496,9 @@ core／CLI／Studio build 均 exit 0；CLI 在最終內建 rendering topic／Cra
 
 保留 1% 容差及現有 budgets；所採六筆沒有上游同 commit 的預算增量，延後的 #7134 只有新 share package 預算，不能用來提高 core／CLI 門檻。封裝大小缺口未消除。
 
-### 最新剩餘快照（水位 `66cbabc39`）
+### 水位 `66cbabc39` 時點的剩餘快照
 
-2026-11-06、fork HEAD `46d98d9bd` 的收尾 `python tools/check_upstream_updates.py --strict` exit 1，完整報告為 `strict-final.md`；上游 tip `cb8e02e82`。水位以上 10 個 commit（下一筆 `6011d9d`／#7299）、PR #7242 以上 61 筆、issue #7223 以上 11 筆；96 筆 monitored 中 #6695 一筆 open head 差異，原釘 `8aa9967f3b8bb8c776f7555d065d8ebd939ebe66`、查詢為 `3b2321c`。現行剩餘數字只在此維護，歷史節的日期快照保留；沒有為 strict 歸零越過指定八筆或釘選未讀補丁。
+2026-11-06、fork HEAD `46d98d9bd` 的收尾 `python tools/check_upstream_updates.py --strict` exit 1，完整報告為 `strict-final.md`；上游 tip `cb8e02e82`。水位以上 10 個 commit（下一筆 `6011d9d`／#7299）、PR #7242 以上 61 筆、issue #7223 以上 11 筆；96 筆 monitored 中 #6695 一筆 open head 差異，原釘 `8aa9967f3b8bb8c776f7555d065d8ebd939ebe66`、查詢為 `3b2321c`。此為水位 66cbabc39 的日期快照；現行剩餘數字只在後續最新節維護，歷史節的日期快照保留；沒有為 strict 歸零越過指定八筆或釘選未讀補丁。
 
 ### 完整套件與乾淨 HEAD 的逐名比較
 
@@ -1523,3 +1523,86 @@ core 全套是在測試清理／加強前取得，保留原始 5618 個 passed�
 ### 維護 gate 收尾
 
 2026-11-06、fork HEAD `46d98d9bd` 的 `pwsh -NoProfile -File tools/dev_check.ps1` exit 0：39 passed／0 failed（`dev-check-final.log`）；12 份維護文件、0 個斷鏈，結尾 `WINDOWS DEV CHECK GREEN`。新節與 MDX 修改已用 `node_modules/.bin/oxfmt --ignore-path <empty-ignore>` 格式化，歷史節只改過期的「最新」標題與快照定位；`git diff --check` exit 0。最終工作樹的 changed／untracked SHA-256 存於 `delivery-inputs.json`，不冒稱為完整 suite 的啟動快照。
+
+## 2026-11-06：接續至 `9e2510bda`，審查 8 個連續 commit
+
+以 fork `537b88dbe9896c264fbe89e915bbb8b4aa4191b6` 為起點，只審 `6011d9d0d..9e2510bda` 八筆連續 commit。起始 `python tools/check_upstream_updates.py --strict` exit 1，報告存於忽略目錄 `tmp/upstream-20261106-601/strict-initial.md`；八筆的唯讀 `gh pr view --repo heygen-com/hyperframes --json state,mergeCommit,headRefOid,mergedAt` 均為 MERGED，mergeCommit 與下表一致。實際 baseline 的 PR #7242、issue #7223、monitored 96 筆保持，不退回提示中的舊水位或舊筆數。完整補丁與 reporter 同存此忽略目錄。
+
+| Commit／PR                                                                | 裁決與理由                                                                                                                                                                                                                                                                                                                                                                                                                          | 上游證據                                                                        | fork 證據                                           |
+| ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- | --------------------------------------------------- |
+| `6011d9d0d`／[#7299](https://github.com/heygen-com/hyperframes/pull/7299) | 採用：variable supplement 在涵蓋的 bundled exact weights 另發 face，避免 Latin Extended 字母落到系統字型。                                                                                                                                                                                                                                                                                                                          | `6011d9d0d:packages/core/src/fonts/deterministicFonts.ts:691`                   | `packages/core/src/fonts/deterministicFonts.ts:690` |
+| `8fd754207`／[#7301](https://github.com/heygen-com/hyperframes/pull/7301) | 採用：Chrome install worker 提高一級優先權；EPERM／EACCES 仍靜默退回正常優先權，lint 的 background 政策保留。                                                                                                                                                                                                                                                                                                                       | `8fd754207:packages/cli/src/renderSetupWorker.ts:25`                            | `packages/cli/src/renderSetupWorker.ts:24`          |
+| `41b7aeeaf`／[#7262](https://github.com/heygen-com/hyperframes/pull/7262) | 部分採用：non-TTY 狀態改變或持續一分鐘時輸出進度，JSON 保持靜默。style-sampling remix／manifest 不適用，本線只有七個現有技能；說明同步既有 CLI 文件。                                                                                                                                                                                                                                                                               | `41b7aeeaf:packages/cli/src/commands/cloud/render.ts:1025`                      | `packages/cli/src/commands/cloud/render.ts:999`     |
+| `3e86def58`／[#7265](https://github.com/heygen-com/hyperframes/pull/7265) | 採用並適配：video 在 cut 前最多一秒隱藏播放，以 0.5–2 倍速度追上，visible 後恢復溫和 steering；paused／render seek 不提前播放。保留本線 out-point、audio 與 source-window 行為。                                                                                                                                                                                                                                                    | `3e86def58:packages/core/src/runtime/media.ts:396`                              | `packages/core/src/runtime/media.ts:310`            |
+| `fc0b53361`／[#7261](https://github.com/heygen-com/hyperframes/pull/7261) | 不適用：本線沒有 commands/media-use/{voices,generate}、heygen/generate 或 style-sampling 技能。既有 media-use 是 resolve.mjs passthrough，沒有 clone catalogue／public voice picker；若日後成組採用 HeyGen generation，必須同採 workspace 所有權提示、語言碼正規化與 multilingual 拒絕測試。                                                                                                                                        | `fc0b53361:packages/cli/src/heygen/generate.ts:619`                             | `packages/cli/src/commands/media-use.ts:32`         |
+| `9fcd06cbb`／[#7305](https://github.com/heygen-com/hyperframes/pull/7305) | 採用：check_report 只帶 allowlist stop_code，沒有停止 finding 時省略。沿用既有 telemetry opt-out，沒有引進 #7176 的使用者資料或擴大遙測啟用政策；本線沒有外部 consumer，STOP_CODES 保持模組私有以通過 fallow。                                                                                                                                                                                                                      | `9fcd06cbb:packages/cli/src/utils/checkPipeline.ts:2133`                        | `packages/cli/src/utils/checkPipeline.ts:2128`      |
+| `07824098e`／[#7302](https://github.com/heygen-com/hyperframes/pull/7302) | 成組延後：本線沒有 blurPage／differentialPage／liveness 與 producer blurDifferential harness。單搬 CI fail-closed 或新 helper 會沒有 consumer／缺 fixture；先採已延後的 #6967 differential harness 與 callback／crop fixtures，再同採 CI 缺 Chrome／drawElementImage／ffmpeg 必須失敗、inside 實際有 blur、held-card slide-out 與 serial producer integration lane；驗 Windows、CI 負例與逐幀結果，禁止只搬 helper 冒稱 gate 完成。 | `07824098e:packages/engine/src/services/__fixtures__/motionBlur/blurPage.ts:22` | `packages/producer/scripts/run-test-lane.mjs:35`    |
+| `9e2510bda`／[#7263](https://github.com/heygen-com/hyperframes/pull/7263) | 不適用：本線沒有 templates pull／五個 plan-gated style-sampling packs，也沒有對應 pinned digest；不新建無入口的指紋清單。若引入 templates／billing 下載管線，必須成組採用新版完整性校驗與 release-check payload。                                                                                                                                                                                                                   | `9e2510bda:packages/cli/src/commands/templates.ts:37`                           | `packages/cli/src/cli.ts:133`                       |
+
+### 依賴、延後與對外邊界
+
+```text
+preview playing -> hidden pre-roll -> proportional steering -> cut -> gentle steering
+paused / render-driven seek -> no pre-roll
+```
+
+#7265 在本線沒有上游後續 WebKit／out-point metadata 的區塊上作最小適配，沒有搬入 #7232 或改本線的 source-duration 與 WebAudio 契約。舊 learned start-latency seam 由固定 pre-roll 取代，上游對應的舊測試同步替換為可觀察播放行為；既有非 latency 測試保留。#7305 的 type-only StopCode import 沒有建立 runtime 循環，stop_code 僅三個固定代碼，不包含訊息／路徑／素材內容。
+
+#6940 的 audioDeliveryLimit／limiter 前置未出現在指定八筆，#7246 保持延後：成組採用 limiter 後驗真實 AAC -1.2 至 -1 dBTP、重複輸出 bytes 與分散式 loudness。#7182 等長來源分段副本與離線長片驗收；#7176 等維護者決定遙測政策；#7104／#7168 retry 等新 session 所有權、取消與一次性重試契約；#6716 的 17 檔遷移等 Windows 私有快取根與完整 guard 測試。採用的五筆不依賴以上延後內容。#7134 的 share host／kernel 與 #7295 的 #7080 overflow／SVG crop 維持先前成組條件。
+
+八筆沒有到達 monitored 的項目，96 筆原釘選保留；#6695 的未讀 open head 差異不藉重釘消除。PR 水位不越過尚未完整裁決的 #7243，commit 軸的已合併證據不代表 PR 軸已連續清空。
+
+八筆沒有 golden 或 LFS pointer 變更，既有 #6665 pointer 保留；需上傳的新 LFS 物件：無。`3e86def58:scripts/package-size-budgets.json:35` 只將 player packed 增加 1655 bytes；player 以 `noExternal: ["@hyperframes/core"]` 打包，`packages/player/src/parent-media.ts:22` 引入 core 的 media-steer，所以本線同樣採用此增量（157145→158800）。此預算只由 publish workflow 檢查，不移用該增量提高 core／CLI 預算。其餘所採補丁沒有相關預算增量。
+
+採用產品的上游作者為 Miguel Ángel（#7299、#7301、#7265、#7305）與 WaterrrForever（#7262）；email 僅供 Co-authored-by，不寫入文件。
+
+### 聚焦紅綠
+
+| 範圍                                          | 舊碼 pass／fail                            | 移植 pass／fail | exit 舊／新 |
+| --------------------------------------------- | ------------------------------------------ | --------------- | ----------- |
+| bundledSubset                                 | 2／1，缺 bundled exact weights 的補充 face | 3／0            | 1／0        |
+| Chrome install priority                       | 6／1，未設定 above-normal                  | 7／0            | 1／0        |
+| media／mediaSteer／preseek／init.videoPreseek | 187／9，包含未提前啟動與 hidden rate 錯誤  | 196／0          | 1／0        |
+| cloud render／telemetry events／check         | 260／3，包含未輸出 minute tick 與 stopCode | 263／0          | 1／0        |
+
+命令為各套件 cwd 的 `bun x vitest run <files> --maxWorkers=2 --reporter=json --outputFile=<ignored json>`。`red-core.json`、`red-cli.json`、`red-media.json`、`red-more-cli.json` 保存舊碼斷言；`green-core.json` 合計 199 passed／0 failed，`green-cli.json` 合計 270 passed／0 failed。測試先注入舊碼再修改產品，未以編譯錯誤當行為重現；新增 logsTick 為舊版缺 helper 的負例，其餘有實際行為斷言。初次適配檢查發現缺少 isHiddenPreRoll 局部變數，於第一次綠測前補齊，未將此錯誤列為回歸證據。
+
+### 雙樹建置、靜態閘門與封裝
+
+乾淨樹以 `git archive HEAD` 建立，第三方依賴以 junction 共用，各 workspace 指向乾淨樹自身。core／CLI／scripts 的 1861 個 archive 檔案逐 byte 比較差異 0（`archive-parity.json`）。乾淨樹重建 parsers、lint、core、studio-server、Studio、inspector、player、CLI dist 全部 exit 0；移植樹 core／CLI build exit 0，CLI 模組私有化後再 build 亦 exit 0。archive 的歷史 compiled.html LFS 警告原樣保留，沒有改寫 fixture 或把它視為受影響套件通過證據。
+
+lefthook 三組 `node node_modules/typescript/bin/tsc --noEmit -p <packages/core/tsconfig.json|packages/studio/tsconfig.json|scripts/tsconfig.json>` 全部 exit 0、無輸出（`{core,studio,scripts}-tsc.result.json`）。初次 Python static wrapper 用不可由 CreateProcess 直接執行的 fallow shim 失敗，三個 tsc 的 exit 0 結果保留；改用 PowerShell 執行實際 `.bin/fallow`。第一次 audit exit 1，唯一新增 dead-code finding 是 STOP_CODES 的多餘 export；改為模組私有後，`node_modules/.bin/fallow audit --base origin/main --fail-on-issues` exit 0，結尾 `No issues in 18 changed files`。既有一組 69-line clone 由原 new-only gate 排除，沒有改排除設定、門檻或其他 package。
+
+16 個變更 TypeScript 檔的 `node_modules/.bin/oxlint <files>` exit 0：0 warnings／0 errors；`node scripts/check-cli-process-ownership.mjs` exit 0：`CLI process ownership verified: only process roots terminate the process.`。沒有執行會 staging 的 lefthook format job。最終 CLI 聚焦 `final-focused-cli.json` 仍 270 passed／0 failed，exit 0。
+
+額外的 `node node_modules/typescript/bin/tsc --noEmit -p packages/cli/tsconfig.json` 雙樹均 exit 2：check.test.ts 一例 TS18048（deadline 可能 undefined）與兩例 TS2554（assertKnownFlags 呼叫參數）。乾淨 HEAD 在 2287／3834／3835 行，移植在 2287／3838／3839 行；除新增測試造成的行號位移外內容完全相同，新增錯誤為 0（`cli-tsc-comparison.json`）。這不改寫為整個 CLI typecheck 綠燈；lefthook 的三組門檻與這個額外檢查分開記錄。
+
+雙樹以 `pnpm pack --json --pack-destination <ignored directory>` 單純量測，沒有安裝依賴或新增鎖檔；來源與大小存於 `package-sizes.json`，最終 CLI 再建置／量測為 `delivery-pack-cli.log`。
+
+| 套件 | HEAD packed／unpacked | 移植 packed／unpacked | 判定                                |
+| ---- | --------------------- | --------------------- | ----------------------------------- |
+| core | 1681350／4056727      | 1681651／4058035      | 雙樹 packed 既有超標；unpacked 通過 |
+| cli  | 8499470／24203584     | 8501202／24198988     | 雙樹 packed／unpacked 既有超標      |
+
+保留 1% 容差與現有 budgets；所採 commit 沒有可套用於 core／CLI 的預算增量，不以無出處的預算提高消除超標。封裝大小缺口保留，不宣稱完整產品驗收通過。
+
+### 完整套件與乾淨 HEAD 逐名比較
+
+只有 core／CLI 產品來源變更，兩樹各跑一次完整 `bun run test --maxWorkers=2 --reporter=json --outputFile=<ignored json>`；逐筆命令、開始時間、耗時及 exit 存於 `head-{core,cli}.result.json`／`port-{core,cli}.result.json`。per-batch 可設定上限為 `UPSTREAM_SUITE_TIMEOUT_SECONDS=2400` 秒，整段監看停止上限為 3600 秒；實際從第一套啟動到最後一套結束約 971 秒，沒有 timeout。沒有執行 `tools/test_product.ps1 -Full`，也沒有重跑任何完整 suite。
+
+| 套件 | 乾淨 HEAD pass／fail／skip | 移植 pass／fail／skip | exit HEAD／移植 | 只在移植樹失敗（含 suite error） |
+| ---- | -------------------------- | --------------------- | --------------- | -------------------------------- |
+| core | 5619／0／11                | 5625／0／11           | 0／0            | 0                                |
+| cli  | 6240／35／307              | 6250／29／307         | 1／1            | 0                                |
+
+逐名清單為 `head-{core,cli}.failures.json`／`port-{core,cli}.failures.json`，差集與清單 SHA-256 存於 `comparison.json`。CLI 的 29 個移植樹失敗全部在乾淨 HEAD 重現；六個只在 HEAD 失敗的 snapshot late-image／warmCheck browser 案例另保留清單，不宣稱它們由這五筆修正解決。兩樹 suite-error 差集也為 0。CLI 完整套件仍非 0 failed，不能稱作完整產品驗收通過。
+
+CLI 模組私有化發生在兩樹 CLI 全套啟動前；產品來源在全套啟動後只有 oxfmt 的非語意格式調整，沒有新增、移除或改寫測試。CLI 最終 dist 在全套執行期間再建置，其封裝數字取最後一次輸出；不把全套起始的 `suite-inputs.json` 冒稱為最終 bytes 快照。最終 changed／untracked hash 另存 `delivery-inputs.json`。producer／engine 沒有產品或測試變更，不擴大執行其 lane；#7302 的 producer serial lane 條件明確保留在 ROADMAP，沒有用其他 runner 取代該驗收。
+
+### 最新剩餘快照（水位 `9e2510bda`）
+
+2026-11-06、fork HEAD `537b88dbe` 的最後 `python tools/check_upstream_updates.py --strict --baseline tmp/upstream-20261106-601/candidate-baseline.json --output tmp/upstream-20261106-601/strict-final.md` exit 1。候選 baseline 與驗證後寫入的正式 `tools/upstream_baseline.json` 逐 byte 相同；只推進已逐筆審查的連續 commit 水位，不改 PR／issue／monitored。上游 tip `410a516ce`；尚有 3 個 commit，下一個是 `f3e45b492`／#7310；PR #7242 以上 62 筆、issue #7223 以上 11 筆，96 筆 monitored 中 #6695 一筆 open head 差異（原釘 `8aa9967f3b8bb8c776f7555d065d8ebd939ebe66`，查詢 `3b2321c`）。現行剩餘數字只在此維護，歷史日期快照保留。沒有為 strict 歸零越過指定八筆，ROADMAP 近期列保留。
+
+### 維護 gate 收尾
+
+2026-11-06、fork HEAD `537b88dbe` 的 `pwsh -NoProfile -File tools/dev_check.ps1` exit 0：39 passed／0 failed，12 份維護文件、0 個斷鏈，結尾 `WINDOWS DEV CHECK GREEN`（`dev-check.log`）。Markdown／MDX 新增內容以 `node_modules/.bin/oxfmt --ignore-path <empty-ignore>` 格式化；歷史段落保留原格式，只改舊節「最新」標題與快照定位，沒有整檔重排。`git diff --check` exit 0。

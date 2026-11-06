@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 
 import {
   assertArchiveFits,
+  logsTick,
   parseAspectRatioFlag,
   resolveAspectRatioForSubmit,
   validateDryRunSource,
@@ -35,6 +36,15 @@ function writeComposition(width: number, height: number): string {
   );
   return dir;
 }
+
+describe("logsTick", () => {
+  it("logs a long render once a minute while its status holds, so a slow render does not read as a hang", () => {
+    const logged = { status: "rendering", at: 2_000 };
+    expect(logsTick("rendering", 30_000, logged)).toBe(false);
+    expect(logsTick("rendering", 62_000, logged)).toBe(true);
+    expect(logsTick("completed", 3_000, logged)).toBe(true);
+  });
+});
 
 describe("validateDryRunSource", () => {
   it("accepts a local directory and rejects already-uploaded sources", () => {

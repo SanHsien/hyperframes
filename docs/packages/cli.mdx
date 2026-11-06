@@ -2041,7 +2041,7 @@ npx hyperframes telemetry status
 ```
 
 Telemetry collects command names, render performance, render checkpoint and
-error names, aggregate browser diagnostic counts, browser initialization
+error names, the code of a finding that stopped `check` (when one did), aggregate browser diagnostic counts, browser initialization
 duration and tween count, aggregate video-extraction workload counts (extracted
 frames, VFR preflights), example choices, the names of registry items `add` or
 Studio installs and which of the two installed them, and system info — including a coarse
@@ -2292,6 +2292,11 @@ End to end: zips the project, uploads it through the direct-to-S3 asset flow,
 submits `POST /v3/hyperframes/renders`, polls
 `GET /v3/hyperframes/renders/{id}` until it finishes or fails, and streams the
 video to disk.
+
+When output is redirected or non-interactive, progress prints at each status
+change and once a minute while the status stays the same. JSON mode keeps
+progress silent. A long `rendering` status alone does not mean the job has hung;
+use `hyperframes cloud get <id>` to inspect a job after you stop waiting.
 
 The zip excludes root `renders` and `snapshots`, `.git`, `node_modules`, `dist`,
 `.next`, `coverage`, dotfiles, and anything your `.hyperframesignore` rules

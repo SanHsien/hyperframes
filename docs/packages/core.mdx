@@ -15,6 +15,11 @@ the runtime.
 npm install @hyperframes/core
 ```
 
+During preview playback, an upcoming video starts hidden up to one second before
+its cut, using available source frames before its in-point. Hidden playback can
+speed up or slow down to meet the cut; visible playback keeps gentle drift
+correction. Paused playback and render-driven frame seeks do not pre-roll.
+
 ## Main surfaces
 
 | Need                                    | Import                                   |

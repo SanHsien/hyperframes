@@ -12,6 +12,8 @@ const MEDIA_STEER_RELEASE_SECONDS = 0.01;
 // Audio never steers past 10%, where speech changes tempo; a lag held past 100 ms is seeked instead.
 const AUDIO_MAX_STEER = 0.1;
 const AUDIO_STEER_LIMIT_SECONDS = 0.1;
+// A hidden video catches up before its cut.
+const HIDDEN_GAIN = 5;
 
 /** Direction (+1 fast, -1 slow) an element is being steered in; absent when it plays at its authored rate. */
 const steering = new WeakMap<HTMLMediaElement, number>();
@@ -23,6 +25,7 @@ export function steerMedia(
   baseRate: number,
   settled: boolean,
   audioOnly = el.tagName === "AUDIO",
+  hidden = false,
 ): { rate: number; seek: boolean } {
   const lag = Math.abs(offset);
   if (audioOnly && settled && lag > AUDIO_STEER_LIMIT_SECONDS) {
@@ -30,6 +33,8 @@ export function steerMedia(
     return { rate: baseRate, seek: true };
   }
   const direction = Math.sign(offset);
+  if (hidden && lag > MEDIA_SYNC_TOLERANCE_SECONDS)
+    return steerHidden(el, direction, lag, baseRate);
   const current = steering.get(el);
   if (lag > MEDIA_SYNC_TOLERANCE_SECONDS) steering.set(el, direction);
   else if (current !== direction || lag <= MEDIA_STEER_RELEASE_SECONDS) {
@@ -38,6 +43,12 @@ export function steerMedia(
   }
   const step = MEDIA_STEER_STEPS.find(([from]) => lag > from)?.[1] ?? MEDIA_STEER;
   const steer = audioOnly ? Math.min(step, AUDIO_MAX_STEER) : step;
+  return { rate: baseRate * (1 + direction * steer), seek: false };
+}
+
+function steerHidden(el: HTMLMediaElement, direction: number, lag: number, baseRate: number) {
+  steering.set(el, direction);
+  const steer = Math.min(direction > 0 ? 1 : 0.5, lag * HIDDEN_GAIN);
   return { rate: baseRate * (1 + direction * steer), seek: false };
 }
 
