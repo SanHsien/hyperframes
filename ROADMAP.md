@@ -1,7 +1,7 @@
 # 路線圖
 
 > 本 repo 後續工作的單一真相源。做完一項，就在同一個 commit 刪掉那一列；新工作只加在這裡。
-> 上游審查於 2026-11-07 接續到 commit `18fc75dcd7b453ab10d0834bc9e8d2265353121c`（PR #7288、issue #7223）；逐筆裁決見 [接續缺口清冊](docs/UPSTREAM_REVIEW_2026-11-04_CONTINUED.md)。CI／告警保留現況段既有日期快照。
+> 上游審查於 2026-11-07 接續到 commit `6fab2191423165436f20ec5e057d0d025f34cffb`（PR #7303、issue #7313）；逐筆裁決見 [接續缺口清冊](docs/UPSTREAM_REVIEW_2026-11-04_CONTINUED.md)。CI／告警保留現況段既有日期快照。
 
 ## 現況
 
@@ -48,6 +48,8 @@ HyperFrames 將 HTML、CSS 與動畫渲染為影片，本線保留 Windows 渲�
 2026-11-07 以 fork `48f5654de` 接續審完最後 2 個 commit（`318724f5f`／#7284、`18fc75dcd`／#7324，commit 軸再次到達上游 tip）、PR #7260–#7265 與三筆移動的釘選：採用 #7284 的 Studio Storyboard 分頁與 `hyperframes open` 的 `doc: "storyboard"` 交接（適配本線沒有 #6897 結構的 `desktopApp.ts`）與 #7324 的 drawElement 閘門（手工移植 `frameCapture.ts`）；PR 六筆沿用原節裁決，#6695、#6816 重釘新 head，#7150 重釘 closed，monitored 維持 99 筆。逐筆證據、上游動到的檔案逐檔判定與雙樹比較見 [接續清冊](docs/UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-07接續至-18fc75dcd審查最後-2-個-commit-與-6-筆-pr)。strict 尚未轉綠（commit 軸已清空，PR 還有 50 筆、issue 11 筆），不宣稱完整產品驗收通過；近期接續列保留，既有日期快照不變。
 
 2026-11-07 以 fork `6f7d25030` 接續，commit 軸已在上游 tip，把 PR 軸從 #7266 連續推進到 #7288（15 筆）：9 筆 MERGED 沿用原節裁決並重新核對 fork 行號，沒有新移植；6 筆 open（#7266、#7269、#7281、#7282、#7285、#7286）釘 monitored（99 增為 105 筆）。逐筆證據見 [接續清冊](docs/UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-07接續-pr-軸至-7288審查-15-筆-pr)。沒有產品程式碼變更；strict 尚未轉綠（PR 還有 38 筆、issue 11 筆），不宣稱完整產品驗收通過；近期接續列保留，既有日期快照不變。
+
+2026-11-07 以 fork `a3d8f0bcf` 接續，審完最後 1 個 commit（`6fab21914`／#7329，commit 軸再次到達上游 tip）、PR #7289–#7303 與 issue #7259–#7313（共 11 筆）：採用 #7329 的 session 初始化預算（segmented 與 sequential disk 擷取路徑，手工適配串流路徑的共用 helper）；9 筆 MERGED PR 沿用原節裁決並重新核對 fork 行號，5 筆 open（#7289、#7291、#7296、#7297、#7300）釘 monitored（105 增為 110 筆），#7303 為已被取代的 codegen PR 不釘；issue 8 筆各對應一筆已釘的 open PR、2 筆已被已採用的 commit 覆蓋（#7259、#7313）、#7312 無本線修正點。逐筆證據、上游動到的檔案逐檔判定與紅綠測試見 [接續清冊](docs/UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-07接續至-6fab21914審查最後-1-個-commit15-筆-pr-與-11-筆-issue)。producer 完整單元測試逐名失敗差集為 0（既有環境失敗與乾淨 HEAD 相同），lefthook 三組 typecheck、producer typecheck 與 fallow 通過；strict 尚未轉綠（PR 還有 23 筆），不宣稱完整產品驗收通過；近期接續列保留，既有日期快照不變。
 
 ## 近期：可以直接動手
 

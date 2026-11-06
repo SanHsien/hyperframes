@@ -281,3 +281,9 @@ commit 水位 `18fc75dcd7b453ab10d0834bc9e8d2265353121c`，PR #7265、issue #722
 以 fork `6f7d25030` 接續，commit 軸已在上游 tip（`18fc75dcd`，無新 commit、99 筆釘選無移動），只把 PR 軸從 #7266 連續推進到 #7288（15 筆）。其中 9 筆為 MERGED 且合併 commit 在 baseline 內（#7267、#7268、#7270、#7271、#7280、#7283、#7284、#7287、#7288），沿用各自原節裁決並重新核對 fork 行號與反向套用結果，沒有需要新移植的內容；6 筆為 open（#7266、#7269、#7281、#7282、#7285、#7286）釘 monitored 與重訪條件。逐筆來源／fork 行號見 [接續清冊](UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-07接續-pr-軸至-7288審查-15-筆-pr)。
 
 commit 水位 `18fc75dcd7b453ab10d0834bc9e8d2265353121c`，PR #7288、issue #7223，monitored 由 99 增為 105 筆。#7191、#7295／#7080、#6967／#7302、#6912、#7182、#7176、#7104／#7168 retry、#6716 的 17 檔遷移、#7134、#6897、#7246 與 #7247 依清冊條件維持延後。沒有 golden／LFS pointer 變更、沒有預算增量、沒有採用上游程式碼；剩餘數字僅記於清冊最新節，ROADMAP 接續列保留。
+
+## 2026-11-07：連續水位 `6fab21914`
+
+以 fork `a3d8f0bcf` 接續，審完最後 1 個 commit（`6fab21914`／#7329，commit 軸再次到達上游 tip）、PR #7289–#7303 共 15 筆與 issue #7259–#7313 共 11 筆。採用 #7329：segmented 與 sequential disk 擷取路徑也受 session 初始化預算保護（開 session、初始化、deferred drawElement init 共用同一個計時），串流路徑原有的預算抽成共用的 `createSessionInitBudget`，本線串流路徑沒有 transient resume 迴圈，`frameIndex` 固定為 0。9 筆 MERGED PR 沿用原節裁決並重新核對 fork 行號；5 筆 open（#7289、#7291、#7296、#7297、#7300）釘 monitored 與重訪條件；#7303 是已被 #7326 取代的 codegen PR，不釘。逐筆來源／fork 行號與上游動到的檔案逐檔判定見 [接續清冊](UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-07接續至-6fab21914審查最後-1-個-commit15-筆-pr-與-11-筆-issue)。
+
+commit 水位 `6fab2191423165436f20ec5e057d0d025f34cffb`，PR #7303、issue #7313，monitored 由 105 增為 110 筆。#7191、#7295／#7080、#6967／#7302、#6912、#7182、#7176、#7104／#7168 retry、#6716 的 17 檔遷移、#7134、#6897、#7246 與 #7247 依清冊條件維持延後。沒有 golden／LFS pointer 變更、沒有預算增量；採用的上游程式碼作者為 Miguel Ángel（供 Co-authored-by）。剩餘數字僅記於清冊最新節，ROADMAP 接續列保留。
