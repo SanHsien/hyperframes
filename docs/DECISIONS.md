@@ -1072,3 +1072,11 @@ core packed 實測 1678498 → 1680858（+2360 bytes），超出目前 1662813 �
 commit 水位 `b108f851201dc22f5d4974ee7f1c9d19b472cc1e`，PR 軸沿既有採用證據連續至 #7238，issue 維持 #7223，monitored 維持 96 筆。#7246 等 #6940 limiter 與真實 AAC／分散式 loudness 成組驗收；#7232 等 #6912／#7225 WebKit 接管管線與記憶體／Safari 音訊時鐘驗收。#7182、#7176、#7104／#7168 retry、#6716 的 17 檔遷移保留原條件，所採六筆不依賴它們。沒有 golden／LFS pointer 變更。
 
 #6695 的 open head 差異未到對應 commit 軸，不重釘未讀補丁；其餘監控釘選保留。剩餘數量僅記於接續清冊的新節，ROADMAP 保留接續計畫。
+
+## 2026-11-06：連續水位 `32eb4c358`
+
+以 fork `2de8e9755` 接續，審完 `35cbca992..32eb4c358` 的 8 個連續 commit；採用 #7240、#7241、#7255、#7254、#7256、#7258、#7242，release 不同步整版版本或發行資產。來源／fork 行號、紅綠、雙樹比較與限制見 [接續清冊](UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-06接續至-32eb4c358審查-8-個連續-commit)。
+
+commit 水位 `32eb4c3582d6b5b52c06f1444d23bc395b8e19d8`，PR 水位 #7242、issue #7223，monitored 保持實際 baseline 的 96 筆。#6695 未讀的 open head 差異仍保持原釘選；這八筆沒有到達其他 monitored 項目。#7246 的 #6940 limiter 先決未出現，與 #7232、#7182、#7176、#7104／#7168 retry、#6716 的 17 檔遷移一樣保留清冊的重訪條件；沒有 golden／LFS pointer 變更。剩餘數字只在清冊的新節維護，ROADMAP 接續計畫保留。
+
+#7242 預設不啟用；來源幀的分段抽取獨立於 #7182 的長來源 browser-playable 副本。保留 fork 的 encoder durationMs、capture options、stall clock 與 updateJobStatus 進度契約。producer packed 超出舊預算的 1% 容差，依 `968f97fe9` 同一補丁的 +12000 bytes 調整 828932 → 840932；unpacked 未超標，保留 3081613。CLI 既有大小缺口不調高。單 worker 的 150 畫格逐幀相同；兩 worker 峰值案例初次遇到 windowed session 導航逾時，僅作一次聚焦確認後通過：240 畫格相同，實測／reported peak 715796 bytes，低於 925632 bytes 上限。兩次紀錄均保留，測試內 retry 沒有啟用。

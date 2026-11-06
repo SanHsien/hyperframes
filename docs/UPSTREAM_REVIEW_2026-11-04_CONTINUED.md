@@ -1269,8 +1269,95 @@ lint 的共同失敗為 `does not read a linked shader outside the project throu
 
 lefthook 三組 typecheck 最終均 exit 0；`node_modules/.bin/fallow audit --base origin/main --fail-on-issues` 最終 exit 0，38 changed files，new-only gate 排除一組 inherited duplication，實際輸出見 `fallow-closeout.*`。PowerShell 可直接解析該本機入口，曾用 cmd 的 forward-slash 路徑呼叫則在啟動 audit 前失敗（0.04 秒），不計為產品 gate 結果。
 
-### 最新剩餘快照（水位 `b108f8512`）
+### 水位 `b108f8512` 時點的剩餘快照
 
-2026-11-06、fork HEAD `2e34275fc` 的 `python tools/check_upstream_updates.py --strict` exit 1，原始輸出為 `strict-final.md`。上游 tip `66cbabc39`；水位以上仍有 24 個 commit（下一筆 `35cbca992`／#7240）、PR #7238 以上 54 筆、issue #7223 以上 9 筆；96 筆 monitored 中 #6695 有一筆 open head 變動，原釘選保持 `8aa9967f3b8bb8c776f7555d065d8ebd939ebe66`。這是可變剩餘數量的單一記錄處，較早數字均保留為其水位日期快照。
+2026-11-06、fork HEAD `2e34275fc` 的 `python tools/check_upstream_updates.py --strict` exit 1，原始輸出為 `strict-final.md`。上游 tip `66cbabc39`；水位以上仍有 24 個 commit（下一筆 `35cbca992`／#7240）、PR #7238 以上 54 筆、issue #7223 以上 9 筆；96 筆 monitored 中 #6695 有一筆 open head 變動，原釘選保持 `8aa9967f3b8bb8c776f7555d065d8ebd939ebe66`。這是水位 `b108f8512` 的日期快照；現行剩餘數量見後續新節。
 
 連續審查止於指定八筆的 `b108f851201dc22f5d4974ee7f1c9d19b472cc1e`，沒有讀入下一筆補丁或用新 head 消除未審缺口。PR 水位 #7238、issue #7223，baseline／UPSTREAM／DECISIONS／ROADMAP 現況一致。strict、CLI／lint 全套及既有封裝大小仍有缺口，ROADMAP 近期列保留。需上傳的新 LFS 物件：無。
+
+## 2026-11-06：接續至 `32eb4c358`，審查 8 個連續 commit
+
+以 fork `2de8e9755e9d172604dbd591a597cd82a3d56a85` 為起點，只處理 `35cbca992..32eb4c358` 八筆連續補丁。唯讀 GraphQL 核對這八筆 PR 均 MERGED，mergeCommit 與指定 SHA 一致；原始補丁、PR JSON、測試與命令 exit 保存在忽略目錄 `tmp/upstream-20261106-35c/`。採用七筆產品修正；release 不同步整版版本與發行資產。
+
+| Commit／PR                                                                | 裁決與重訪條件                                                                                                                                                                                                     | 上游證據                                                                              | fork 證據                                                                   |
+| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `35cbca992`／[#7240](https://github.com/heygen-com/hyperframes/pull/7240) | 採用：抽出共用 deferred frame resolver，保留 distributed remote-source guard 與 INVALID_VIDEO_METADATA。                                                                                                           | `35cbca992:packages/producer/src/services/render/deferredVideoFrames.ts:53`           | `packages/producer/src/services/render/deferredVideoFrames.ts:55`           |
+| `599eaad2b`／[#7241](https://github.com/heygen-com/hyperframes/pull/7241) | 採用：每個 worker 持有自己的 hook，segment prepare／release、初始化／回收 on-demand 與 join 清理；保留本線 encoder 回傳 durationMs 的契約。                                                                        | `599eaad2b:packages/producer/src/services/render/segmentVideoFrames.ts:40`            | `packages/producer/src/services/render/segmentVideoFrames.ts:45`            |
+| `8df4f21c2`／[#7255](https://github.com/heygen-com/hyperframes/pull/7255) | 採用：segmented 與 sequential capture 寫入 encoder 前也驗 drawElement 樣本；低於 PSNR floor 必須失敗。保留既有 stall clock，不導入 render retry。                                                                  | `8df4f21c2:packages/producer/src/services/render/stages/captureStreamingStage.ts:471` | `packages/producer/src/services/render/stages/captureStreamingStage.ts:457` |
+| `2f2195515`／[#7254](https://github.com/heygen-com/hyperframes/pull/7254) | 採用：reference normalization 受 +12 dB 與 -1.5 dBTP 限制，回報與 reference 的差距；gain 被限制且不變時不寫檔。兩種模式共用 fittedGain，保留想提高音量時不反向降低的政策。                                         | `2f2195515:packages/studio-server/src/helpers/loudness.ts:386`                        | `packages/studio-server/src/helpers/loudness.ts:386`                        |
+| `7290ee68c`／[#7256](https://github.com/heygen-com/hyperframes/pull/7256) | 採用：script-load origin／code 移到自由文字前，截斷長錯誤仍保留診斷，沒有輸出 script URL。                                                                                                                         | `7290ee68c:packages/engine/src/services/frameCapture.ts:2562`                         | `packages/engine/src/services/frameCapture.ts:2519`                         |
+| `478ef2f26`／[#7258](https://github.com/heygen-com/hyperframes/pull/7258) | 採用：SVG gradient 用最弱 stop 算對比，支援 href 並限制八跳；pattern／無法解析的 reference 跳過，不製造黑色前景。瀏覽器像素驗收另記限制。                                                                          | `478ef2f26:packages/cli/src/commands/contrast-audit.browser.js:192`                   | `packages/cli/src/commands/contrast-audit.browser.js:192`                   |
+| `968f97fe9`／[#7242](https://github.com/heygen-com/hyperframes/pull/7242) | 採用：HF_VIDEO_FRAME_WINDOW 預設關閉；只對 eligible segmented mp4／mov 延後抽幀，calibration 預抽後釋放，改走其他 capture route 時補齊全部 deferred frames。保留本線 capture options 與 updateJobStatus 進度介面。 | `968f97fe9:packages/producer/src/services/renderOrchestrator.ts:3546`                 | `packages/producer/src/services/renderOrchestrator.ts:3378`                 |
+| `32eb4c358`／[#7260](https://github.com/heygen-com/hyperframes/pull/7260) | 整版 release 不適用：fork 未同步所有發布內容，不改 package／plugin 版本、不發佈 npm。producer unpacked 預算未超標，不套用 release 的額外預算。                                                                     | `32eb4c358:releases/v0.9.17.md:5`、`32eb4c358:scripts/package-size-budgets.json:40`   | `packages/producer/package.json:3`、`scripts/package-size-budgets.json:40`  |
+
+### 依賴、PR 軸、monitored 與 LFS
+
+#7240／#7241 是 #7242 在指定範圍內的先決，一併採用。#7242 以既有 engine deferredRange／range extraction 運作，不需要 #7182 的 browser-playable 長來源分段副本；兩者解決不同階段的磁碟用量。#7182 等長來源分段副本與離線長片驗收；#7176 等維護者決定遙測政策；#7104／#7168 retry 等新 session 所有權、取消與一次性重試契約；#6716 的 17 檔遷移等 Windows 私有快取根及完整 guard 測試。這四項維持延後，沒有隨新功能擴大採用。
+
+指定八筆沒有 #6940 的 audioDeliveryLimit／browser true-peak limiter；#7246 維持延後，等 limiter 管線成組採用並驗 AAC -1.2 至 -1 dBTP、重複輸出 bytes 與分散式 loudness。#7232 仍等 #6912／#7225 WebKit decode-first 與記憶體／Safari clock 驗收。
+
+PR 軸沿實際 #7238 接續：#7239 已於 `0a6746e1d` 那節採用，來源 `80e02e74a:packages/lint/src/projectIgnore.ts:8`，fork `packages/lint/src/projectIgnore.ts:8`；#7240–#7242 見上表。四筆均經唯讀 GraphQL 核對 MERGED，連續 PR 水位可至 #7242，沒有跳過 #7243 去釘 #7258。issue 保持 #7223。monitored 沿實際 baseline 維持 96 筆；這八筆沒有到達其中項目，#6695 open head 的未審差異仍保留原釘選，不重釘未讀補丁。
+
+八個補丁均沒有新增或修改 golden／LFS pointer；#6665 既有 pointer 保留。需上傳的新 LFS 物件：無。上游作者為 Vance Ingalls（#7240／#7241／#7242／#7260）與 Miguel Ángel（其餘四筆）；email 僅供提交 trailer，不寫入文件。
+
+### 適配與套件預算
+
+新增 segmentVideoFrames 測試的實際磁碟路徑以分隔符正規化比對，避免 `/clip/` 在 Windows 產生假失敗。兩例原有 segmentOutputPath／segmentDirFor 的 POSIX 常數斷言保留，交由雙樹逐名比較。未更改 timeout、失敗斷言、coverage 容差或渲染品質門檻。
+
+producer packed 實測 HEAD 833390 → 842152 bytes，超出原 828932 預算的 1% 容差；依 `968f97fe9:scripts/package-size-budgets.json:39` 同一補丁的 +12000 增量調為 840932，保留原 1% 容差。unpacked 3007333 → 3041607，仍在 3081613 預算內，不採用 release 的 +48387 增量。CLI 原有 packed／unpacked 超標不調高；engine 與 studio-server 預算不變。
+
+### 聚焦回歸與先紅後綠
+
+每項修正先移入測試才改產品；`red-*.log`／`red-cli.json`／`red-engine.json` 保留初始失敗，不把 Chrome 啟動逾時或錯誤 runner 當作行為紅燈。新 API 的缺失另外明列。
+
+| 修正                     | 舊碼證據                                                                                                                                                            | 移植後證據                                                                                                                                                        |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| #7240 共用抽幀           | deferredVideoFrames 單檔 exit 1：舊碼無共用模組，0 passed／1 failed／1 import error。這是介面新增，非既有行為斷言失敗。                                             | 分類指定的 unit／bun 單檔 2 passed；integration／bun 2 passed，含不夠幀時 fail-closed 與 fallback 全抽幀逐 byte 相同。                                            |
+| #7241 分段生命週期       | `red-segment.log` 的 prepare 順序、retry 重抽、resume 不抽與 abort release 等斷言失敗；整個初試 37 passed／12 failed／1 missing-module error，含舊 POSIX 路徑失敗。 | 最終新功能篩選 `with segmentVideoFrames\|drawElement self-verify` 15 passed／0 failed；segmentVideoFrames 單檔 13 passed／0 failed。                              |
+| #7255 drawElement 校驗   | `red-verify.log` 中 segmented／sequential 的「compares … ground truth」與「fails … below … floor」四例失敗，舊碼沒有呼叫校驗。                                      | segmented 的兩例包含在上列 15 passed；streaming 全檔 35 passed／0 failed，保留原 PSNR floor。                                                                     |
+| #7254 reference loudness | planner 的 ceiling／true-peak／limitedBy 三例與 command 寫入／回報一例共四例失敗。                                                                                  | normalize-audio 的 planner／command 與 contrast-fg 合計 42 passed／0 failed；CLI 完整 suite 中新增 command 也通過。                                               |
+| #7256 警告前綴           | `red-engine.json` 7 passed／1 failed：長自由文字前不是 origin／code。                                                                                               | 同檔 8 passed／0 failed。                                                                                                                                         |
+| #7258 SVG gradient       | contrast-fg 舊碼將 gradient 當黑色，`toBeNull` 失敗。新增 browser 案例初試是 Chrome 30 秒啟動逾時，不當作視覺行為紅燈。                                             | contrast-fg 與上列 CLI focused 均通過；完整 CLI suite 的新增 browser 案例 passed，light／dim／borrowed stops 與 pattern 的實際像素斷言成立。                      |
+| #7242 window flag        | `red-window.log` 的 forFrames 預抽／失敗清理兩例在舊介面失敗，另缺 videoFrameWindow 模組；初試混入 Vitest 檔造成的 runner error 不列為回歸證據。                    | 正確分類的 orchestrator／coverage／manifest 最終 focused 30 passed／0 failed／47 filtered；window helper 2 passed。較廣的 producer focused 356 passed／0 failed。 |
+
+producer runner 由 `discoverProducerTests()` 分類：unit Vitest 透過 `node scripts/run-test-lane.mjs unit vitest`；unit bun 依同一清冊、HYPERFRAMES_TEST_LANE=unit 與 no-network preload，每檔 fresh process，失敗後繼續到最後一檔。分類測試 7 passed；全部 179 檔均有分類。未跑跨 workspace Full。
+
+### 真實媒體與瀏覽器驗收
+
+integration lane 的 deferredVideoFrames（bun）2 passed、extractVideosStage（Vitest）2 passed，均 exit 0：包含真實 FFmpeg、deferred fallback 逐 byte 與 VFR 來源留在全抽幀路徑。
+
+真實 windowedFrames 只取兩個獨立必要證據，不展開其餘案例：`bun test src/services/render/windowedFrames.integration.test.ts -t 'renders a mid-clip start frame for frame'` exit 0，150 畫格的 framemd5 與完整抽幀一致；`-t 'never holds more than workers'` 初次 exit 1（2-workers-windowed 的 session navigation 60000ms 逾時），一次聚焦確認 exit 0，240 畫格一致，source-frame sampled／reported peak 均 715796 bytes，largest frame 6428 bytes，bound 925632 bytes。確認過程中 full 與 windowed 的測試內 retry 都為 false，沒有啟用 HF_TEST_RETRY_BROWSER_STALL、調長 timeout 或移除斷言。首個失敗與確認紀錄分別保存在 `integration-window-peak.*`／`integration-window-peak-confirm.*`；不把原始失敗抹掉。其餘 windowed integration 案例與硬體 drawElement 視覺 parity 未執行。
+
+### 完整套件與乾淨 HEAD 逐名比較
+
+乾淨樹由 `git archive HEAD` 建立，沒有切分支或更動 index；archive 中 packages／scripts 的 5532 個檔案逐 byte 比對差異 0。第三方依賴用 junction 共用，各 workspace 指向乾淨樹自己的 package；重建 core、lint、engine、studio-server、studio、inspector、player、producer、CLI dist。初次缺 ignore junction／前置 dist 的建置失敗，補齊環境後成功，沒有為建置改產品。CLI／engine／studio-server／producer 的移植樹 build 皆 exit 0。
+
+完整 suite 各樹各跑一次。Vitest JSON／default reporter、逐名 failures、差集及命令 exit 保存於 `tmp/upstream-20261106-35c/`；`reconciled-comparison.json` 分開保存原始差異與聚焦後未解差異，不將 0 個 assertion failure 當成 runner exit 0。下表為 pass／fail／skip。
+
+| 套件／命令（套件 cwd）                                             | 乾淨 HEAD        | 移植樹           | Exit HEAD／移植             | 原始只在移植樹失敗 | 聚焦後未解 |
+| ------------------------------------------------------------------ | ---------------- | ---------------- | --------------------------- | ------------------ | ---------- |
+| cli：`bun run test --maxWorkers=2`                                 | 6230／35／306    | 6239／29／306    | 1／1                        | 0                  | 0          |
+| engine：`bun run test --maxWorkers=2`                              | 2616／6／53      | 2622／0／53      | 1／1                        | 0                  | 0          |
+| studio-server：`bun run test --maxWorkers=2`                       | 1490／23／61     | 1488／25／61     | 1／1                        | 2                  | 0          |
+| producer unit Vitest：`node scripts/run-test-lane.mjs unit vitest` | 1142／4／5       | 1164／6／5       | 1／1                        | 2                  | 0          |
+| producer unit bun：分類清冊逐檔、unit 環境、no-network preload     | 875／8／0，52 檔 | 909／8／0，55 檔 | 各 3 檔 exit 1，其餘 exit 0 | 0                  | 0          |
+
+Studio-server 的兩個原始差異為 projectHistory「ends a window idle past its lifetime」與 videoState「projects real committed history」；雙樹僅重跑這兩例，皆 2 passed／0 failed。producer Vitest 的兩個原始差異是 deGateProbe「a comp the engine refuses at init …」與 stall「gives each retry batch its own first-frame window」；雙樹對 stall、deGateProbe、segmentedDeRetry 三檔各作一次聚焦，皆 16 passed／1 failed，共同失敗只有既有「retries a stalled attempt on fewer workers … completes」，兩個差異案例均通過。沒有修改這些測試或 timeout。
+
+CLI 原始逐名差集為 0；engine 原始逐名差集為 0，兩樹另有 undecodableTrack suite setup error，移植樹 assertion 0 fail 仍是 exit 1。producer bun 八個失敗名稱完全相同：chunkAudio 三例、projectHash 的四例 symlink EPERM 與 segmentOutputPath 的 POSIX 常數斷言。segmentManifest、renderDirOwner 與既有 stall 等共同失敗保留。完整產品驗收不是 0 fail，不能宣稱完整綠燈；沒有再跑已完成的全套。
+
+產品補丁完成後僅做非語意格式化；最終 `final-product-inputs.json` 釘 HEAD、changed／untracked 輸入雜湊，後續分類正確的 focused 命令與 reporter 均保留。沒有把後補雜湊冒稱為完整 suite 啟動時的快照。
+
+### 靜態閘門
+
+lefthook core／studio／scripts 三組 `node node_modules/typescript/bin/tsc --noEmit -p <path>` 均 exit 0（無輸出）。`node_modules/.bin/fallow audit --base origin/main --fail-on-issues` exit 0，36 changed files，new-only gate 排除三個 inherited findings，沒有新增阻擋項；完整 log 保留。變更 32 檔 oxlint exit 0、0 warnings／0 errors；`bun run check:cli-process-ownership` exit 0。只執行獨立檢查，沒有執行會 staging 的 lefthook format job。
+
+### 最新剩餘快照（水位 `32eb4c358`）
+
+2026-11-06、fork HEAD `2de8e9755` 的 `python tools/check_upstream_updates.py --strict` exit 1，原始輸出為 `strict-final.md`；上游 tip `6011d9d0dd555a21430baeee8d84cca8cbacbb6a`。commit 軸仍有 17 筆（下一筆 `256b84a41`／#7264），PR #7242 以上 52 筆、issue #7223 以上 9 筆；96 筆 monitored 中 #6695 有一筆 open head 差異，原釘選仍為 `8aa9967f3b8bb8c776f7555d065d8ebd939ebe66`。這是現行剩餘數量的單一記錄處，舊節數字只代表各自水位日期快照。
+
+只推進有逐筆證據的八筆連續前綴至 `32eb4c3582d6b5b52c06f1444d23bc395b8e19d8`；PR #7242、issue #7223，baseline／UPSTREAM／DECISIONS／ROADMAP 現況一致。strict、完整產品套件與 CLI 既有封裝大小缺口仍在，ROADMAP 近期列保留。需上傳的新 LFS 物件：無。
+
+### 維護 gate 收尾
+
+2026-11-06、fork HEAD `2de8e9755` 的 `pwsh -NoProfile -File tools/dev_check.ps1` exit 0：39 passed／0 failed；相對連結 12 份文件、0 錯誤，結尾 `WINDOWS DEV CHECK GREEN`。新增 Markdown 節使用 `node_modules/.bin/oxfmt --ignore-path <empty-ignore>` 格式化，歷史節保留原文與原有表格格式；`git diff --check` exit 0。產品程式在聚焦確認後沒有變更；最終整體工作樹輸入另保存為 `delivery-inputs.json`。
