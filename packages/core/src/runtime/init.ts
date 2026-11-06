@@ -3960,6 +3960,17 @@ export function initSandboxRuntimeModular(): void {
 
   // Passes that must see scene DOM, which arrives after init: when scenes mount, or when one is
   // swapped. Resolves when caption overrides have landed.
+  // Registered scene timelines other than the root's, as upstream's helper of the same name
+  // (#6785) returns them; motion blur mutes their discrete callbacks while it scans (#7271).
+  const sceneTimelines = () => {
+    const timelines = (window.__timelines ?? {}) as Record<string, RuntimeTimelineLike | undefined>;
+    const rootCompositionId =
+      resolveRootCompositionElement()?.getAttribute("data-composition-id") ?? null;
+    return Object.entries(timelines).filter(
+      (entry): entry is [string, RuntimeTimelineLike] =>
+        !!entry[1] && typeof entry[1] === "object" && entry[0] !== rootCompositionId,
+    );
+  };
   // Capture motion blur (data-motion-blur="on" on the root). Its pose reads seek the timeline
   // and adapters only: media and transport bookkeeping stay on the frame's seek.
   function initMotionBlur(): void {
