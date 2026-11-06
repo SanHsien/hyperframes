@@ -1,7 +1,7 @@
 # 路線圖
 
 > 本 repo 後續工作的單一真相源。做完一項，就在同一個 commit 刪掉那一列；新工作只加在這裡。
-> 上游審查於 2026-11-06 接續到 commit `32eb4c3582d6b5b52c06f1444d23bc395b8e19d8`（PR #7242、issue #7223）；逐筆裁決見 [接續缺口清冊](docs/UPSTREAM_REVIEW_2026-11-04_CONTINUED.md)。CI／告警保留現況段既有日期快照。
+> 上游審查於 2026-11-06 接續到 commit `b4cc674f7f312e77ded32e0b53006cc0bad6723b`（PR #7242、issue #7223）；逐筆裁決見 [接續缺口清冊](docs/UPSTREAM_REVIEW_2026-11-04_CONTINUED.md)。CI／告警保留現況段既有日期快照。
 
 ## 現況
 
@@ -34,6 +34,8 @@ HyperFrames 將 HTML、CSS 與動畫渲染為影片，本線保留 Windows 渲�
 2026-11-06 以 fork `2e34275fc` 接續審查 8 個連續 commit 至 `b108f8512`，採用六筆修正並補 #6829 先決；PR 水位 #7238、issue #7223，monitored 維持 96 筆。core 全套 5598 passed／11 skipped／0 failed；lint 與 CLI 的完整比較及瀏覽器限制見 [接續清冊](docs/UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-06接續至-b108f8512審查-8-個連續-commit)。strict 與完整產品驗收仍有缺口，近期接續列保留；既有日期快照不變。
 
 2026-11-06 以 fork `2de8e9755` 接續審查 8 個連續 commit 至 `32eb4c358`，採用七筆產品修正；PR 水位 #7242、issue #7223，monitored 維持 96 筆。producer／engine／CLI／studio-server build 與 lefthook 三組 typecheck、fallow 通過；雙樹完整套件比較及真實渲染限制見 [接續清冊](docs/UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-06接續至-32eb4c358審查-8-個連續-commit)。strict 與完整產品驗收仍有缺口，近期接續列保留；既有日期快照不變。
+
+2026-11-06 以 fork `6e8cc4d8b` 接續審完 `256b84a41..b4cc674f7` 八筆連續 commit，採用五筆產品修正與 #7061 先決；commit 水位至 `b4cc674f7`，PR #7242／issue #7223、monitored 96 筆保持。core 全套 5607 passed／11 skipped／0 failed；CLI 與乾淨 HEAD 的完整比較、聚焦紅綠及靜態閘門見 [接續清冊](docs/UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-06接續至-b4cc674f7審查-8-個連續-commit)。strict 與完整產品驗收仍有缺口，近期接續列保留；既有日期快照不變。
 
 ## 近期：可以直接動手
 

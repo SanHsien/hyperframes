@@ -242,6 +242,24 @@ describe("createColorGradingRuntime", () => {
     return { video, canvas };
   }
 
+  it("skips source uploads behind the CLI draw gate and resumes on the next draw", () => {
+    startRuntimeWithVideo();
+    const key = Symbol.for("hyperframes.webglDrawGate");
+    const previous = Reflect.get(window, key);
+    try {
+      Reflect.set(window, key, { skip: true });
+      texImage2DCalls = [];
+      for (let i = 0; i < 8; i++) runtime?.redraw();
+      expect(texImage2DCalls.filter((args) => args.length === 6)).toHaveLength(0);
+      Reflect.set(window, key, { skip: false });
+      runtime?.redraw();
+      expect(texImage2DCalls.filter((args) => args.length === 6)).toHaveLength(1);
+    } finally {
+      if (previous === undefined) Reflect.deleteProperty(window, key);
+      else Reflect.set(window, key, previous);
+    }
+  });
+
   it.each([
     { pixelRatio: 1, width: 640, height: 360 },
     { pixelRatio: 2, width: 1280, height: 720 },

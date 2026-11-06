@@ -1352,12 +1352,87 @@ CLI 原始逐名差集為 0；engine 原始逐名差集為 0，兩樹另有 unde
 
 lefthook core／studio／scripts 三組 `node node_modules/typescript/bin/tsc --noEmit -p <path>` 均 exit 0（無輸出）。`node_modules/.bin/fallow audit --base origin/main --fail-on-issues` exit 0，36 changed files，new-only gate 排除三個 inherited findings，沒有新增阻擋項；完整 log 保留。變更 32 檔 oxlint exit 0、0 warnings／0 errors；`bun run check:cli-process-ownership` exit 0。只執行獨立檢查，沒有執行會 staging 的 lefthook format job。
 
-### 最新剩餘快照（水位 `32eb4c358`）
+### 水位 `32eb4c358` 時點的剩餘快照
 
-2026-11-06、fork HEAD `2de8e9755` 的 `python tools/check_upstream_updates.py --strict` exit 1，原始輸出為 `strict-final.md`；上游 tip `6011d9d0dd555a21430baeee8d84cca8cbacbb6a`。commit 軸仍有 17 筆（下一筆 `256b84a41`／#7264），PR #7242 以上 52 筆、issue #7223 以上 9 筆；96 筆 monitored 中 #6695 有一筆 open head 差異，原釘選仍為 `8aa9967f3b8bb8c776f7555d065d8ebd939ebe66`。這是現行剩餘數量的單一記錄處，舊節數字只代表各自水位日期快照。
+2026-11-06、fork HEAD `2de8e9755` 的 `python tools/check_upstream_updates.py --strict` exit 1，原始輸出為 `strict-final.md`；上游 tip `6011d9d0dd555a21430baeee8d84cca8cbacbb6a`。commit 軸仍有 17 筆（下一筆 `256b84a41`／#7264），PR #7242 以上 52 筆、issue #7223 以上 9 筆；96 筆 monitored 中 #6695 有一筆 open head 差異，原釘選仍為 `8aa9967f3b8bb8c776f7555d065d8ebd939ebe66`。這是水位 32eb4c358 的日期快照；現行剩餘範圍見後續新節。
 
 只推進有逐筆證據的八筆連續前綴至 `32eb4c3582d6b5b52c06f1444d23bc395b8e19d8`；PR #7242、issue #7223，baseline／UPSTREAM／DECISIONS／ROADMAP 現況一致。strict、完整產品套件與 CLI 既有封裝大小缺口仍在，ROADMAP 近期列保留。需上傳的新 LFS 物件：無。
 
 ### 維護 gate 收尾
 
 2026-11-06、fork HEAD `2de8e9755` 的 `pwsh -NoProfile -File tools/dev_check.ps1` exit 0：39 passed／0 failed；相對連結 12 份文件、0 錯誤，結尾 `WINDOWS DEV CHECK GREEN`。新增 Markdown 節使用 `node_modules/.bin/oxfmt --ignore-path <empty-ignore>` 格式化，歷史節保留原文與原有表格格式；`git diff --check` exit 0。產品程式在聚焦確認後沒有變更；最終整體工作樹輸入另保存為 `delivery-inputs.json`。
+
+## 2026-11-06：接續至 `b4cc674f7`，審查 8 個連續 commit
+
+以 fork `6e8cc4d8b` 為起點，只審 `256b84a41..b4cc674f7` 八筆連續補丁。起始 strict exit 1；原始補丁、唯讀 GraphQL 的 MERGED／mergeCommit 證據、命令與 reporter 存在忽略目錄 `tmp/upstream-20261106-256/`。沒有讀入下一個 commit 的補丁。採用五筆獨立產品修正，另補已合併的 #7061 必要先決。
+
+| Commit／PR                                                                | 裁決與理由                                                                                                                                                                                                             | 上游證據                                                                                                                     | fork 證據                                                                                   |
+| ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `256b84a41`／[#7264](https://github.com/heygen-com/hyperframes/pull/7264) | 採用：CLI no-draw seek 的 draw gate 同時阻止 color-grading source texture 上傳，下一次正常 draw 恢復。保留既有 WebGL／來源處理。                                                                                       | `256b84a41:packages/core/src/runtime/colorGrading.ts:3352`                                                                   | `packages/core/src/runtime/colorGrading.ts:3345`                                            |
+| `4935d6736`／[#7267](https://github.com/heygen-com/hyperframes/pull/7267) | 採用：gain 被 ceiling／true-peak 限制而不寫檔時，回報實際保持的 LUFS。補齊先前 #7254 適配遺漏的 absolute matched／held 區別，不引進不同 loudness 政策。                                                                | `4935d6736:packages/cli/src/commands/normalize-audio.ts:203`；`9c01e2e12:packages/studio-server/src/helpers/loudness.ts:567` | `packages/cli/src/commands/normalize-audio.ts:168`、`:198`                                  |
+| `72326a3ac`／[#7268](https://github.com/heygen-com/hyperframes/pull/7268) | 採用：render 等待的 lint 保持正常優先權，preview／Studio 背景 lint 明確帶 background；保留既有 Windows EPERM／EACCES 靜默處理。                                                                                        | `72326a3ac:packages/cli/src/renderSetupWorker.ts:40`                                                                         | `packages/cli/src/renderSetupWorker.ts:39`                                                  |
+| `5259fd112`／[#7280](https://github.com/heygen-com/hyperframes/pull/7280) | 不採用：這是上游 queue 的 stale 自動關閉政策及 Renovate label 配套，非產品修正。本 fork 使用 Dependabot，現有 queue 由維護者逐筆判斷；只有決定採取同一個 14+7 日自動關閉政策時成組重訪，不因產品同步新增自動關閉權限。 | `5259fd112:.github/workflows/stale.yml:22`、`5259fd112:.github/renovate.json:9`                                              | `TRIAGE.md:89`、`.github/dependabot.yml:5`                                                  |
+| `cbe5dcb2d`／[#7270](https://github.com/heygen-com/hyperframes/pull/7270) | 整版 release 不適用：只含版本 metadata、發行說明及其鏡像。fork 未整版同步，不宣稱 v0.9.18；不改 npm／plugin 發行版本。                                                                                                 | `cbe5dcb2d:releases/v0.9.18.md:5`                                                                                            | `packages/core/package.json:3`、`packages/cli/package.json:3`                               |
+| `6abc62a17`／[#7283](https://github.com/heygen-com/hyperframes/pull/7283) | 採用，連同 #7061：每一次 render landing（包括 replay）都 settle 已結束的 overlap，讓 set 打斷 tween 後的畫格與 preview 相同。保留本線 gsapTimelineOf stand-in 與 authored-order steps。                                | `6abc62a17:packages/core/src/runtime/adapters/gsap.ts:263`                                                                   | `packages/core/src/runtime/adapters/gsap.ts:260`                                            |
+| `b56e2c036`／[#7287](https://github.com/heygen-com/hyperframes/pull/7287) | 採用：保留能擷取的本機字型，缺少的 family 加空 face 走 stack fallback；CLI 點名、JSON 列 swapped_fonts。只放寬系統字型 capture pass，前置解析仍 fail-closed，其他例外仍傳出。保留本線 offloadMedia 介面。              | `b56e2c036:packages/cli/src/cloud/fontPreflight.ts:103`                                                                      | `packages/cli/src/cloud/fontPreflight.ts:103`；`docs/packages/cli.mdx` 的 cloud render 說明 |
+| `b4cc674f7`／[#7290](https://github.com/heygen-com/hyperframes/pull/7290) | 整版 release 不適用：v0.9.19 發行 metadata／changelog，處理同上一筆 release；不更動本線版本或發布 guard。                                                                                                              | `b4cc674f7:releases/v0.9.19.md:5`                                                                                            | `packages/core/package.json:3`、`packages/cli/package.json:3`                               |
+
+### 先決、延後與三軸邊界
+
+#7283 需要 `0f85af7c7`／#7061 的 overlap span metadata、settleOverlapsEndedBetween 與 preview 回歸；唯讀 GraphQL 確認 MERGED。來源 `0f85af7c7:packages/core/src/runtime/adapters/gsap.ts:221` → fork 同檔 `:224`；preview 先在乾淨 HEAD 注入上游測試，2 passed／2 failed，移植後 4 passed。#6767 已有的「欲提升音量時不能反向降低」政策保留；以 #6767 的 absoluteOutcome matched／held 性質適配現有 CLI，不新增 studio-server export 或改變公開 helper 介面。
+
+#6940 的 audioDeliveryLimit／browser limiter 沒有出現在這八筆，#7246 保持延後：成組採用 limiter 後驗真實 AAC -1.2 至 -1 dBTP、重複輸出 bytes 與分散式 loudness。#7182 等長來源分段副本與離線長片驗收；#7176 等維護者決定遙測政策；#7104／#7168 retry 等新 session 所有權、取消與一次性重試契約；#6716 的 17 檔遷移等 Windows 私有快取根與完整 guard 測試。五筆修正及 #7061 不依賴這四組延後內容。
+
+commit 水位只推進至 `b4cc674f7f312e77ded32e0b53006cc0bad6723b`。實際起點 PR #7242／issue #7223 不退回提示中的舊水位，也不越過尚未裁決的 PR #7243；指定八筆 PR 均已合併不代表中間所有 PR 都已審完。monitored 保持實際 baseline 的 96 筆，八筆沒有到達其中項目；#6695 未審的 open head 差異保留原釘選，不以新 head 消除缺口。
+
+八筆與 #7061 都沒有 golden／LFS pointer 變更，既有 #6665 pointer 保留；需上傳的新 LFS 物件：無。指定八筆與先決均無 package-size-budgets 增量，不能憑空提高預算；既有 core／CLI 超標另列驗證結果。上游產品作者：Miguel Ángel，email 僅供 Co-authored-by，不寫入文件。
+
+### 聚焦回歸與適配
+
+| 範圍                                                       | 舊碼                                                                                | 最終聚焦                             | exit 舊／新 |
+| ---------------------------------------------------------- | ----------------------------------------------------------------------------------- | ------------------------------------ | ----------- |
+| core colorGrading＋gsap.order                              | 122 passed／2 failed：draw gate 仍上傳八次；set 在 tween 結束後為 0 而非 1          | 加入 preview 共 128 passed／0 failed | 1／0        |
+| #7061 preview（乾淨 HEAD 注入新測試後恢復）                | 2 passed／2 failed：不同 tick／nested timeline 的 hide 不一致                       | 4 passed，包含 callback 恰一次       | 1／0        |
+| CLI normalize／priority／fontPreflight／cloud render fonts | 14 passed／8 failed；其中一例是新增 describeSwappedFonts 介面不存在，其餘為行為斷言 | 22 passed／0 failed                  | 1／0        |
+
+命令為套件 cwd 的 `bun x vitest run <files> --maxWorkers=2`；具體檔案與原始斷言見 `red-core.*`、`red-cli.*`、`red-preview-behavior.*`、`final-core.*`、`final-cli.*`。首次 red-preview 是沒有注入檔案的錯誤 runner，不算紅燈；修正注入位置後得到上述行為負例。首次 CLI 綠測揭露 absolute gain 已受限卻報 Already matched 的舊適配缺口，補 matched／held 判定後才全過。
+
+保留 #7264 的 Chromium 真實圖片上傳測試，另補現有 mock WebGL 的 source upload 性質測試，以在 Windows 預設不啟用 Chromium 時仍能釘行為。顯式啟用 Chromium 的首次驗收 exit 1：Chrome 啟動／profile 錯誤。完整套件結束後作一次 serial 確認仍 exit 1（`chromium-confirm.*`）：同為 browser already running 的啟動錯誤，5 skipped，沒有取得真實 GPU 圖片上傳驗收；到此停止，不以 mock 取代該聲明。
+
+fallow 首次發現 prepareLocalArchive 與新增 settleOverlapsEndedBetween 複雜度超標；抽出字型提示與 overlap predicate，保持相同行為，沒有改 gate、排除或門檻。最終聚焦與 core typecheck 都在此適配後通過。完整 suite 執行期間發生這兩處 helper extraction，完整 suite 與最終 focused 分開記錄，不將前者冒稱為最終 bytes 的全套驗證。
+
+### 完整套件與乾淨 HEAD 逐名比較
+
+乾淨樹以 `git archive HEAD` 建立，沒有改 index 或切分支。archive 中 packages／scripts 共 5543 個檔案逐 byte 比較差異 0；第三方依賴以 junction 共用，各 workspace 指向乾淨樹自身。補齊 ignore junction 與依賴 dist 後，重建 parsers、lint、core、studio-server、studio、inspector、player、CLI；移植樹 core／CLI 最終 build 均 exit 0。初始缺 ignore 的建置失敗不列為產品缺陷，未修改程式或依賴宣告消除環境問題。
+
+只有 core／CLI 產品變更，兩個受影響套件在雙樹各跑一次完整 `bun run test --maxWorkers=2`，JSON reporter 與命令 exit 保存在 `head-{core,cli}.*`、`port-{core,cli}.*`。producer 未改產品檔，不擴大跑 producer lane；沒有執行 `tools/test_product.ps1 -Full`。表內為 passed／failed／skipped。
+
+| 套件 | 乾淨 HEAD     | 移植樹        | exit HEAD／移植 | 原始只在移植樹失敗 |
+| ---- | ------------- | ------------- | --------------- | ------------------ |
+| core | 5598／0／11   | 5607／0／11   | 0／0            | 0                  |
+| cli  | 6233／35／306 | 6243／29／307 | 1／1            | 0                  |
+
+逐名失敗清單為 `head-cli.failures.json`／`port-cli.failures.json`，原始差集與清單 SHA-256 記在 `comparison.json`；未把既有環境失敗計為產品通過。完整 suite 的非零 exit 與跳過都保留，不能宣稱完整產品驗收綠燈。
+
+### 靜態閘門與封裝大小
+
+lefthook 三組 `node node_modules/typescript/bin/tsc --noEmit -p <packages/core/tsconfig.json|packages/studio/tsconfig.json|scripts/tsconfig.json>` 均 exit 0、無輸出；helper extraction 後 core typecheck 再驗仍 exit 0。`node_modules/.bin/fallow audit --base origin/main --fail-on-issues` 最終 exit 0：`No issues in 17 changed files`，dead code／complexity／duplication 皆 0；沒有放寬規則。變更的 16 個 TypeScript 檔 oxlint exit 0，0 warnings／0 errors；`bun run check:cli-process-ownership` exit 0，結尾 `CLI process ownership verified: only process roots terminate the process.`。沒有執行會 staging 的 lefthook format job。
+
+雙樹的 `pnpm pack --json --pack-destination <ignored directory>` 僅用於量測，沒有安裝依賴或新增 lockfile；最終 core／CLI dist 都已重建，原始封裝資訊存於 `package-sizes.json`。
+
+| 套件 | HEAD packed／unpacked | 移植 packed／unpacked | 判定                                |
+| ---- | --------------------- | --------------------- | ----------------------------------- |
+| core | 1681470／4056731      | 1681999／4057971      | 雙樹 packed 既有超標；unpacked 通過 |
+| cli  | 8498594／24200488     | 8500525／24196487     | 雙樹 packed／unpacked 既有超標      |
+
+保留原有 1% 容差，八筆與 #7061 都沒有上游同 commit 的預算增量，因此不調高 budgets。大小缺口不能宣稱已驗收。
+
+### 最新剩餘快照（水位 `b4cc674f7`）
+
+2026-11-06、fork HEAD `6e8cc4d8b` 的 `python tools/check_upstream_updates.py --strict` exit 1，完整結果為 `strict-final.md`；上游 tip `41b7aeeaf`。commit 軸尚有 11 筆，下一筆是 `a81b344`／#7294；PR #7242 以上 55 筆、issue #7223 以上 9 筆；96 筆 monitored 中 #6695 有一筆 open head 差異（原釘 `8aa9967f3b8bb8c776f7555d065d8ebd939ebe66`，查詢為 `3b2321c`）。這是現行剩餘數量的單一記錄處；舊節保留各自日期快照。沒有以未讀補丁或狀態釘選消除 strict 缺口，ROADMAP 近期列維持，連續審查止於指定八筆。
+
+CLI 逐名差集為 0；「只在移植樹失敗＝0」只代表未新增失敗，並非全套 0 failed。
+
+### 維護 gate 收尾
+
+2026-11-06、fork HEAD `6e8cc4d8b` 的 `pwsh -NoProfile -File tools/dev_check.ps1` exit 0：39 passed／0 failed；相對連結 12 份文件、0 錯誤，結尾 `WINDOWS DEV CHECK GREEN`。新 Markdown 節與 CLI 說明以 `node_modules/.bin/oxfmt` 格式化，歷史節只調整過期的「最新」標題與快照定位，不重排舊內容；`git diff --check` exit 0。最終產品來源未再變更，交付時的 changed／untracked SHA-256 存於忽略目錄的 `delivery-inputs.json`，不冒稱它是完整 suite 啟動時的快照。

@@ -71,7 +71,7 @@ import {
   pollUntilTerminal,
 } from "../../cloud/index.js";
 import { reportApiError } from "../../cloud/errors.js";
-import { describeUnresolvedFonts, embedSystemFonts } from "../../cloud/fontPreflight.js";
+import { describeSwappedFonts, embedSystemFonts } from "../../cloud/fontPreflight.js";
 import { parseEnumFlag, parseIntFlag, parseNumericFlag } from "../../cloud/parsing.js";
 import { uploadAssetViaDirectUpload, uploadZipViaDirectUpload } from "../../cloud/upload.js";
 import {
@@ -319,7 +319,10 @@ export default defineCommand({
       if (asJson) {
         console.log(
           JSON.stringify(
-            withMeta({ render: { render_id: renderId, status: "queued" as const } }),
+            withMeta({
+              render: { render_id: renderId, status: "queued" as const },
+              swapped_fonts: preparedArchive?.swappedFonts ?? [],
+            }),
             null,
             2,
           ),
@@ -364,6 +367,7 @@ export default defineCommand({
             render: detail,
             output_path: outputPath,
             bytes_written: downloadResult.bytes,
+            swapped_fonts: preparedArchive?.swappedFonts ?? [],
           }),
           null,
           2,
@@ -643,6 +647,7 @@ interface PreparedLocalArchive {
   fileCount: number;
   largestFiles: ArchiveFileSummary[];
   offloaded: OffloadedMedia[];
+  swappedFonts: string[];
 }
 
 function summarizeLargestFiles(fileMap: Map<string, StagedFile>): ArchiveFileSummary[] {
@@ -650,6 +655,10 @@ function summarizeLargestFiles(fileMap: Map<string, StagedFile>): ArchiveFileSum
     .map(([path, content]) => ({ path, size_bytes: stagedSize(content) }))
     .sort((a, b) => b.size_bytes - a.size_bytes || a.path.localeCompare(b.path))
     .slice(0, LARGEST_FILE_COUNT);
+}
+
+function reportSwappedFonts(families: readonly string[], asJson: boolean): void {
+  if (families.length > 0 && !asJson) console.log(c.dim(describeSwappedFonts(families)));
 }
 
 async function prepareLocalArchive(
@@ -664,16 +673,13 @@ async function prepareLocalArchive(
     console.log(`${c.accent("◆")}  Zipping ${c.accent(project.name)}`);
   }
   const { fileMap, entryPath } = stageProjectFiles(project, composition);
-  const missingFonts = await embedSystemFonts({
+  const swappedFonts = await embedSystemFonts({
     dir: project.dir,
     entryFile: composition,
     entryPath,
     fileMap,
   });
-  if (missingFonts.length > 0) {
-    errorBox("Fonts not on this computer", describeUnresolvedFonts(missingFonts));
-    failCommand();
-  }
+  reportSwappedFonts(swappedFonts, asJson);
   const offloaded = await offloadMedia(project, fileMap, entryPath, asJson, upload);
 
   // Media left on disk barely compresses: past the limit, its size is the report and nothing is read.
@@ -696,6 +702,7 @@ async function prepareLocalArchive(
     fileCount: fileMap.size,
     largestFiles,
     offloaded,
+    swappedFonts,
   };
   if (upload) assertArchiveFits(sizeBytes, largestFiles);
   if (!asJson && sizeBytes >= ARCHIVE_DIAGNOSTIC_THRESHOLD_BYTES) {
@@ -806,6 +813,7 @@ function reportDryRun(prepared: PreparedLocalArchive, asJson: boolean): void {
             exceeds_upload_limit: sizeBytes > DIRECT_UPLOAD_LIMIT_BYTES,
             largest_files: prepared.largestFiles,
             offloaded_media: prepared.offloaded,
+            swapped_fonts: prepared.swappedFonts,
           },
         }),
         null,

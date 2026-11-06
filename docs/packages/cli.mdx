@@ -918,6 +918,10 @@ string turns that service off, whatever credential is present.
 
 ### `normalize-audio`
 
+When a gain or true-peak limit holds a clip's gain, the report shows the loudness
+at its unchanged `data-volume`, rather than the level a proposed gain would reach.
+It names the limit and leaves the file unchanged, including with `--write`.
+
 Match one authored audio clip to a reference using the exact local media bytes
 and FFmpeg's integrated EBU R128 loudness measurement.
 
@@ -2273,6 +2277,12 @@ hyperframes cloud list                          # recent renders
 ```
 
 ### `cloud render [<projectDir>]`
+
+System fonts available on this computer are embedded in the archive. A font with
+no local file uses the next font in its CSS stack (or the default font), as a local
+render does. The command names these substitutions; JSON reports list them in
+`swapped_fonts` (`archive.swapped_fonts` for `--dry-run`). A missing local font
+does not stop the render. Errors other than a missing font still fail the command.
 
 End to end: zips the project, uploads it through the direct-to-S3 asset flow,
 submits `POST /v3/hyperframes/renders`, polls
