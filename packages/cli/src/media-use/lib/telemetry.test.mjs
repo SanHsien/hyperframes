@@ -18,7 +18,8 @@ function sandbox() {
   const root = mkdtempSync(join(tmpdir(), "mu-telemetry-"));
   const home = join(root, "home");
   mkdirSync(home, { recursive: true });
-  process.env.HOME = home;
+  process.env.HOME = process.env.USERPROFILE = home;
+  delete process.env.HYPERFRAMES_CONFIG_DIR;
   process.env.HYPERFRAMES_MEDIA_HOME = home;
   return { root, home };
 }
@@ -71,6 +72,40 @@ test("optedOut honors telemetryEnabled: false from the shared config", () => {
     assert.equal(optedOut(), false, "telemetryEnabled: true allows tracking");
     writeFileSync(configPath, "{not json");
     assert.equal(optedOut(), false, "unreadable config: tracking allowed");
+  } finally {
+    restoreEnv(savedEnv);
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("the shared config is read from HYPERFRAMES_CONFIG_DIR when it is set", () => {
+  const savedEnv = { ...process.env };
+  const { root } = sandbox();
+  try {
+    withoutTelemetryOptOut();
+    const configDir = join(root, "config");
+    mkdirSync(configDir, { recursive: true });
+    writeFileSync(join(configDir, "config.json"), JSON.stringify({ telemetryEnabled: false }));
+    process.env.HYPERFRAMES_CONFIG_DIR = configDir;
+    assert.equal(optedOut(), true);
+  } finally {
+    restoreEnv(savedEnv);
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("an opt-out in ~/.hyperframes holds until HYPERFRAMES_CONFIG_DIR has its own config", () => {
+  const savedEnv = { ...process.env };
+  const { root, home } = sandbox();
+  try {
+    withoutTelemetryOptOut();
+    mkdirSync(join(home, ".hyperframes"), { recursive: true });
+    writeFileSync(
+      join(home, ".hyperframes", "config.json"),
+      JSON.stringify({ telemetryEnabled: false }),
+    );
+    process.env.HYPERFRAMES_CONFIG_DIR = join(root, "moved");
+    assert.equal(optedOut(), true);
   } finally {
     restoreEnv(savedEnv);
     rmSync(root, { recursive: true, force: true });

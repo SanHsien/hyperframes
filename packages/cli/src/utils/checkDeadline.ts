@@ -35,6 +35,25 @@ export class CheckDeadlineError extends Error {
   }
 }
 
+export const COPY_BUDGET_MS = 120_000;
+
+export class CheckCopiesUnfinishedError extends Error {
+  constructor(budgetMs: number, unfinished: readonly string[]) {
+    super(
+      `Making browser-playable video copies took longer than ${budgetMs / 1000} s: ${unfinished.join(", ")}. ` +
+        "Finished pieces are kept. Run `hyperframes check --prepare-media` (no time limit) to finish them, then run check again.",
+    );
+  }
+}
+
+export class CheckBudgetError extends Error {
+  constructor(budgetMs: number, where: string) {
+    super(
+      `Check reached its --budget of ${budgetMs / 1000} s${where || "."} The report holds what it found before then.`,
+    );
+  }
+}
+
 export class CheckStoppedError extends Error {
   constructor(signal: string) {
     super(`Check stopped before finishing (${signal}).`);
@@ -57,10 +76,28 @@ export class CheckDeadline {
   private readonly spent = new Map<CheckPhase, number>();
   private readonly partials: Array<() => Partial<CheckBrowserResult>> = [];
 
-  constructor() {
+  private readonly budgetTimer: NodeJS.Timeout | undefined;
+  private readonly stopAt: number | undefined;
+
+  constructor(
+    private readonly idleMs = CHECK_IDLE_MS,
+    budget?: { ms: number; stopAt: number },
+  ) {
     this.expiry = new Promise((_, reject) => {
       this.rejectExpiry = reject;
     });
+    this.expiry.catch(() => undefined);
+    this.budgetTimer =
+      budget &&
+      setTimeout(
+        () => this.expire(new CheckBudgetError(budget.ms, this.where())),
+        Math.max(0, budget.stopAt - Date.now()),
+      );
+    this.stopAt = budget?.stopAt;
+  }
+
+  remainingMs(): number | undefined {
+    return this.stopAt === undefined ? undefined : Math.max(0, this.stopAt - Date.now());
   }
 
   keepPartial = (read: () => Partial<CheckBrowserResult>): void => {
@@ -85,13 +122,18 @@ export class CheckDeadline {
   }
 
   private describe(): string {
+    const where = this.where();
+    return where && ` (no progress for ${this.idleMs / 1000} s after Chrome was ready),${where}`;
+  }
+
+  private where(): string {
     if (!this.work) return "";
     const open = Date.now() - this.work.since;
     const parts = [...this.spent].map(([phase, ms]) => {
       const seconds = ((phase === this.work?.phase ? ms + open : ms) / 1000).toFixed(1);
       return `${PHASE_LABELS[phase]} ${seconds}${BEFORE_DEADLINE.has(phase) ? " (before the deadline)" : ""}`;
     });
-    return ` (no progress for ${CHECK_IDLE_MS / 1000} s after Chrome was ready), while ${PHASE_LABELS[this.work.phase]}${this.work.detail ? ` (${this.work.detail})` : ""}. Seconds per phase: ${parts.join(", ")}.`;
+    return ` while ${PHASE_LABELS[this.work.phase]}${this.work.detail ? ` (${this.work.detail})` : ""}. Seconds per phase: ${parts.join(", ")}.`;
   }
 
   start = (): void => {
@@ -105,12 +147,13 @@ export class CheckDeadline {
     clearTimeout(this.timer);
     this.timer = setTimeout(
       () => this.expire(new CheckDeadlineError(this.scripts.at(-1), this.describe())),
-      CHECK_IDLE_MS,
+      this.idleMs,
     );
   }
 
   private expire(error: Error): void {
     clearTimeout(this.timer);
+    clearTimeout(this.budgetTimer);
     this.expired = error;
     this.rejectExpiry(error);
     this.abort.abort(error);
@@ -159,6 +202,7 @@ export class CheckDeadline {
   async close(): Promise<void> {
     this.phase = "closed";
     clearTimeout(this.timer);
+    clearTimeout(this.budgetTimer);
     const closes = await Promise.allSettled([...this.browsers].map(closeManagedBrowser));
     const errors = closes
       .filter((entry) => entry.status === "rejected")

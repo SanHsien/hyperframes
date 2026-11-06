@@ -210,10 +210,18 @@ commit 水位只推進連續 11 筆至 `3f42dc1c73b0c9915b311e48bd0099b39a0865a9
 
 #7199 適配本線既有 peak guard，不引入延後的 limiter；#7195 不引入本線沒有的 starts cache；#7190 不搬入缺 #7108 前置 fixture 的缺陷測試。#7182、#7176、#7104／#7168 retry、#6716 的 17 檔快取遷移仍維持既有條件。沒有 golden LFS pointer 變更或新增待上傳物件。
 
-commit 水位 `aa34cffe4b8d66053bc1bf999275b12265c22ab7`、PR #7190、issue #7223，monitored 維持 92 筆。最新剩餘數量只在接續清冊的此節記錄。審查水位不代表整版同步或完整產品驗收；ROADMAP 保留接續計畫。
+commit 水位 `aa34cffe4b8d66053bc1bf999275b12265c22ab7`、PR #7190、issue #7223，monitored 維持 92 筆。該水位剩餘快照見當時的接續清冊。審查水位不代表整版同步或完整產品驗收；ROADMAP 保留接續計畫。
 
 ## 2026-11-06：連續水位 `659ef568d`
 
 以 fork `12c05b9ea` 接續審查 `f3e5b81df..659ef568d` 的 15 個連續 commit，採用／部分採用 8 組獨立修正。逐筆上游與 fork 行號、先決條件、紅綠測試及完整套件比較見 [接續清冊](UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-06接續至-659ef568d審查-15-個連續-commit)。
 
-commit 水位 `659ef568d71442a3e4f1b919cf03a547c79e7005`，PR 維持 #7190、issue 維持 #7223。monitored 維持 92 筆，#7038 重釘 closed、head 不變，沒有合併因而不移植。#7182、#7176、#7104／#7168 retry、#6716 的 17 檔遷移維持原條件；沒有 golden／LFS pointer 變更。最新剩餘數字只在接續清冊的此節維護；ROADMAP 保留接續計畫。
+commit 水位 `659ef568d71442a3e4f1b919cf03a547c79e7005`，PR 維持 #7190、issue 維持 #7223。monitored 維持 92 筆，#7038 重釘 closed、head 不變，沒有合併因而不移植。#7182、#7176、#7104／#7168 retry、#6716 的 17 檔遷移維持原條件；沒有 golden／LFS pointer 變更。該水位剩餘快照見當時的接續清冊；ROADMAP 保留接續計畫。
+
+## 2026-11-06：連續水位 `0a6746e1d`
+
+以 fork `d599288fd` 接續，審查 `b96d3c8bd..0a6746e1d` 的 15 個連續 commit，採用／部分採用 11 組修正並補 #6707 先決；逐筆原始碼行號、PR 裁決與驗證見 [接續清冊](UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-06接續至-0a6746e1d審查-15-個連續-commit)。
+
+commit 水位 `0a6746e1d6fabab6178ef8ead0e6da1593a1e59a`、PR #7231、issue #7223。monitored 由 92 增為 96 筆，新增 open #7208、#7209、#7215、#7227 的 head／條件，既有釘選保留。#7225 等 #6912／#7232 的 WebKit 音訊接管與記憶體契約，#7247 等 #6621 的 CLI 解析契約；billing 與整版 release 不適用。#7182、#7176、#7104／#7168 retry、#6716 的 17 檔遷移維持條件，採用部分不依賴它們。沒有 golden／LFS pointer 變更；最新剩餘數量僅在接續清冊的新節記錄。
+
+#6904 的 open head 移動至 `fa3302b927d8c4542a276c199d1620978797b718`；完整 3 檔 diff 已重審並重釘，維持合併後再驗 element-identity 幾何與 capture/filter 像素的條件，monitored 總數仍 96。細節見接續清冊的新節。

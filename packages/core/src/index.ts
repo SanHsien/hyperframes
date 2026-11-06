@@ -266,7 +266,12 @@ export { parseCubeLut, CubeLutParseError, type ParseCubeLutOptions } from "./col
 export {
   firstFrameColourArgs,
   hdrToSdrToneMapFilter,
+  keyframeTransferArgs,
+  parseKeyframeTransfers,
+  readsKeyframeTransfers,
+  toneMapReferenceNits,
   parseFirstFrameColour,
+  type ToneMapFrameColour,
   type ToneMapSourceColour,
 } from "./hdrToneMap";
 export {

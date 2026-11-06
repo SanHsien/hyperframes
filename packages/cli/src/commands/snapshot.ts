@@ -61,6 +61,10 @@ import {
 import {
   firstFrameColourArgs,
   hdrToSdrToneMapFilter,
+  keyframeTransferArgs,
+  parseKeyframeTransfers,
+  type ToneMapFrameColour,
+  readsKeyframeTransfers,
   isClipVisibleAt,
   isInClipWindow,
   parseFirstFrameColour,
@@ -507,15 +511,7 @@ export async function extractVideoFrameToBuffer(
       metadata && isHdrColorSpace(metadata.colorSpace)
         ? hdrToSdrToneMapFilter(
             metadata.colorSpace ?? {},
-            parseFirstFrameColour(
-              (
-                await runFfmpegOnce(
-                  ffmpegPath,
-                  firstFrameColourArgs(videoPath),
-                  FFMPEG_EXTRACT_TIMEOUT_MS,
-                )
-              ).stderr,
-            ),
+            await frameColour(ffmpegPath, videoPath, metadata.videoCodec),
           )
         : null;
     const frameArgs = (toneMapFilter: string | null): string[] => {
@@ -1751,3 +1747,17 @@ export default defineCommand({
     }
   },
 });
+
+async function frameColour(
+  ffmpegPath: string,
+  videoPath: string,
+  codec: string,
+): Promise<ToneMapFrameColour> {
+  const read = (args: string[]) => runFfmpegOnce(ffmpegPath, args, FFMPEG_EXTRACT_TIMEOUT_MS);
+  const probe = await read(firstFrameColourArgs(videoPath));
+  const first = parseFirstFrameColour(probe.stderr);
+  if (probe.code !== 0 || !readsKeyframeTransfers(first)) return first;
+  const keyframes = await read(keyframeTransferArgs(videoPath, codec));
+  const keyframeTransfers = keyframes.code === 0 ? parseKeyframeTransfers(keyframes.stderr) : [];
+  return { ...first, keyframeTransfers };
+}

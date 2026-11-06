@@ -1,3 +1,4 @@
+import { projectIgnore } from "./projectIgnore.js";
 export { shouldBlockRender } from "./shouldBlockRender.js";
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
@@ -229,10 +230,12 @@ export async function lintProject(
   const allHtmlSources: HtmlSource[] = [{ html: rootHtml, compSrcPath: rootCompSrcPath }];
   const compositionsDir = resolve(projectDir, "compositions");
   if (!entryFile && existsSync(compositionsDir)) {
+    const ignored = projectIgnore(projectDir);
     const collectHtmlFiles = (dir: string, rel: string): string[] => {
       const out: string[] = [];
       for (const entry of readdirSync(dir, { withFileTypes: true })) {
         const relPath = rel ? `${rel}/${entry.name}` : entry.name;
+        if (ignored.ignores(`compositions/${relPath}${entry.isDirectory() ? "/" : ""}`)) continue;
         if (entry.isDirectory()) {
           // Registry components are source snippets, not independently mounted
           // sub-compositions. Linting every installed template here makes an

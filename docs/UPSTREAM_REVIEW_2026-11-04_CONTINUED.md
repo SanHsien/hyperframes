@@ -613,7 +613,7 @@ commit 連續區段 `b3b6a8116..370f886aa`（14 個，兩端含）逐筆有證�
 
 交付擴大驗證：`bun run --cwd packages/cli test src/auth src/commands/auth src/commands/check.test.ts src/commands/cloud/render.test.ts src/utils/networkFailure.test.ts src/server/studioServer.stampOnOpen.test.ts` exit 0，18 檔 397 passed／1 skipped／0 failed。`pwsh -NoProfile -File tools/dev_check.ps1` exit 0：compileall／Ruff 通過，39 passed／0 failed，相對連結 12 份文件、0 錯誤，結尾 `WINDOWS DEV CHECK GREEN`。變更程式 oxlint 0 warnings／0 errors；Markdown 與變更檔已執行 oxfmt，skills manifest 依本線重生。
 
-### 收尾 strict 快照（剩餘數量的單一記錄處）
+### 收尾 strict 快照（該水位的歷史快照）
 
 `python tools/check_upstream_updates.py --strict` exit 1，固定上游 tip `b7d72c947`：commit 水位以上 69 筆、PR #7165 起 84 筆、issue #7223 以上 0 筆、91 筆 monitored 中 2 筆移動（#6972、#6983）。這是 checker 的水位缺口，包含水位外已先行採用的 #7173／#7179，以及額外讀過但未形成 PR 連續前綴的項目；不冒充全數未讀或 strict 綠燈。下一個 commit 是 `cba66f20a`（#7165），不跨缺口推進。ROADMAP 的接續列保留。
 
@@ -709,7 +709,7 @@ commit 連續區段 `b3b6a8116..370f886aa`（14 個，兩端含）逐筆有證�
 
 commit 連續區段 `cba66f20a..15b1de4ae`（24 個，兩端含）逐筆有裁決，水位 `15b1de4aeba2a375931c13542fa2d1e6500174db`；PR 水位 #7189；issue 維持 #7223；monitored 92 筆。下一個 commit 為 `aace91b5e`（#6983）；之後第 26 個起（#7199、#7194、#7195 等）未讀。審查不代表整版同步或完整產品驗收。
 
-### 收尾 strict 快照（本節為剩餘數量的單一記錄處）
+### 收尾 strict 快照（該水位的歷史快照）
 
 `python tools/check_upstream_updates.py --strict` exit 1，上游 tip `35cbca992`：commit 水位以上 55 筆（含本輪期間新進者）、PR #7190 起 62 筆、issue 無新項、92 筆 monitored 中 1 筆移動（#6983，待第 25 個 commit）。已先行處理但在水位外的 commit（#7179、#7173）見前節。下一個 commit 是 `aace91b5e`（#6983）。ROADMAP 的接續列保留。
 
@@ -769,7 +769,7 @@ Co-authored-by 作者為 Vance Ingalls；email 由上游 Git metadata 提供提�
 
 commit 水位為 `aace91b5ec0d937772f66ab06e63c5755e579646`；PR #7189、issue #7223、monitored 92 筆。下一個 commit 是 `f6ae9bfb4`（#7199）；閱讀其補丁不等於完成裁決或採用。ROADMAP 接續列保留，審查水位不代表整版同步或完整產品驗收。
 
-### 收尾 strict 快照（剩餘數量的單一記錄處）
+### 收尾 strict 快照（該水位的歷史快照）
 
 `python tools/check_upstream_updates.py --strict --output tmp/upstream-20261106/strict-final.md` exit 1；固定上游 tip `256b84a41bc32913870953c06e05f4ab25e963f8`，commit 水位以上 62 筆（包含檢查期間新進者）、PR #7190 起 73 筆、issue #7259 一筆；monitored 92 筆全部維持釘選 head／state，移動數為 0。不以水位變更掩蓋其餘待審軸，ROADMAP 接續列保留。
 
@@ -1019,8 +1019,171 @@ core／engine／CLI／studio-server／studio／lint 分別執行 `bun run test -
 - Markdown／MDX 使用空 ignore 檔明確執行 oxfmt，避免既有 `.prettierignore` 的 `docs/` 排除；僅保留新增段落的格式化，既有清冊與日期快照不重排。
 - core packed 預算只增加 #7191 在本線的 1065-byte 增量（1661748 → 1662813）；`listPackageSizeIssues` 對移植 core 回傳 `[]`。CLI packed／unpacked 在乾淨 HEAD 已超標，沒有調高其預算。
 
-#### 水位與最新剩餘範圍
+#### 水位 659ef568d 時點的剩餘快照
 
 `python tools/check_upstream_updates.py --strict` exit 1：2026-11-06 收尾快照剩 36 個 commit（從 `b96d3c8` #7231 起）、85 筆 PR（#7190 以上）、9 筆 issue（#7223 以上）；92 筆 monitored 無差異。commit 只推進連續 15 筆至 `659ef568d`；PR／issue 水位不以已審 commit 的 PR 清單代替連續審查。ROADMAP 近期列保留。
 
 上游作者：Miguel Ángel（#7214、#7212、#7221、#7222、#7228）、WaterrrForever（#7089）、Vance Ingalls（#7191）、James Russo（#7211）。Co-authored-by email 僅在交付回報提供，不寫入文件。
+
+## 2026-11-06：接續至 `0a6746e1d`，審查 15 個連續 commit
+
+以 fork `d599288fdc62dfe1073210b1dd1dba1b2ade95d3` 為起點，逐筆讀 `659ef568d..0a6746e1d` 的完整補丁；唯讀 GraphQL 取得 PR state、head 與 mergeCommit。採用／部分採用 11 組修正，另補 #6707 先決。水位表示連續審查，包含有條件延後與不適用。
+
+| Commit／PR         | 裁決與重訪條件                                                                                                                                                                                                                                                                                | 上游證據                                                                     | fork 證據                                                          |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `b96d3c8bd`／#7231 | 採用並補齊已合併先決 #6707：重播重疊 tween 的跳過幀；proxy 的 overlap／landing mark 均以真 timeline 為 owner，root 與 scene 帶 export fps。                                                                                                                                                   | `b96d3c8bd:packages/core/src/runtime/adapters/gsap.ts:162`                   | `packages/core/src/runtime/adapters/gsap.ts:150`                   |
+| `0180c603d`／#7217 | 採用：template entry 在共享 compile stage 解析，distributed plan 與本機 render 共用 index shell／獨立 duration；保留本線私有快取守衛。                                                                                                                                                        | `0180c603d:packages/producer/src/services/render/stages/compileStage.ts:161` | `packages/producer/src/services/render/stages/compileStage.ts:160` |
+| `ecf0e1438`／#7224 | 採用：明確設定 HYPERFRAMES_CACHE_DIR 時搬移 preview state、registry、model、catalog、catch-up；空 catalog override 視為未設定。沒有擴成 #6716 的全部遷移。                                                                                                                                    | `ecf0e1438:packages/core/src/cacheDir.ts:9`                                  | `packages/core/src/cacheDir.ts:9`                                  |
+| `b7a8cfa73`／#7225 | 延後：依賴尚缺的 #6912（e181d34ed）WebKit decode-first／element-to-buffer 接管管線，並有後續 #7232 的記憶體預算修正。需成組移植並驗證未知 duration 共用 source、長音訊記憶體上限、變速與 Safari 音訊時鐘；不單獨加 600 秒常數。                                                               | `b7a8cfa73:packages/core/src/runtime/init.ts:505`                            | `packages/core/src/runtime/webAudioTransport.ts:231`               |
+| `216395e98`／#7229 | 部分採用：HyperFrames config／install-state、project links、Cloud Run state、running CLI／updater 與兩份 media-use telemetry 讀同一設定根，缺檔只 COPYFILE_EXCL seed，保留 opt-out；未登記 running 不啟動背景 installer。auth/paths 仍依本線 HEYGEN_CONFIG_DIR，不引入缺失的 OAuth 環境遷移。上游同時修改的 `packages/cli/src/utils/autoUpdate.invocation.test.ts` 在本線不存在，不移植。 | `216395e98:packages/cli/src/utils/configDir.ts:12`                           | `packages/cli/src/utils/configDir.ts:12`                           |
+| `2af37ac0c`／#7233 | 採用：video 與 container 都無 duration 時，以 packet 最大結束時間補足；只留 64 KiB 尾端，丟棄切半行，缺 packet duration 用一幀。                                                                                                                                                              | `2af37ac0c:packages/engine/src/utils/ffprobe.ts:1128`                        | `packages/engine/src/utils/ffprobe.ts:1099`                        |
+| `5f7b85c5d`／#7226 | 不適用：本線沒有 billing 指令／checkout 管線；先前 #7216／#7099 裁決不變。若導入該功能，須同採付款前重新讀帳戶、無法定價拒絕與取消契約，並保留明確費用授權。                                                                                                                                  | `5f7b85c5d:packages/cli/src/commands/billing.ts:89`                          | `packages/cli/src/cli.ts:190`                                      |
+| `45705fa25`／#7230 | 不適用：整版 v0.9.16 發行 metadata／changelog，fork 未整版同步，不冒稱該版本；保留作者、官方連結與發佈 guard。                                                                                                                                                                                | `45705fa25:packages/core/package.json:3`                                     | `packages/core/package.json:3`                                     |
+| `5ee9e928d`／#7234 | 部分採用：core、snapshot、engine extraction 與 Studio proxy 只在所有 SPS/keyframe transfers 都是 HLG 時用 203 nit，混合 PQ／SDR 或未讀出仍 100 nit；失敗 probe 不快取。measure 子系統不存在，該兩檔不適用。                                                                                   | `5ee9e928d:packages/core/src/hdrToneMap.ts:15`                               | `packages/core/src/hdrToneMap.ts:15`                               |
+| `f55990ebc`／#7236 | 採用：fetch cause 只公開 /^[A-Z][A-Z0-9_]{2,40}$/ code，保留明確 suggestion 優先，拒絕含路徑的 free text。                                                                                                                                                                                    | `f55990ebc:packages/cli/src/cloud/errors.ts:60`                              | `packages/cli/src/cloud/errors.ts:60`                              |
+| `80e02e74a`／#7239 | 採用：lint 與 publish 共用 gitignore matcher，掃 compositions 時跳過被忽略目錄；新增 lint 的 ignore 宣告及鎖檔 workspace edge，版本沿用既有相容線。Windows 測試補齊 dirname import。                                                                                                          | `80e02e74a:packages/lint/src/projectIgnore.ts:8`                             | `packages/lint/src/projectIgnore.ts:8`                             |
+| `df54f380c`／#7235 | 採用：info --media 輸出 render 實際混音清單，含 scene host 的 film-clock offset，依來源長度截尾並重用 probe；文件同步旗標與 heard 欄位。                                                                                                                                                      | `df54f380c:packages/cli/src/utils/projectMedia.ts:50`                        | `packages/cli/src/utils/projectMedia.ts:49`                        |
+| `c1977fab3`／#7244 | 採用：只靜默 uv_os_setpriority 的 EPERM／EACCES（info.code）；其餘錯誤仍點名，lint 繼續。                                                                                                                                                                                                     | `c1977fab3:packages/cli/src/renderSetupWorker.ts:23`                         | `packages/cli/src/renderSetupWorker.ts:22`                         |
+| `b7d72c947`／#7245 | 採用並補必要副本取消先決：--budget 保留 10 秒回報時間，deadline 涵蓋啟動／copies／samples，副本只用剩餘預算；逾時回部分 report 與 check_budget_reached，停止 optional crops。適配本線既有固定 idle window；不引入 render retry。                                                              | `b7d72c947:packages/cli/src/utils/checkDeadline.ts:52`                       | `packages/cli/src/utils/checkDeadline.ts:49`                       |
+| `0a6746e1d`／#7247 | 延後：依賴未採的 #6621（e2c915132）CLI unknownSubcommand／path／presented-error 契約；本線 resolver 僅回 command／parent，不能直接搬 helper 而讓 CLI 永遠不呼叫它。與該解析契約成組移植，驗未知 root／group／flag 的 exit 2、精簡 stderr、JSON hint 與 skill 路徑後重訪。                     | `0a6746e1d:packages/cli/src/cli.ts:540`                                      | `packages/cli/src/utils/commandUsageResolution.ts:5`               |
+
+### 先決與保留分歧
+
+#6707（`fa9acbd73`）已合併，重疊 property spans 與 fps 重播是 #7231 的必要先決，一併採用；沒有它時非 proxy 的 8-worker／chunk／host-offset 測試也失敗。兩個補丁的原始碼與測試均逐筆讀取，不以 proxy-only 修正冒充完整修復。
+
+#7182 的長來源分段複本在來源窗口、快取與離線長片測試齊備後重訪；#7176 的遙測變更等維護者採用遙測政策後重訪；#7104／#7168 retry 等新 session 所有權、取消與一次性重試完整契約齊備後重訪；#6716 的 17 檔遷移等 Windows 私有快取根與整套 guard 測試齊備後重訪。所採用內容不依賴這四項，沒有藉 cache override 把它們一併搬入。
+
+#7234 不導入本線沒有的 measure；#7229 保留 HeyGen credential 根，其他 HyperFrames 設定可遷移，缺檔 seed 不覆蓋目標。Node telemetry fixture 同時設定 HOME／USERPROFILE 並清除 config override，讓 Windows 的 homedir 確實隔離。
+
+15 個補丁沒有修改 golden／output 或 LFS pointer；#6665 已採用的 golden pointer 保留。新增需上傳的 LFS 物件：無。
+
+### PR 軸與 monitored
+
+PR 軸從實際 baseline #7190 接續；#7191–#7231 範圍逐項如下。merged 的產品裁決以既有節及上述 commit 表為準；closed 未合併不採用，open 只釘 head。
+
+| PR                                                           | 狀態／裁決                                                                                         | fork 證據／重訪條件                                 |
+| ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| [#7191](https://github.com/heygen-com/hyperframes/pull/7191) | MERGED；沿用 DOM journal 已採用                                                                    | `tools/upstream_baseline.json` 與本清冊各 commit 表 |
+| [#7192](https://github.com/heygen-com/hyperframes/pull/7192) | MERGED；整版 release 不適用                                                                        | `tools/upstream_baseline.json` 與本清冊各 commit 表 |
+| [#7194](https://github.com/heygen-com/hyperframes/pull/7194) | MERGED；沿用 Windows browser install 有界重試已採用                                                | `tools/upstream_baseline.json` 與本清冊各 commit 表 |
+| [#7195](https://github.com/heygen-com/hyperframes/pull/7195) | MERGED；沿用 paused-scene release 已採用                                                           | `tools/upstream_baseline.json` 與本清冊各 commit 表 |
+| [#7196](https://github.com/heygen-com/hyperframes/pull/7196) | MERGED；沿用 skills 文件已採用                                                                     | `tools/upstream_baseline.json` 與本清冊各 commit 表 |
+| [#7197](https://github.com/heygen-com/hyperframes/pull/7197) | MERGED；官方下載歸因不適用                                                                         | `tools/upstream_baseline.json` 與本清冊各 commit 表 |
+| [#7198](https://github.com/heygen-com/hyperframes/pull/7198) | CLOSED；closed 未合併的 generated client，不採用                                                   | `tools/upstream_baseline.json` 與本清冊各 commit 表 |
+| [#7199](https://github.com/heygen-com/hyperframes/pull/7199) | MERGED；沿用 delivery PCM 已採用                                                                   | `tools/upstream_baseline.json` 與本清冊各 commit 表 |
+| [#7201](https://github.com/heygen-com/hyperframes/pull/7201) | MERGED；沿用 lint-verbose 已採用                                                                   | `tools/upstream_baseline.json` 與本清冊各 commit 表 |
+| [#7202](https://github.com/heygen-com/hyperframes/pull/7202) | MERGED；整版 release 不適用                                                                        | `tools/upstream_baseline.json` 與本清冊各 commit 表 |
+| [#7203](https://github.com/heygen-com/hyperframes/pull/7203) | MERGED；延後：等 producer reference-background 契約                                                | `tools/upstream_baseline.json` 與本清冊各 commit 表 |
+| [#7205](https://github.com/heygen-com/hyperframes/pull/7205) | MERGED；沿用 contrast motion 已採用                                                                | `tools/upstream_baseline.json` 與本清冊各 commit 表 |
+| [#7206](https://github.com/heygen-com/hyperframes/pull/7206) | CLOSED；closed 未合併的 generated client，不採用                                                   | `tools/upstream_baseline.json` 與本清冊各 commit 表 |
+| [#7207](https://github.com/heygen-com/hyperframes/pull/7207) | MERGED；延後：generated schema／gateway 成組對齊                                                   | `tools/upstream_baseline.json` 與本清冊各 commit 表 |
+| [#7208](https://github.com/heygen-com/hyperframes/pull/7208) | OPEN；上游合併後核對 doctor 只讀診斷、FFmpeg 提示與 skill budget                                   | `tools/upstream_baseline.json` 與本清冊各 commit 表 |
+| [#7209](https://github.com/heygen-com/hyperframes/pull/7209) | OPEN；上游合併後驗 first-pass hide 在 volume sweep 的 detach／restore 與 preview/render 同時間像素 | `tools/upstream_baseline.json` 與本清冊各 commit 表 |
+| [#7210](https://github.com/heygen-com/hyperframes/pull/7210) | MERGED；沿用 timing lint 與文件已採用                                                              | `tools/upstream_baseline.json` 與本清冊各 commit 表 |
+| [#7211](https://github.com/heygen-com/hyperframes/pull/7211) | MERGED；沿用 setup timeout 診斷已採用                                                              | `tools/upstream_baseline.json` 與本清冊各 commit 表 |
+| [#7212](https://github.com/heygen-com/hyperframes/pull/7212) | MERGED；沿用 cut 拒絕診斷已採用                                                                    | `tools/upstream_baseline.json` 與本清冊各 commit 表 |
+| [#7213](https://github.com/heygen-com/hyperframes/pull/7213) | CLOSED；closed 未合併；不改 pre-capture RAF，若新 PR 合併再驗 deterministic first seek             | `tools/upstream_baseline.json` 與本清冊各 commit 表 |
+| [#7214](https://github.com/heygen-com/hyperframes/pull/7214) | MERGED；沿用 apply 最終 overlap 已採用                                                             | `tools/upstream_baseline.json` 與本清冊各 commit 表 |
+| [#7215](https://github.com/heygen-com/hyperframes/pull/7215) | OPEN；上游合併後驗帶 MIME 參數／換行 base64 的拒絕與正常相對路徑                                   | `tools/upstream_baseline.json` 與本清冊各 commit 表 |
+| [#7216](https://github.com/heygen-com/hyperframes/pull/7216) | MERGED；billing 不存在，不適用                                                                     | `tools/upstream_baseline.json` 與本清冊各 commit 表 |
+| [#7217](https://github.com/heygen-com/hyperframes/pull/7217) | MERGED；見上述 commit 裁決與原始碼行號                                                             | `tools/upstream_baseline.json` 與本清冊各 commit 表 |
+| [#7218](https://github.com/heygen-com/hyperframes/pull/7218) | MERGED；沿用明確費用授權，不採代付措辭                                                             | `tools/upstream_baseline.json` 與本清冊各 commit 表 |
+| [#7219](https://github.com/heygen-com/hyperframes/pull/7219) | MERGED；延後：Windows builder／manifest 與 raster/path 像素驗收                                    | `tools/upstream_baseline.json` 與本清冊各 commit 表 |
+| [#7220](https://github.com/heygen-com/hyperframes/pull/7220) | MERGED；延後：隔離實體磁碟根目錄舊紅新綠                                                           | `tools/upstream_baseline.json` 與本清冊各 commit 表 |
+| [#7221](https://github.com/heygen-com/hyperframes/pull/7221) | MERGED；沿用 cancel settle 已採用                                                                  | `tools/upstream_baseline.json` 與本清冊各 commit 表 |
+| [#7222](https://github.com/heygen-com/hyperframes/pull/7222) | MERGED；沿用 screenshot 一次重試已採用                                                             | `tools/upstream_baseline.json` 與本清冊各 commit 表 |
+| [#7224](https://github.com/heygen-com/hyperframes/pull/7224) | MERGED；見上述 commit 裁決與原始碼行號                                                             | `tools/upstream_baseline.json` 與本清冊各 commit 表 |
+| [#7225](https://github.com/heygen-com/hyperframes/pull/7225) | MERGED；見上述 commit 裁決與原始碼行號                                                             | `tools/upstream_baseline.json` 與本清冊各 commit 表 |
+| [#7226](https://github.com/heygen-com/hyperframes/pull/7226) | MERGED；見上述 commit 裁決與原始碼行號                                                             | `tools/upstream_baseline.json` 與本清冊各 commit 表 |
+| [#7227](https://github.com/heygen-com/hyperframes/pull/7227) | OPEN；目前 open；#7231 已採替代修正，若此 PR 合併或 head 變動再比對重疊 DOM tween／proxy 像素      | `packages/core/src/runtime/adapters/gsap.ts`        |
+| [#7228](https://github.com/heygen-com/hyperframes/pull/7228) | MERGED；沿用 display-size parser 已採用                                                            | `tools/upstream_baseline.json` 與本清冊各 commit 表 |
+| [#7229](https://github.com/heygen-com/hyperframes/pull/7229) | MERGED；見上述 commit 裁決與原始碼行號                                                             | `tools/upstream_baseline.json` 與本清冊各 commit 表 |
+| [#7230](https://github.com/heygen-com/hyperframes/pull/7230) | MERGED；整版 release 不適用                                                                        | `tools/upstream_baseline.json` 與本清冊各 commit 表 |
+| [#7231](https://github.com/heygen-com/hyperframes/pull/7231) | MERGED；見上述 commit 裁決與原始碼行號                                                             | `tools/upstream_baseline.json` 與本清冊各 commit 表 |
+
+monitored 由 92 增為 96 筆，新增以下 4 筆；既有 92 筆不因推進 PR 軸而刪除。
+
+| PR    | pinned head／state                               | 重訪條件                                                                                     |
+| ----- | ------------------------------------------------ | -------------------------------------------------------------------------------------------- |
+| #7208 | `d22212561cda630ffafe8a0ae633ad4c5811a9fc`／open | 上游合併後核對 doctor 只讀診斷、FFmpeg 提示與 skill budget                                   |
+| #7209 | `bdd3922759527d606b8023b88e1a47c28f8abb93`／open | 上游合併後驗 first-pass hide 在 volume sweep 的 detach／restore 與 preview/render 同時間像素 |
+| #7215 | `85309fdbdd814186638df3e8ade5fe7f2d35b53d`／open | 上游合併後驗帶 MIME 參數／換行 base64 的拒絕與正常相對路徑                                   |
+| #7227 | `9b646ef59ffaa140f4f908331461ded47614cad1`／open | 目前 open；#7231 已採替代修正，若此 PR 合併或 head 變動再比對重疊 DOM tween／proxy 像素      |
+
+上游作者：Miguel Ángel、Jerrai。Co-authored-by email 僅在交付回報提供，不寫入文件。
+
+### 聚焦回歸、先紅後綠與建置
+
+原始命令、exit code、JSON reporter、逐名失敗清單與 SHA-256 證據存於忽略目錄 `tmp/upstream-20261106-b96/`。舊碼使用 `git archive HEAD` 的 `d599288fd`，只換入最終測試與 test helper 後執行，隨即還原原始 bytes；另保留產品移植前的實際紅燈輸出。
+
+| 範圍／命令（套件 cwd）                                                                                                                                              | 舊碼 pass／fail／skip                       | 新碼 pass／fail／skip | Exit 舊／新 |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- | --------------------- | ----------- |
+| core：`bun x vitest run src/cacheDir.test.ts src/hdrToneMap.test.ts src/runtime/adapters/gsap.order.test.ts src/runtime/adapters/gsap.steps.test.ts --maxWorkers=2` | 81／10／0                                   | 91／0／0              | 1／0        |
+| CLI：14 個變更測試檔，`bun x vitest run <files> --maxWorkers=2`                                                                                                     | 432／21／2，另缺新 helper 的 suite 收集錯誤 | 455／0／2             | 1／0        |
+| lint：`bun x vitest run src/project.test.ts --maxWorkers=2`                                                                                                         | 75／1／0                                    | 76／0／0              | 1／0        |
+| producer：compileStage 與 mediaType，`bun x vitest run <files> --maxWorkers=2`                                                                                      | 1／20／0（含新介面未提供路徑與缺 resolver） | 21／0／0              | 1／0        |
+| engine：ffprobe、videoFrameExtractor 與 concurrency 3 檔，`bun x vitest run <files> --maxWorkers=2`                                                                 | 340／6／7                                   | 346／0／7             | 1／0        |
+| Node：local-media-search 與兩份 telemetry，`node --import ./packages/cli/scripts/test-home.mjs --test <3 files>`                                                    | 34／3／0                                    | 37／0／0              | 1／0        |
+
+producer template plan 的實際行為另以分類指定的 integration／bun runner 驗證：舊碼 `HYPERFRAMES_TEST_LANE=integration bun test src/services/distributed/plan.test.ts -t 'template sub-composition entry'` 為 0 passed／2 failed；共享 compile 修正後兩例均通過。該檔全套移植樹 71 passed／3 failed，乾淨 HEAD 69 passed／3 failed，同名三例為既有 stitched mp4 loudness／encode 長度失敗。mediaType 依分類的 integration／Vitest 全檔雙樹均 exit 0。
+
+初次把 plan 交給 Vitest 時因該檔使用 bun:test 而無法收集，exit 1，不列入驗收；隨即改由 repo 的 `discoverProducerTests()` 取得 runner／lane。完整 unit 的 Vitest 使用 `node scripts/run-test-lane.mjs unit vitest`；bun 使用同一分類清冊、unit 環境與 no-network preload，每檔 fresh process，失敗後仍跑完全部 52 檔。分類 gate 為 7 passed／0 failed，172 檔均有分類。
+
+`bun run --cwd packages/{core,lint,producer,studio-server,cli,engine} build` 各自執行成功。乾淨樹另外重建 parsers、studio、inspector、player 的 dist，再完成 CLI copy；初次缺少 dist 的建置失敗只視為前置條件缺失，沒有改產品來略過。archive 中 packages／scripts 的 5153 個原始碼與設定檔逐檔比對原 tar bytes，差異 0；第三方依賴以 junction 共用，workspace links 指向乾淨樹自己的 packages。
+
+三組 lefthook typecheck（core、studio、scripts）皆 exit 0。額外 CLI typecheck 雙樹 exit 2，只有相同三筆既有診斷：deadline 可能 undefined、兩個呼叫多傳一個參數；移植樹行號 2287／3834／3835，HEAD 為 2265／3760／3761。
+
+`node_modules/.bin/fallow audit --base origin/main --fail-on-issues` exit 0：81 changed files、No issues；dead code／complexity／duplication 均為 0。變更 TS／MJS 的 oxlint exit 0，72 files、0 warnings／0 errors。CLI process ownership、workspace contracts、skill mirror、core skills 與 skills manifest 皆 exit 0。
+
+### Monitored #6904 的 head 變動
+
+strict 快照發現 #6904 由 `843a29d0aa44bed346fbf425e25339dbeec9beb3` 變為 `fa3302b927d8c4542a276c199d1620978797b718`，仍 open、非 draft、mergedAt 為 null。已讀完整 3 檔 diff：`discover.test.ts` 新增 style-only callback、插入 sibling 的 element identity、真正由 callback 驅動 geometry 的三種案例；`discover.ts` 的 `readStepGeometry`／`boxesDiffer` 改以 HTMLElement identity 追蹤 boxes；`index.test.ts` 補 capture／filter 不重播 style-only callback 的斷言。上游證據為 [PR #6904 files](https://github.com/heygen-com/hyperframes/pull/6904/files)（head 如上，`packages/core/src/runtime/captureMotionBlur/discover.ts:51`／`:304`）；fork 為 `packages/core/src/runtime/captureMotionBlur/discover.ts:184`，仍是本線的 discovery 契約。
+
+維持延後、不移植 open PR；head 已重釘，monitored 仍 96 筆。上游合併後，須連同本線的 DOM journal／seek restore 驗相同元素的幾何、style-only callback 次數、插入 sibling 與 capture/filter 前後像素，再判斷採用。
+
+### 套件大小與預算缺口
+
+雙樹以相同 `pnpm pack --json --pack-destination <ignored directory>` 量測，未安裝依賴或產生 pnpm 鎖檔；不是改用 pnpm 管理 workspace。判定使用 repo 的 `listPackageSizeIssues` 與原有 1% 容差。
+
+| 套件          | HEAD packed／unpacked | 移植 packed／unpacked | 預算判定                                      |
+| ------------- | --------------------- | --------------------- | --------------------------------------------- |
+| core          | 1678498／4048191      | 1680858／4054737      | 新增 packed 超標；原 packed 預算 1662813 保留 |
+| engine        | 458388／1524987       | 458963／1527263       | 通過                                          |
+| cli           | 8487349／24160972     | 8494195／24173272     | 雙樹原有 packed／unpacked 超標，沒有調高      |
+| producer      | 832683／3005281       | 833342／3007116       | 通過                                          |
+| studio-server | 153477／597311        | 154765／597793        | 通過                                          |
+| lint          | 180384／694438        | 180663／695324        | 通過                                          |
+
+15 筆上游補丁與 #6707 都沒有改 `scripts/package-size-budgets.json`，沒有可直接照搬的上游預算增量。core 同一批產品修正的實測 packed 增量為 2360 bytes；若沿用前一節的實測增量方法，packed 預算為 1665173 時 `listPackageSizeIssues` 回 `[]`。目前預算保持 1662813，core 的新增超標仍是產品驗收缺口，不以假稱上游已調預算或放寬容差處理。
+
+### 完整套件與乾淨 HEAD 的逐名比較
+
+同一次雙樹完整測試的原始 reporter 與命令保留於 `tmp/upstream-20261106-b96/`；沒有重跑已完成的完整套件。下表數字為 pass／fail／skip，exit 依實際 runner 記錄；suite setup error 另外列出，不把 0 個 assertion failure 誤當 exit 0。
+
+| 套件／runner（套件 cwd）                                           | 乾淨 HEAD     | 移植樹        | Exit HEAD／移植                              | 原始只在移植樹失敗 | 聚焦覆驗後未解差異                             |
+| ------------------------------------------------------------------ | ------------- | ------------- | -------------------------------------------- | ------------------ | ---------------------------------------------- |
+| core：`bun run test --maxWorkers=2`                                | 5583／0／11   | 5594／0／11   | 0／0                                         | 0                  | 0                                              |
+| engine：`bun run test --maxWorkers=2`                              | 2619／0／53   | 2622／0／53   | 1／1                                         | 0                  | 0；兩邊均有 undecodableTrack suite setup error |
+| CLI：`bun run test --maxWorkers=2`                                 | 6201／35／305 | 6227／29／305 | 1／1                                         | 0                  | 0                                              |
+| Studio：`bun run test --maxWorkers=2`                              | 7938／229／2  | 7938／229／2  | 1／1                                         | 0                  | 0；另各 16 todo                                |
+| lint：`bun run test --maxWorkers=2`                                | 1244／1／0    | 1245／1／0    | 1／1                                         | 0                  | 0                                              |
+| Studio-server：`bun run test --maxWorkers=2`                       | 1490／23／61  | 1490／23／61  | 1／1                                         | 0                  | 0                                              |
+| producer unit Vitest：`node scripts/run-test-lane.mjs unit vitest` | 1139／2／5    | 1141／3／5    | 1／1                                         | 1（stall）         | 0；stall 雙樹聚焦各 7／0／0                    |
+| producer unit bun：分類清冊逐檔、unit 環境、no-network preload     | 875／8／0     | 875／8／0     | 3 個檔 exit 1，其餘 49 檔 exit 0（兩樹相同） | 0                  | 0；52 檔全部執行                               |
+| producer integration bun：`plan.test.ts`                           | 69／3／0      | 71／3／0      | 1／1                                         | 0                  | 0                                              |
+
+`comparison.json`、`cli-compare.json`、`producer-bun-compare.json` 與兩邊逐名的 `*.failures.json` 是原始差集；producer Vitest 的 stall 差異保留，沒有從總數刪掉。該檔雙樹聚焦 reporter `head-stall.tests.json`／`port-stall.tests.json` 都是 7 passed、0 failed；因此沒有未解的移植樹獨有失敗，但不能宣稱原始完整套件 0 fail。既有 symlink EPERM、media 檔名、Chrome 啟動、音軌與模擬 DOM 等失敗仍屬完整產品驗收限制。
+
+舊 `inputs.json` 是產品移植前的工作樹快照，不能當成最終產品雜湊證明。收尾檢查確認所有受影響 package 的變更檔修改時間早於各自完整套件結束時間；這是時間序證據，不等同當時的最終輸入雜湊。另以 `closeout/focused-inputs.json` 釘目前 HEAD、全部 changed／untracked 輸入的 SHA-256，再執行受影響五組聚焦回歸，並保留各命令、exit 與 reporter；不冒稱舊完整套件具有當時未記錄的最終雜湊。
+
+收尾聚焦回歸均 exit 0：core 91 passed／0 failed、CLI 455 passed／0 failed／2 skipped、lint 76 passed／0 failed、producer 21 passed／0 failed、engine 346 passed／0 failed／7 skipped；命令範圍與上方紅綠表相同。Node 的 local-media-search 與兩份 telemetry 沿用 37 passed／0 failed。產品程式及測試在釘雜湊後沒有變動；文件格式與證據補充另留最終雜湊清冊。
+
+### 收尾閘門與水位界線
+
+2026-11-06、fork HEAD `d599288fdc62dfe1073210b1dd1dba1b2ade95d3` 的收尾記錄位於 `tmp/upstream-20261106-b96/closeout/`：`pwsh -NoProfile -File tools/dev_check.ps1` exit 0（39 passed、0 failed；`WINDOWS DEV CHECK GREEN`）；lefthook 的 core、studio、scripts 三組 `node node_modules/typescript/bin/tsc --noEmit -p <path>` 均 exit 0；`node_modules/.bin/fallow audit --base origin/main --fail-on-issues` exit 0（82 changed files，No issues；dead code／complexity／duplication 各 0）。只讀取／測試，沒有執行 lefthook 內會 staging 的 format job。
+
+### 最新剩餘快照（水位 `0a6746e1d`）
+
+2026-11-06 的 `python tools/check_upstream_updates.py --strict` exit 1；完整快照保存為 `closeout/strict-start.md`。上游 tip 為 `e2bb7da25da9d268e33d766683885ad69b088169`，水位以上 31 個 commit（自 `644b166` #7250 起）、PR #7232 起 58 筆、issue #7259 起 9 筆；96 筆 monitored 中 #6695 的 open head 又由 `8aa9967f3b8bb8c776f7555d065d8ebd939ebe66` 移動至 `3b2321c`。該新 diff 沒有裁決，保留原釘選，於 commit 軸到達後重審；不以未讀差異的 head 重釘讓 strict 歸零。
+
+這是最新剩餘數量的單一記錄處；較早各節只保留其日期快照。連續水位停在已具逐筆裁決的 15 個 commit（`git rev-list --count 659ef568d..0a6746e1d` 為 15），PR #7231、issue #7223 不變；不擴大至半成品以外的 commit。strict 與完整產品驗收尚未通過，ROADMAP 近期接續列保留。core 新增封裝超標也保留為驗收缺口；沒有調整容差或捏造上游預算增量。需上傳的新 LFS 物件：無。

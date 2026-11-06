@@ -15,6 +15,7 @@
 // Vector metadata validation is intentionally defensive at this file boundary.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
+import { namedCacheDir } from "@hyperframes/core/cache-dir";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -87,7 +88,9 @@ function bundledVectorDirectory(): string {
 /** Where the bundled vector set lives, overridable for development. */
 function localVectorDirectory(): string {
   return (
-    process.env["HYPERFRAMES_CATALOG_ARTIFACT_DIR"] ?? join(homedir(), ".hyperframes", "catalog")
+    process.env["HYPERFRAMES_CATALOG_ARTIFACT_DIR"] ||
+    namedCacheDir("catalog") ||
+    join(homedir(), ".hyperframes", "catalog")
   );
 }
 

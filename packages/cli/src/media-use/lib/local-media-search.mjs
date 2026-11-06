@@ -9,7 +9,11 @@ const ARTIFACT_FILES = ["media-vectors.json", "media-vectors.bin"];
 const MODEL_DIMENSIONS = 384;
 
 function directory() {
-  return process.env.HYPERFRAMES_CATALOG_ARTIFACT_DIR || DEFAULT_DIRECTORY;
+  const cache = process.env.HYPERFRAMES_CACHE_DIR;
+  return (
+    process.env.HYPERFRAMES_CATALOG_ARTIFACT_DIR ||
+    (cache ? join(resolve(cache), "catalog") : DEFAULT_DIRECTORY)
+  );
 }
 
 /**

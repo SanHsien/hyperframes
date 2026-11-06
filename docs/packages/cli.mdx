@@ -1179,6 +1179,7 @@ cover every finding from the full check.
 | `--collapse-static` / `--no-collapse-static` | Fold a repeated static finding into one row (default: on)                                                                    |
 | `--tolerance`                                | Allowed overflow in px before reporting (default 2)                                                                         |
 | `--timeout`                                  | Render-ready budget in ms; also raises page navigation above its 10s floor (default 45000, as snapshot and render)                                   |
+| `--budget <ms\|90s\|8m>`                      | Stop the whole check this long after it starts (at least 30s) and report what it found, with `check_budget_reached` naming the phase it was in. For hosts with their own time limit. |
 | `--no-contrast`                              | Skip the WCAG pass while iterating                                                                                         |
 | `--strict`                                   | Exit non-zero on warnings too (default: errors only)                                                                        |
 | `--caption-zone "<x0=..;y0=..;x1=..;y1=..>"` | Opt-in band gate. Flags a text element's DOM box that overlaps the fractional band. Optional `severity` and `seek`.         |
@@ -1917,6 +1918,8 @@ files, the browser download and models are never touched.
 duration, element counts by type, track count, and total size.
 `npx hyperframes compositions` lists every composition in the project with its
 ID, duration, resolution, and element count. Both take `--json`.
+`npx hyperframes info --media --json` adds `heard`: every clip the render mixes, scenes included, on the film's clock,
+each with `src`, `start`, `end`, `mediaStart`, `playbackRate`, `volume` and `type`. The end is clipped to the media's duration when known; `0` means it runs to the media's end.
 
 ### `upgrade`
 
@@ -2260,7 +2263,8 @@ video to disk.
 
 The zip excludes root `renders` and `snapshots`, `.git`, `node_modules`, `dist`,
 `.next`, `coverage`, dotfiles, and anything your `.hyperframesignore` rules
-match. Those rules use gitignore syntax and apply to `hyperframes publish` too.
+match. Those rules use gitignore syntax and apply to `hyperframes publish` too, and
+the project lint behind `lint`, `check`, `snapshot` and `render` does not read compositions they match.
 Keep them narrow — a dynamically selected asset may have no static reference to
 protect it.
 
@@ -2687,3 +2691,9 @@ Anything you leave out gets the default, so the file only needs your overrides.
     The capture engine. Use directly for custom frame capture pipelines.
   </Card>
 </CardGroup>
+
+## Relocate local settings and caches
+
+Set `HYPERFRAMES_CACHE_DIR` to an absolute path to relocate background preview records, registry manifests, the local search model and catalog, and catch-up records. Unset it to keep each feature's existing default.
+
+`HYPERFRAMES_CONFIG_DIR` relocates HyperFrames settings, telemetry and update settings, project links and Cloud Run state. A missing settings file starts as a copy from `~/.hyperframes`, preserving opt-outs and the install identity without replacing an existing destination. This fork's HeyGen credentials continue to use `HEYGEN_CONFIG_DIR`; they are not migrated by this setting.

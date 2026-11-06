@@ -1,5 +1,5 @@
 import { DEFAULT_CONFIG } from "@hyperframes/engine";
-import type { CheckDeadline } from "./checkDeadline.js";
+import { CheckCopiesUnfinishedError, COPY_BUDGET_MS, type CheckDeadline } from "./checkDeadline.js";
 import { logCheckProgress } from "./checkProgress.js";
 import { BrowserCleanupError, closeManagedBrowser, onStopSignal } from "../browser/launch.js";
 import { collectMotionBlurDrafts, dropMotionBlurConsoleEcho } from "./checkMotionBlur.js";
@@ -203,6 +203,7 @@ export async function preResolveHostileMediaProxies(
   projectDir: string,
   html: string,
   autoProxyOverride?: boolean,
+  budgetMs?: number,
 ): Promise<ProxyPreResolution> {
   const none: ProxyPreResolution = { findings: [], failedPaths: new Set(), files: [] };
   if (!resolveAutoProxy(projectDir, autoProxyOverride)) return none;
@@ -244,6 +245,14 @@ export async function preResolveHostileMediaProxies(
   const heartbeat = startCopyHeartbeat(sources, cached);
   const stopped = new AbortController();
   const forgetStop = onStopSignal(() => stopped.abort());
+  let overBudget: number | undefined;
+  const budget =
+    budgetMs === undefined
+      ? undefined
+      : setTimeout(() => {
+          overBudget = budgetMs;
+          stopped.abort();
+        }, budgetMs);
   const results = await resolveProxies(
     projectDir,
     sources,
@@ -257,7 +266,14 @@ export async function preResolveHostileMediaProxies(
   ).finally(() => {
     heartbeat.stop();
     forgetStop();
+    clearTimeout(budget);
   });
+  const unfinished = sources.flatMap(({ file }, index) =>
+    results[index]!.status === "rejected" ? [file] : [],
+  );
+  if (overBudget !== undefined && unfinished.length > 0) {
+    throw new CheckCopiesUnfinishedError(overBudget, unfinished);
+  }
   const failures = sources.flatMap((source, index) => {
     const result = results[index]!;
     return result.status === "rejected" ? [{ ...source, reason: result.reason }] : [];
@@ -349,6 +365,7 @@ export async function runBrowserCheck(
     project.dir,
     html,
     options.autoProxy,
+    Math.min(COPY_BUDGET_MS, deadline?.remainingMs() ?? COPY_BUDGET_MS),
   );
   deadline?.enter("launch");
   const server = await serveStaticProjectHtml(

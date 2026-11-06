@@ -1041,7 +1041,7 @@ commit 水位僅推進一個有證據的連續 commit 至 `aace91b5ec0d937772f66
 
 #7199 適配本線既有 peak guard，不引入延後的 limiter；#7195 不引入本線沒有的 starts cache；#7190 不搬入缺 #7108 前置 fixture 的缺陷測試。#7182、#7176、#7104／#7168 retry、#6716 的 17 檔快取遷移仍維持既有條件。沒有 golden LFS pointer 變更或新增待上傳物件。
 
-commit 水位 `aa34cffe4b8d66053bc1bf999275b12265c22ab7`、PR #7190、issue #7223，monitored 維持 92 筆。最新剩餘數量只在接續清冊的此節記錄。審查水位不代表整版同步或完整產品驗收；ROADMAP 保留接續計畫。
+commit 水位 `aa34cffe4b8d66053bc1bf999275b12265c22ab7`、PR #7190、issue #7223，monitored 維持 92 筆。該水位剩餘快照見當時的接續清冊。審查水位不代表整版同步或完整產品驗收；ROADMAP 保留接續計畫。
 
 ## 2026-11-06：採用 8 組修正與連續水位 `659ef568d`
 
@@ -1052,3 +1052,15 @@ commit 水位 `aa34cffe4b8d66053bc1bf999275b12265c22ab7`、PR #7190、issue #722
 #7191 的 `898d0fb00` DOM journal 在本線重建使 core packed 增加 1065 bytes（1677433 → 1678498），超出原預算的 1% 容差。只將 core packed 預算 1661748 → 1662813，保留原容差與 unpacked 預算。上游該 commit 沒有預算檔變動，這是同一產品變更在 fork 的實測增量，不宣稱上游曾調高預算。CLI 在乾淨 HEAD 已超出 packed／unpacked 預算，沒有以這段移植為由調高。
 
 commit 水位為 `659ef568d71442a3e4f1b919cf03a547c79e7005`，PR #7190、issue #7223 不變；monitored 維持 92 筆。#7038 的 head `4eaa2558213300972e495b0791036b02cd0c23fe` 未變、仍為 draft、狀態 closed、mergedAt 為 null；完整 diff 的 still-frame／scroll offset 優化不移植，若以新 PR 合併再驗同時間 GSAP 回呼與 Windows 像素一致性。沒有新增或修改 golden／LFS pointer。
+
+## 2026-11-06：採用 11 組修正與連續水位 `0a6746e1d`
+
+依 [逐筆清冊](UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-06接續至-0a6746e1d審查-15-個連續-commit) 採用 #7231（含已合併 #6707 先決）、#7217、#7224、#7229 的本線 settings 部分、#7233、#7234 的本線 tone-map 呼叫點、#7236、#7239、#7235、#7244、#7245。#7234 的 measure 子系統不存在；#7229 保留 HEYGEN_CONFIG_DIR credential 根，只移動其他 HyperFrames settings，保留 opt-out 的缺檔 seed 與 installer running-record 守衛。
+
+#7245 需 browser-playable copies 的預算取消，補齊該先決並保留 partial report，不移植 #7104／#7168 render retry。#7225 依賴未採 #6912，連同後續 #7232 的 memory-budget guard 及 Safari 音訊 clock／變速驗收再採；#7247 依賴 #6621 的 unknownSubcommand／path／presented-error 契約，與 exit 2／JSON hint／skill 路徑測試成組採用。#7226 billing 不存在，#7230 整版發行不適用。#7182、#7176、#7104／#7168 retry、#6716 的 17 檔遷移條件維持，不以新修正繞過。
+
+三軸水位為 commit `0a6746e1d6fabab6178ef8ead0e6da1593a1e59a`、PR #7231、issue #7223；monitored 92 → 96，新增 #7208、#7209、#7215、#7227 的 open head 與重訪條件。沒有 golden／LFS pointer 變更，既有 #6665 pointer 保留。剩餘數字只在清冊的新節維護。
+
+#6904 的 open head 移動至 `fa3302b927d8c4542a276c199d1620978797b718`；完整 3 檔 diff 已重審並重釘，維持合併後再驗 element-identity 幾何與 capture/filter 像素的條件，monitored 總數仍 96。細節見接續清冊的新節。
+
+core packed 實測 1678498 → 1680858（+2360 bytes），超出目前 1662813 預算的 1% 容差；15 筆上游補丁及 #6707 沒有可照搬的預算檔增量，因此保留該預算並明列產品驗收缺口。以同產品修正實測增量推得 1665173 的試算可通過原 helper，但沒有把試算冒稱為已採用或上游預算。CLI 的 packed／unpacked 超標在乾淨 HEAD 已存在，不以這些修正為由調高。

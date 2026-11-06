@@ -172,3 +172,20 @@ test("a tampered source with an absolute file never leaks a path outside the roo
     null,
   );
 });
+
+test("media vectors are read from the cache folder's catalog when HYPERFRAMES_CACHE_DIR is set", (t) => {
+  const cache = mkdtempSync(join(tmpdir(), "hf-cache-"));
+  const prior = process.env.HYPERFRAMES_CACHE_DIR;
+  process.env.HYPERFRAMES_CACHE_DIR = cache;
+  t.after(() => {
+    if (prior === undefined) delete process.env.HYPERFRAMES_CACHE_DIR;
+    else process.env.HYPERFRAMES_CACHE_DIR = prior;
+    rmSync(cache, { recursive: true, force: true });
+  });
+  mkdirSync(join(cache, "catalog"));
+  writeFileSync(
+    join(cache, "catalog", "media-vectors.json"),
+    JSON.stringify({ rows: [{ id: "a" }] }),
+  );
+  assert.deepEqual(mediaVectorRows(), [{ id: "a" }]);
+});
