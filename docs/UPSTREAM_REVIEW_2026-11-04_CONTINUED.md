@@ -1427,12 +1427,99 @@ lefthook 三組 `node node_modules/typescript/bin/tsc --noEmit -p <packages/core
 
 保留原有 1% 容差，八筆與 #7061 都沒有上游同 commit 的預算增量，因此不調高 budgets。大小缺口不能宣稱已驗收。
 
-### 最新剩餘快照（水位 `b4cc674f7`）
+### 水位 `b4cc674f7` 時點的剩餘快照
 
-2026-11-06、fork HEAD `6e8cc4d8b` 的 `python tools/check_upstream_updates.py --strict` exit 1，完整結果為 `strict-final.md`；上游 tip `41b7aeeaf`。commit 軸尚有 11 筆，下一筆是 `a81b344`／#7294；PR #7242 以上 55 筆、issue #7223 以上 9 筆；96 筆 monitored 中 #6695 有一筆 open head 差異（原釘 `8aa9967f3b8bb8c776f7555d065d8ebd939ebe66`，查詢為 `3b2321c`）。這是現行剩餘數量的單一記錄處；舊節保留各自日期快照。沒有以未讀補丁或狀態釘選消除 strict 缺口，ROADMAP 近期列維持，連續審查止於指定八筆。
+2026-11-06、fork HEAD `6e8cc4d8b` 的 `python tools/check_upstream_updates.py --strict` exit 1，完整結果為 `strict-final.md`；上游 tip `41b7aeeaf`。commit 軸尚有 11 筆，下一筆是 `a81b344`／#7294；PR #7242 以上 55 筆、issue #7223 以上 9 筆；96 筆 monitored 中 #6695 有一筆 open head 差異（原釘 `8aa9967f3b8bb8c776f7555d065d8ebd939ebe66`，查詢為 `3b2321c`）。這是水位 b4cc674f7 的日期快照；現行剩餘數量只在後續最新節維護。沒有以未讀補丁或狀態釘選消除 strict 缺口，ROADMAP 近期列維持，連續審查止於指定八筆。
 
 CLI 逐名差集為 0；「只在移植樹失敗＝0」只代表未新增失敗，並非全套 0 failed。
 
 ### 維護 gate 收尾
 
 2026-11-06、fork HEAD `6e8cc4d8b` 的 `pwsh -NoProfile -File tools/dev_check.ps1` exit 0：39 passed／0 failed；相對連結 12 份文件、0 錯誤，結尾 `WINDOWS DEV CHECK GREEN`。新 Markdown 節與 CLI 說明以 `node_modules/.bin/oxfmt` 格式化，歷史節只調整過期的「最新」標題與快照定位，不重排舊內容；`git diff --check` exit 0。最終產品來源未再變更，交付時的 changed／untracked SHA-256 存於忽略目錄的 `delivery-inputs.json`，不冒稱它是完整 suite 啟動時的快照。
+
+## 2026-11-06：接續至 `66cbabc39`，審查 8 個連續 commit
+
+以 fork `46d98d9bd` 為起點，審查範圍止於 `a81b34410..66cbabc39` 八筆連續 commit。起始 `python tools/check_upstream_updates.py --strict` exit 1；唯讀 GraphQL 確認八筆均為 MERGED，mergeCommit 與下表相同。完整補丁、PR 狀態、來源行號及命令 reporter 保存在忽略目錄 `tmp/upstream-20261106-a81/`。沒有審查範圍之後的補丁。
+
+| Commit／PR                                                                | 裁決與理由                                                                                                                                                                                                                                                                                          | 上游證據                                                                                                                                          | fork 證據                                                                                                                                              |
+| ------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `a81b34410`／[#7294](https://github.com/heygen-com/hyperframes/pull/7294) | 採用：line_unread 帶出 line run 兩端各三個鄰近樣本，空白樣本使用 null，不推算未量到的 opacity／height。                                                                                                                                                                                             | `a81b34410:packages/cli/src/utils/craftAudit.ts:450`                                                                                              | `packages/cli/src/utils/craftAudit.ts:451`；`packages/cli/src/utils/checkTypes.ts:351`；`docs/packages/cli.mdx` 的 Craft warnings 說明                 |
+| `cd7e93baa`／[#7271](https://github.com/heygen-com/hyperframes/pull/7271) | 採用：掃描／eventful pose read 暫停 GSAP 離散 callback，finally 恢復；onUpdate 保持執行。移除會消耗 once guard 的 DOM journal。沿用 fork discovery 與 seek 復原介面。                                                                                                                               | `cd7e93baa:packages/core/src/runtime/adapters/gsap.ts:505`；同 SHA `packages/core/src/runtime/captureMotionBlur/discover.ts:295`                  | `packages/core/src/runtime/adapters/gsap.ts:453`；`packages/core/src/runtime/captureMotionBlur/index.ts:253`                                           |
+| `2066a2ff5`／[#7293](https://github.com/heygen-com/hyperframes/pull/7293) | 採用：filter 的 SVG 定義放在 documentElement，避免改變 composition 的 last-child；timeline／root 更換與 teardown 仍清理。                                                                                                                                                                           | `2066a2ff5:packages/core/src/runtime/captureMotionBlur/filterTier.ts:166`                                                                         | `packages/core/src/runtime/captureMotionBlur/filterTier.ts:191`                                                                                        |
+| `f54b2227f`／[#7134](https://github.com/heygen-com/hyperframes/pull/7134) | 延後新功能：新增分享 kernel，而非既有路徑的獨立修正。host 需綁帳戶、上傳、project fingerprint；本線 CLI 仍使用既有 publishProject，沒有 share consumer。等分享 host／帳戶政策及 #7135–#7140 接線成組驗收；包含 Windows portable lock、可信 upload origin、redirect 拒絕、owner／feedback recovery。 | `f54b2227f:packages/share/src/host.mjs:9`、`:32`；同 SHA `packages/share/src/projectLock.mjs:62`；`packages/share/src/signedInRequest.mjs:80`     | `packages/cli/src/commands/publish.ts:18`、`:33`；`package.json:8`（現行 workspace，無 share consumer）                                                |
+| `b6f2bec16`／[#7292](https://github.com/heygen-com/hyperframes/pull/7292) | 採用：有 viewport-fixed child 且尚非 containing block 的 mover 保持銳利，其他 mover 照常 blur；逐畫格判斷 transform／will-change／contain。256-node 上限直接保留在 filterTier，沒有引進 #7080 crop。                                                                                                | `b6f2bec16:packages/core/src/runtime/captureMotionBlur/filterTier.ts:97`                                                                          | `packages/core/src/runtime/captureMotionBlur/filterTier.ts:99`、`:229`                                                                                 |
+| `4bee04e4a`／[#7295](https://github.com/heygen-com/hyperframes/pull/7295) | 延後，與 #7080 成組：pseudoBox 是接在本線不存在的 grownBox／contentBox 上；只搬 helper 沒有作用。等 #7080 的 Range／overflow／SVG 管線與此修正一併驗 before／after、旋轉與 ancestor transform、overflow hidden、SVG mask／clip、正反 seek 及輸出 RGBA。                                             | `4bee04e4a:packages/core/src/runtime/captureMotionBlur/frames.ts:59`、`:82`；`d89bf35b1:packages/core/src/runtime/captureMotionBlur/frames.ts:79` | `packages/core/src/runtime/captureMotionBlur/frames.ts:43`、`:61`（仍以 offsetWidth／offsetHeight 取 crop）；原 #7080 裁決保留                         |
+| `e2bb7da25`／[#7288](https://github.com/heygen-com/hyperframes/pull/7288) | 採用：auto 一律 filter，capture 保持明確 opt-in，HDR／renderer-off 仍優先；移除 translationOnly hand-off。CLI finding、Beta label、guide／skill 同步；不把上游成本量測宣稱成本線重新量測。                                                                                                          | `e2bb7da25:packages/core/src/runtime/captureMotionBlur/tier.ts:70`；同 SHA `docs/guides/motion-blur.mdx:46`                                       | `packages/core/src/runtime/captureMotionBlur/tier.ts:69`；`packages/core/src/runtime/captureMotionBlur/index.ts:652`；`docs/guides/motion-blur.mdx:46` |
+| `66cbabc39`／[#7298](https://github.com/heygen-com/hyperframes/pull/7298) | 採用：Shift 只更新容器 data attribute，cursor 交由 CSS，不以 React state 重渲染 timeline；blur／keyup 清除 modifier。                                                                                                                                                                               | `66cbabc39:packages/studio/src/player/components/useTimelineShiftModifier.ts:4`                                                                   | `packages/studio/src/player/components/useTimelineShiftModifier.ts:4`；`packages/studio/src/player/components/timelineProviderStateBuilders.ts:79`     |
+
+### 適配、依賴與延後條件
+
+`#7271 -> mute callbacks -> discover / pose reads -> seek(t) -> finally unmute`。本線沒有上游後續 scanMovers／holdFrame 介面，維持 `config.events` 驅動 onUpdate 與 `readMoverFrames` 最後的 `seek(t)`；不覆蓋 #6983 shutter phase 與復原。兩個 tier 的 once guard 回歸同時釘「掃描／跨過 callback 的 shutter pose read 都不先消耗 callback、回到原本 0.3／0.499 秒、真 seek 0.7 秒才寫 label」；異常測試確認 onUpdate 中途 throw 仍恢復 callback。
+
+#7271 的已知限制保留：若 mover 要等首次被靜音的 callback 才建立，較早啟動的 worker 會讓它保持銳利；由 `tl.call(() => gsap.to(...))` 建立的 mover 不會被掃描到。非 GSAP adapter 若忽略 suppressEvents，once-only 完成 callback 仍可能提早寫 DOM；沒有宣稱這些限制已解。
+
+本線沒有註冊上游新增的 CLI motion-blur topic，沒有留下無入口檔案；將相同設定摘要放入既有 `packages/cli/src/docs/rendering.md`，正式 guide 與 CLI 參考同步更新。
+
+#7292／#7293 是 #7288 預設 filter 可獨立採用的修正；#7295 依賴原本已延後的 #7080，沒有藉預設切換偷偷搬入 crop／SVG 大改。上游新增的 browser differential／callback matrix 依賴本線尚未採用的 harness，未整批建立；保留現有 browser pixel test，聚焦驗證真實 filter trail。#7134 的 publish workflow、Docker、版本／lockfile 與 share 大型新 package 均未套用；發布 guard 保持。
+
+指定八筆沒有 #6940 audioDeliveryLimit／true-peak limiter，#7246 維持延後，條件為 limiter 成組採用後驗 AAC -1.2 至 -1 dBTP、重複輸出 bytes 與分散式 loudness。#7182 等長來源分段副本與離線長片驗收；#7176 等維護者決定遙測政策；#7104／#7168 retry 等新 session 所有權、取消與一次性重試契約；#6716 的 17 檔遷移等 Windows 私有快取根與完整 guard 測試。所採六筆不依賴這四組。
+
+實際 PR 水位 #7242、issue #7223 保持，不退回提示中的 #7189，也不越過尚未裁決的 #7243。monitored 維持實際 baseline 的 96 筆，這八筆沒有對應項目，#6695 保留舊 head；沒有以未讀的新 head 消除 strict 缺口。
+
+八筆均沒有 golden／LFS pointer 變更；既有 #6665 pointer 保留，需上傳的新 LFS 物件：無。只有延後的 #7134 新增 share package 的預算，所採六筆沒有 core／CLI 的上游同 commit 增量，不能為既有超標提高 budgets。採用產品的上游作者為 Miguel Ángel 與 Vance Ingalls，#7271／#7293／#7292／#7288 另附 Claude Sonnet 5.5 attribution；email 僅供 Co-authored-by，不寫入文件。
+
+### 聚焦紅綠與最終驗證
+
+| 範圍                                                 | 舊碼紅燈                                                                                      | 最終聚焦                                         | exit 舊／新 |
+| ---------------------------------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------ | ----------- |
+| core：mute／tier／filter guards                      | 120 passed／11 failed；五例是新 helper 不存在，其餘含 auto tier、SVG 與 fixed-child 行為斷言  | 加 frames／discover 共 164 passed／0 failed      | 1／0        |
+| #7271 once guard（乾淨 HEAD 注入測試後恢復原 bytes） | capture／filter 與 0.3／0.499 秒四例均在 `expected true to be false` 失敗：掃描提前消耗 guard | 四例均通過，包含回到原時點與真正 seek 才寫 label | 1／0        |
+| CLI：craftAudit／checkMotionBlur                     | 37 passed／2 failed：measured 為空，tier-auto 多報 finding                                    | 含 CLI docs 共 41 passed／0 failed               | 1／0        |
+| Studio：Shift modifier／meta／Blur panel             | 15 passed／3 failed：attribute／cursor／Beta label                                            | 18 passed／0 failed                              | 1／0        |
+
+命令為套件 cwd 的 `bun x vitest run <files> --maxWorkers=2 --reporter=json --outputFile=<ignored json>`，檔案清單與原始斷言見 `red-core-final.*`、`red-once-guard-final.*`、`red-cli.*`、`red-studio.*`、`final-core-guard.*`、`delivery-cli-docs.*`、`final-studio.*`。初次適配有缺閉括號的 transform error，修正後才取得上述綠燈，沒有把編譯錯誤當成 bug 重現。最終 core 聚焦同時包含 GSAP callback 參數／scope、nested mute、onUpdate throw 復原與 #6983 phase 測試。
+
+最小真實瀏覽器驗收只取一個現有 filter trail 像素案例：engine cwd 的 `bun x vitest run src/services/captureMotionBlur.pixels.browser.test.ts -t "leaves a trail along the motion line, in the filter tier" --maxWorkers=1 --reporter=json --outputFile=<ignored json>` exit 0，1 passed／0 failed／16 未選取；確實執行了像素斷言，沒有把 skip 當成功。沒有另建 smoke data、重跑同一瀏覽器案例或宣稱已驗全部上游 differential matrix。
+
+### 靜態閘門與封裝
+
+core／CLI／Studio build 均 exit 0；CLI 在最終內建 rendering topic／Craft warnings／motion blur 文件完成後重建，`delivery-build-cli.*` exit 0，最後封裝量測為 `delivery-pack-cli.*`。lefthook 三組 `node node_modules/typescript/bin/tsc --noEmit -p <packages/core/tsconfig.json|packages/studio/tsconfig.json|scripts/tsconfig.json>` 均 exit 0、無輸出。`node_modules/.bin/fallow audit --base origin/main --fail-on-issues` exit 0，結尾 `No issues in 27 changed files`；new-only gate 排除一筆 inherited complexity finding，沒有放寬門檻。最初呼叫不存在的 fallow.cmd 是啟動錯誤，改用實際 `.bin/fallow` 後成功，不列作產品失敗。
+
+變更 TypeScript 的 oxlint exit 0、0 warnings／0 errors；`node scripts/check-cli-process-ownership.mjs` 與改動 Studio 檔案的 `node scripts/check-studio-file-size.mjs <files>` 亦 exit 0；`bun packages/cli/scripts/gen-skills-manifest.ts --check` exit 0，`skills-manifest.json is in sync (7 skills)`。只直接執行檢查，沒有執行會 staging 的 lefthook format job。完整套件啟動後產品程式只有非語意格式／換行調整；core 測試刪掉一例重複異常案例，另把 once guard 由兩例擴為四例、加入實際 mover 幾何及跨 callback 的 shutter window。全套仍記當時實跑的原始個數，最終產品程式的語意保持，最終聚焦與輸入雜湊另保留於 `final-product-inputs.json`，不把後補 hash 冒稱為全套啟動時的 bytes。
+
+雙樹重建 dist 後以 `pnpm pack --json --pack-destination <ignored directory>` 單純量測（沒有安裝依賴或新增 lockfile），原始大小見 `package-sizes.json`。
+
+| 套件 | HEAD packed／unpacked | 移植 packed／unpacked | 判定                                |
+| ---- | --------------------- | --------------------- | ----------------------------------- |
+| core | 1681999／4057971      | 1681350／4056727      | 雙樹 packed 既有超標；unpacked 通過 |
+| cli  | 8500040／24202857     | 8500352／24197584     | 雙樹 packed／unpacked 既有超標      |
+
+保留 1% 容差及現有 budgets；所採六筆沒有上游同 commit 的預算增量，延後的 #7134 只有新 share package 預算，不能用來提高 core／CLI 門檻。封裝大小缺口未消除。
+
+### 最新剩餘快照（水位 `66cbabc39`）
+
+2026-11-06、fork HEAD `46d98d9bd` 的收尾 `python tools/check_upstream_updates.py --strict` exit 1，完整報告為 `strict-final.md`；上游 tip `cb8e02e82`。水位以上 10 個 commit（下一筆 `6011d9d`／#7299）、PR #7242 以上 61 筆、issue #7223 以上 11 筆；96 筆 monitored 中 #6695 一筆 open head 差異，原釘 `8aa9967f3b8bb8c776f7555d065d8ebd939ebe66`、查詢為 `3b2321c`。現行剩餘數字只在此維護，歷史節的日期快照保留；沒有為 strict 歸零越過指定八筆或釘選未讀補丁。
+
+### 完整套件與乾淨 HEAD 的逐名比較
+
+乾淨樹由 `git archive HEAD` 建立，第三方依賴以 junction 共用，各 workspace 指向乾淨樹自身。core／CLI／Studio 與 scripts 共 3665 個 archive 檔案逐 byte 比較差異 0（`archive-parity.json`）。重建乾淨樹 parsers、lint、core、studio-server、Studio、inspector、player、CLI dist 均 exit 0；移植樹三個受影響 package 亦 build 成功。初次環境處理遇到 dangling ignore junction，改指向已安裝的實體套件後完成，沒有修改產品或依賴宣告。
+
+兩樹的三個套件各執行一次完整 suite，`--maxWorkers=2`，並以 JSON reporter 保留逐名結果。命令為套件 cwd 的 `bun run test --maxWorkers=2 --reporter=json --outputFile=<ignored json>`；Studio 的同一個 underlying command 為 `node <tree>/packages/studio/node_modules/vitest/vitest.mjs run --maxWorkers=2 --reporter=json --outputFile=<ignored json>`。沒有因 wrapper 逾時重新啟動任何完整 suite。
+
+| 套件   | 乾淨 HEAD pass／fail／skip | 移植 pass／fail／skip | 實際 test runner exit HEAD／移植 | 只在移植樹失敗（含 suite error） |
+| ------ | -------------------------- | --------------------- | -------------------------------- | -------------------------------- |
+| core   | 5607／0／11                | 5618／0／11           | 0／0                             | 0                                |
+| cli    | 6237／35／307              | 6246／29／307         | 1／1                             | 0                                |
+| studio | 7938／229／2               | 7940／229／2          | 1／1                             | 0                                |
+
+Studio 的 Bun wrapper 兩樹均在初設 900 秒逾時，這兩個 wrapper 結果維持 incomplete。Vitest 子行程沒有被終止，沿用原本行程、原本輸出檔，透過已開啟的 Windows process handle 等待其真正結束並取 exit code；沒有重跑已完成案例。具名上限為 `UPSTREAM_STUDIO_BATCH_CAP_SECONDS=1800`、`UPSTREAM_OVERALL_CAP_SECONDS=3600`，overall 從這段全套開始時起算；原始命令、PID、時間、exit 1 保存在 `studio-processes.json`、`head-studio-native.result.json`、`port-studio-native.result.json`。兩樹實際耗時分別約 1172／1213 秒，均在上限內完成；不把 wrapper timeout 改記成成功。
+
+逐名清單為 `head-{core,cli,studio}.failures.json` 與 `port-{core,cli,studio}.failures.json`，差集、清單 SHA-256、runner／wrapper exit 都存於 `comparison.json`。三套原始逐名差集與 suite-error 差集均為 0，沒有作失敗項目的重跑或藉聚焦改寫全套結果。Studio 229 個失敗的名稱集合 SHA-256 兩樹完全相同：`9b37556d350508f4a8606a50a88ceb839fc0256b652ffb7a8e9ce693cca76907`。CLI 另外六個只在 HEAD 失敗的 browser／warmCheck 案例保留原始清單，不宣稱是這六筆修正解決。
+
+core 全套是在測試清理／加強前取得，保留原始 5618 個 passed；後續只移除一例重複異常測試並加強 once guard 的幾何與兩個跨 callback 案例，最終 focused 164 passed（`final-core-guard.*`），不虛構最終全套的個數。產品程式語意沒有在全套後改動。
+
+受影響產品來源只有 core／CLI／Studio；沒有建立依賴缺失的 producer／engine harness 檔案。producer 未改產品檔，不擴大跑 producer lane；engine 只跑上述一個真實 filter trail 像素案例。沒有執行 `tools/test_product.ps1 -Full`。CLI／Studio 全套仍有既有失敗，封裝大小仍超標，strict 仍有範圍外未審項目，不能宣稱完整產品驗收綠燈；ROADMAP 近期列保留。
+
+### 維護 gate 收尾
+
+2026-11-06、fork HEAD `46d98d9bd` 的 `pwsh -NoProfile -File tools/dev_check.ps1` exit 0：39 passed／0 failed（`dev-check-final.log`）；12 份維護文件、0 個斷鏈，結尾 `WINDOWS DEV CHECK GREEN`。新節與 MDX 修改已用 `node_modules/.bin/oxfmt --ignore-path <empty-ignore>` 格式化，歷史節只改過期的「最新」標題與快照定位；`git diff --check` exit 0。最終工作樹的 changed／untracked SHA-256 存於 `delivery-inputs.json`，不冒稱為完整 suite 的啟動快照。

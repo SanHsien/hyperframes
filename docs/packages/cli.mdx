@@ -1272,6 +1272,10 @@ edges re-measured to about 0.01 s, and skipped for a `--range` check.
 | `first_frame_empty` | Frame 0 paints nothing but the background (no text, image, video, canvas or SVG), or an opaque element covers every other clip and is named. The first frame is the thumbnail on social players.                                                                      |
 | `film_silent`       | A film longer than 15 s has no unmuted `<audio>` and no `<video>` with sound.                                                                                                                             |
 
+In JSON output, a `line_unread` finding includes `measured` frames around both
+ends of the line's run. Each frame carries `time`, `opacity` and `heightPx`;
+the last two are `null` when that line painted no text in the sampled frame.
+
 Captions-track text (`data-track-kind="captions"`) and `data-layout-ignore`
 text are exempt from the text rules. `dead_stretch` never counts the film's
 last 3 s (a held end card) or time when an element marked `data-hold` is on

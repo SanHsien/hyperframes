@@ -245,3 +245,9 @@ commit 水位 `32eb4c3582d6b5b52c06f1444d23bc395b8e19d8`，PR 水位 #7242、iss
 以 fork `6e8cc4d8b` 接續，只審 `256b84a41..b4cc674f7` 的八筆連續 commit；採用 #7264、#7267、#7268、#7283、#7287，#7283 同採 #7061 先決，stale 自動關閉政策與整版 release 不採用。逐筆來源／fork 行號、紅綠、雙樹比較及限制見 [接續清冊](UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-06接續至-b4cc674f7審查-8-個連續-commit)。
 
 commit 水位 `b4cc674f7f312e77ded32e0b53006cc0bad6723b`，PR #7242、issue #7223，monitored 保持 96 筆；未讀的 #6695 open head 保留原釘選。#7246 的 limiter 前置沒有出現，與 #7182、#7176、#7104／#7168 retry、#6716 的 17 檔遷移維持清冊重訪條件。沒有 golden／LFS pointer 變更，剩餘數字只在清冊的新節維護；ROADMAP 接續列保留。
+
+## 2026-11-06：連續水位 `66cbabc39`
+
+以 fork `46d98d9bd` 接續，只審 `a81b34410..66cbabc39` 八筆連續 commit。採用 #7294、#7271、#7293、#7292、#7288、#7298；#7134 分享 kernel 與 #7295 的 #7080 overflow crop 依賴維持成組延後。逐筆來源／fork 行號、依賴裁決與驗證見 [接續清冊](UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-06接續至-66cbabc39審查-8-個連續-commit)。
+
+commit 水位 `66cbabc39aefc91cc3f82b102499c37a2d546ff8`，PR #7242、issue #7223，monitored 維持 96 筆；指定八筆未到達 monitored 項目，#6695 未讀的 open head 差異保留原釘選。#7246 的 #6940 limiter 先決未出現；#7182、#7176、#7104／#7168 retry、#6716 的 17 檔遷移保留清冊的重訪條件。沒有 golden／LFS pointer 變更；剩餘數字只在清冊最新節維護，ROADMAP 接續列保留。

@@ -36,3 +36,12 @@ Requires: Docker installed and running.
 - Use `--video-frame-format png` when source videos contain saturated UI colors that should avoid JPEG extraction
 - Use `npx hyperframes benchmark` to find optimal settings
 - 4 workers is usually the sweet spot for most compositions
+
+## Motion blur
+
+Set `data-motion-blur="on"` on the composition root to enable shutter blur in preview and render.
+The default `data-motion-blur-tier="auto"` uses per-element SVG filters; turns and zooms soften.
+Use `data-motion-blur-tier="capture"` for streaked turns and zooms when HTML in Canvas is available.
+With `data-motion-blur-events="on"`, continuous `onUpdate` callbacks run during pose reads;
+GSAP discrete callbacks stay muted until the real timeline seek. Cost varies by composition.
+See https://hyperframes.heygen.com/guides/motion-blur for settings and limits.

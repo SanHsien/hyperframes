@@ -11,6 +11,7 @@ export interface CaptureMotionBlurHost {
   now: () => number;
   /** Seek the timeline and adapters (not media) for a pose read. */
   seek: (t: number, suppressEvents: boolean) => void;
+  muteCallbacks?: () => () => void;
   ignoreMutations?: (write: () => void) => void;
 }
 
@@ -61,10 +62,10 @@ export interface TierChoice {
   fallback: boolean;
 }
 
-/** Capture where it can run; the filter tier where it cannot or the page asked for it; off if told to be. */
+/** The filter tier unless the page asks for capture and it can run; off if told to be. */
 export function chooseTier(c: TierChoice): "capture" | "filter" | "off" {
   if (c.defect?.code === "renderer-off") return "off";
   const capturable = c.form && !c.defect;
-  if (c.fallback && (c.tier === "filter" || !capturable)) return "filter";
+  if (c.fallback && (c.tier !== "capture" || !capturable)) return "filter";
   return capturable ? "capture" : "off";
 }

@@ -6,7 +6,7 @@
  */
 
 import { swallow } from "../diagnostics";
-import { discoverMovers, landThenUndoDom } from "./discover";
+import { discoverMovers, whileCallbacksMuted } from "./discover";
 import { planFilter, type FilterPlan } from "./filterPlan";
 import { readMoverFrames, shutterTimes } from "./frames";
 import { createPoseReader } from "./pose";
@@ -94,6 +94,33 @@ function aim(layer: Layer, plan: FilterPlan): void {
   layer.filter.setAttribute("height", h.toFixed(1));
 }
 
+const CONTENT_NODE_LIMIT = 256;
+
+function holdsFixedChild(el: HTMLElement): boolean {
+  const walker = el.ownerDocument.createTreeWalker(el, NodeFilter.SHOW_ELEMENT);
+  for (let n = 0; n < CONTENT_NODE_LIMIT && walker.nextNode(); n++) {
+    if (getComputedStyle(walker.currentNode as Element).position === "fixed") return true;
+  }
+  return false;
+}
+
+const CONTAINING_BLOCK_PROPERTIES = [
+  "transform",
+  "translate",
+  "rotate",
+  "scale",
+  "perspective",
+] as const;
+
+function makesContainingBlock(el: HTMLElement): boolean {
+  const style = getComputedStyle(el);
+  return (
+    CONTAINING_BLOCK_PROPERTIES.some((p) => (style[p] || "none") !== "none") ||
+    /transform|perspective|filter/.test(style.willChange ?? "") ||
+    /paint|layout|strict|content/.test(style.contain ?? "")
+  );
+}
+
 const strip = (el: HTMLElement): string => el.style.filter.replace(OWN, "").trim();
 
 export function createFilterTier(
@@ -107,6 +134,7 @@ export function createFilterTier(
   const seek = (t: number): void => host.seek(t, !config.events);
   let defs: SVGSVGElement | null = null;
   let movers: HTMLElement[] = [];
+  let fixedHolders = new Set<HTMLElement>();
   let pads = new Map<HTMLElement, number>();
   let reader: ReturnType<typeof createPoseReader> | null = null;
   let scanned: unknown;
@@ -121,21 +149,18 @@ export function createFilterTier(
   function discover(restoreTo: number): void {
     scanned = host.timeline();
     const s0 = performance.now();
-    const landing = config.events ? landThenUndoDom(seek, document) : null;
-    let found: ReturnType<typeof discoverMovers>;
-    try {
-      found = discoverMovers({
+    const found = whileCallbacksMuted(host, config.events, () => {
+      const scan = discoverMovers({
         scene: root,
         durationSeconds: host.durationSeconds(),
         fps: host.fps,
         seek,
-        onStep: landing?.flush,
       });
-      (landing?.land ?? seek)(restoreTo);
-    } finally {
-      landing?.stop();
-    }
+      seek(restoreTo);
+      return scan;
+    });
     movers = found.movers;
+    fixedHolders = new Set(movers.filter(holdsFixedChild));
     pads = found.pads;
     reader = createPoseReader(root, found.dynamic);
     scanMs = Math.round(performance.now() - s0);
@@ -163,7 +188,7 @@ export function createFilterTier(
       defs.setAttribute("data-hf-ignore", "");
       defs.style.cssText = "position:absolute;left:0;top:0;pointer-events:none";
       node(defs, "defs", {});
-      root.append(defs);
+      document.documentElement.append(defs);
     }
     layer = buildLayer(defs.querySelector("defs") ?? defs, layers.size, el);
     layers.set(el, layer);
@@ -182,27 +207,24 @@ export function createFilterTier(
   function plansAt(t: number, engineMode: boolean): Array<[HTMLElement, FilterPlan]> {
     if (!reader || host.timeline() !== scanned) discover(t);
     if (!reader) return [];
-    const landing = config.events ? landThenUndoDom(seek, document) : null;
-    let read: ReturnType<typeof readMoverFrames>;
-    try {
-      read = readMoverFrames({
+    const poseReader = reader;
+    const read = whileCallbacksMuted(host, config.events, () =>
+      readMoverFrames({
         movers,
-        reader,
+        reader: poseReader,
         seek,
-        restore: landing?.land,
         t,
         reads: engineMode ? RENDER_READS : PREVIEW_READS,
         ...shutterTimes(config.shutterDeg, config.phaseDeg, host.fps),
         taps: COPIES,
         frameW: width,
         frameH: height,
-      });
-    } finally {
-      landing?.stop();
-    }
+      }),
+    );
     const plans: Array<[HTMLElement, FilterPlan]> = [];
     read.els.forEach((el, i) => {
       const frame = read.frames[i];
+      if (fixedHolders.has(el) && !makesContainingBlock(el)) return;
       const plan = frame && planFilter(frame, pads.get(el) ?? 0, width);
       if (plan) plans.push([el, plan]);
     });
