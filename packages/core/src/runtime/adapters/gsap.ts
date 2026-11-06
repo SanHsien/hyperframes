@@ -57,14 +57,25 @@ function renderOntoInAuthoredOrder(
   timeline.totalTime(below ? t - REDRAW_STEP : t + REDRAW_STEP, true);
   primeTweensStartingAt(children, t, below ? REDRAW_STEP : 0);
   timeline.totalTime(t, true);
-  if (!below && structure) reapplyStepsInAuthoredOrder(timeline, structure, t);
+  const own = structure ?? ownStructureOf(children);
+  if (!below) {
+    reapplyStepsInAuthoredOrder(timeline, own, t);
+  } else if (own) {
+    settleOverlapsEndedBetween(own.owner as RuntimeTimelineLike, t - REDRAW_STEP, t, own.version);
+  }
+}
+
+function ownStructureOf(children: unknown[]): GsapStructureKey | undefined {
+  const owner = (children[0] as GsapPlaced | undefined)?.parent;
+  return owner ? { owner, version: "" } : undefined;
 }
 
 function reapplyStepsInAuthoredOrder(
   timeline: { getChildren?: RuntimeTimelineLike["getChildren"] },
-  structure: GsapStructureKey,
+  structure: GsapStructureKey | undefined,
   t: number,
 ): void {
+  if (!structure) return;
   for (const step of stepsAt(timeline, structure, t)) {
     const { ratio, _zTime, _act } = step;
     step.render(0, true, true);
@@ -421,7 +432,9 @@ function stepsAt(
   structure: GsapStructureKey,
   t: number,
 ): GsapStep[] {
-  const { points } = placedLandingMarks(timeline, structure);
+  const { points } = structure.version
+    ? placedLandingMarks(timeline, structure)
+    : placeLandingMarks(timeline, structure);
   const steps: GsapStep[] = [];
   for (let i = firstPointFrom(points, t - PLAYHEAD_FLOAT_NOISE); i < points.length; i++) {
     if (points[i]!.at > t + PLAYHEAD_FLOAT_NOISE) break;

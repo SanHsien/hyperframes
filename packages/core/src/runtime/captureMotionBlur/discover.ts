@@ -38,6 +38,7 @@ export interface DiscoverOptions {
   /** Seek the composition (timeline + adapters) to a time. */
   seek: (t: number) => void;
   onStep?: (i: number, steps: number) => void;
+  onFast?: (i: number, steps: number, fast: ReadonlySet<HTMLElement>) => void;
 }
 
 export interface Discovery {
@@ -170,6 +171,7 @@ export function discoverMovers({
   fps,
   seek,
   onStep,
+  onFast,
 }: DiscoverOptions): Discovery {
   seek(0);
   const all = [...scene.querySelectorAll("*")].filter(isHtmlElement);
@@ -229,6 +231,7 @@ export function discoverMovers({
       )
         seeThrough.add(el);
     });
+    onFast?.(i, steps, fast);
     // Style reads up the chain are the costly part; every 10th step is enough to see a 3D turn.
     if (i % 10 === 0 || i === steps) {
       for (const el of fast) {

@@ -41,6 +41,20 @@ describe("discoverMovers", () => {
     expect(movers).toEqual([fast]);
   });
 
+  it("hands the fast elements to onFast at every step, with the pose of that step applied", () => {
+    const { scene, fast, seek } = setup();
+    const seen: Array<[number, boolean, string]> = [];
+    discoverMovers({
+      scene,
+      durationSeconds: 1,
+      fps: 30,
+      seek,
+      onFast: (i, _steps, set) => seen.push([i, set.has(fast), fast.style.transform]),
+    });
+    expect(seen.map(([i]) => i)).toEqual(Array.from({ length: 31 }, (_, i) => i));
+    expect(seen.at(-1)).toEqual([30, true, "translateX(300px)"]);
+  });
+
   // A 100 px jump inside one scan step at 5 s: slow to a still-style baseline, fast between two steps.
   function jumpScene() {
     const scene = document.createElement("div");

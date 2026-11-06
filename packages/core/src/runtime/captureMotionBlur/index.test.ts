@@ -96,7 +96,11 @@ function host(
 
 const captureCanvas = (root: HTMLElement) => root.parentElement as HTMLCanvasElement;
 
+// jsdom has no Range layout; the composition scan measures text through one.
+const rangeRect = Range.prototype.getBoundingClientRect;
+
 beforeEach(() => {
+  Range.prototype.getBoundingClientRect = () => new DOMRect();
   setFilterFallbackForTests(false);
   contexts = [];
   vi.spyOn(console, "info").mockImplementation(() => {});
@@ -104,6 +108,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  Range.prototype.getBoundingClientRect = rangeRect;
   resetCaptureMotionBlurForTests();
   setFilterFallbackForTests(true);
   vi.restoreAllMocks();
@@ -1523,6 +1528,23 @@ describe("probe", () => {
     expect(h.seek.mock.calls.at(-1)?.[0]).toBeCloseTo(0.4);
     expect(root.parentElement).toBe(document.body);
     expect(document.querySelector("canvas")).toBeNull();
+  });
+
+  it.each(["capture", "filter"])("counts what the composition holds on the %s tier", (tier) => {
+    installHtmlInCanvas();
+    if (tier === "filter") setFilterFallbackForTests(true);
+    const { root, h } = movingHost({ "data-motion-blur": "on", "data-motion-blur-tier": tier });
+    root.append(document.createElement("video"), document.createElement("video"));
+    initCaptureMotionBlur(h);
+    expect(win.__hfMotionBlur?.report()).toMatchObject({ fingerprint: null, readEvents: false });
+    expect(probe()).toMatchObject({ tier, fingerprint: { video: 2, webgl: 0 }, readEvents: false });
+  });
+
+  it("carries no counts when blur stands down before any scan", () => {
+    win.__HF_PAGE_MOTION_BLUR_OFF__ = "hdr-render";
+    const { h } = movingHost();
+    initCaptureMotionBlur(h);
+    expect(probe()).toMatchObject({ state: "off", fingerprint: null, readEvents: false });
   });
 
   it("reports no movers for a composition where nothing moves", () => {

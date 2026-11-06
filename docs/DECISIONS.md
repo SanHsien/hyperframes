@@ -1104,3 +1104,9 @@ commit 水位 `9e2510bdabc3955183235e47dc6215069bf20882`，PR #7242、issue #722
 以 fork `4cf9a241d` 接續，審完 `f3e45b492..4cf26b5b4` 五個連續 commit 並把 PR 軸推進到 #7250。採用 #7310（MPEG-4 Part 2／MJPEG 預先轉出可播放副本）、#7316（check_report 帶副本計數，適配本線沒有 copy window 的 `preResolveHostileMediaProxies`）與 #7317（render 讀 `data-composition-src` 與預覽一致、拒絕離開專案資料夾的路徑）；#7309 因先決 #6912 未採而延後，#7314 屬 reverse-any-video 帳戶流程不適用。PR #7243 為作者自行關閉而不適用，#7249 open 釘 monitored，#7244、#7245、#7246、#7247、#7248、#7250 沿用既有裁決。逐筆來源／fork 行號、上游動到的全部檔案逐檔判定與雙樹比較見 [接續清冊](UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-06接續至-4cf26b5b4審查-5-個連續-commit)。
 
 commit 水位 `4cf26b5b49e6c4f2b42fb28738a1fb576e7494de`，PR #7250、issue #7223，monitored 由 96 增為 97 筆（新增 #7249 open）。#6912、#7182、#7176、#7104／#7168 retry、#6716 的 17 檔遷移、#7134、#7295、#7302、#7246 與 #7247 依清冊條件維持延後。沒有 golden／LFS pointer 變更或新增上傳物件，也沒有套件大小預算增量；剩餘數字僅記於清冊最新節，ROADMAP 接續列保留。
+
+## 2026-11-07：連續水位 `3e3ba8d0d`
+
+以 fork `21158b212` 接續，審完最後 2 個 commit（commit 軸到達上游 tip）並把 PR 軸推進到 #7258。採用 #7306 的 blur composition 計數遙測（適配本線 `discoverMovers`，沿用既有 opt-out，`readEvents` 因無 #7191 恆為 false）與 #7318（連同已合併先決 #6851 的 `ownStructureOf`）；PR #7251、#7252、#7254、#7255、#7256、#7258 沿用各自原節裁決並重新核對 fork 行號，#7253、#7257 為 open 釘 monitored。逐筆來源／fork 行號、上游動到的全部檔案逐檔判定與雙樹比較見 [接續清冊](UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-07接續至-3e3ba8d0d審查最後-2-個-commit-與-8-筆-pr)。
+
+commit 水位 `3e3ba8d0d076f1487b4e0aa9261ed148c26936eb`，PR #7258、issue #7223，monitored 由 97 增為 99 筆（新增 #7253、#7257 兩筆 open）。#7191、#7295／#7080、#6967／#7302、#6912、#7182、#7176、#7104／#7168 retry、#6716 的 17 檔遷移、#7134、#7246 與 #7247 依清冊條件維持延後。沒有 golden／LFS pointer 變更或新增上傳物件；套件大小預算只有 inspector unpacked 一筆上游同 commit 增量；剩餘數字僅記於清冊最新節，ROADMAP 接續列保留。

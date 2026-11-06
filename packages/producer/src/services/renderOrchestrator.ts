@@ -109,6 +109,7 @@ import {
   augmentProtocolTimeoutError,
   augmentPageNavigationTimeoutError,
   type MotionBlurOptions,
+  type PageMotionBlurSummary,
 } from "@hyperframes/engine";
 import { join, dirname, resolve } from "path";
 import { totalmem } from "node:os";
@@ -600,6 +601,7 @@ export interface RenderPerfSummary {
     noDamageFrames: number;
     hasDamageFrames: number;
   };
+  motionBlur?: PageMotionBlurSummary;
   /**
    * drawElement fast-capture outcome for this render (default-on release
    * visibility). Undefined when no capture session ran.

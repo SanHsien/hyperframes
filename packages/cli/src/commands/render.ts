@@ -86,6 +86,7 @@ import {
   type RenderEnvironmentTelemetryPayload,
 } from "../telemetry/events.js";
 import { maybePromptRenderFeedback } from "../telemetry/feedback.js";
+import { renderMotionBlurTelemetryPayload } from "../telemetry/renderMotionBlur.js";
 import {
   readConfigFresh,
   releaseDeParallelRouterLatch,
@@ -1901,6 +1902,7 @@ function trackRenderMetrics(
     catalogUsage: options.catalogUsage,
     ...renderOutputShapeTelemetryPayload(options),
     ...renderEnvironmentTelemetryPayload(options),
+    ...renderMotionBlurTelemetryPayload(perf?.motionBlur),
     chromeBrowserRssPeakMb: perf?.chromeMemory?.browserRssPeakMb,
     chromeRendererRssPeakMb: perf?.chromeMemory?.rendererRssPeakMb,
     chromeRssLastMb: perf?.chromeMemory?.rssLastMb,

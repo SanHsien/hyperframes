@@ -10,6 +10,40 @@ import {
   translate,
 } from "./pose";
 
+export const CONTENT_NODE_LIMIT = 256;
+
+type Box = [number, number, number, number];
+
+const SUBPIXEL = 0.5;
+
+export const within = (r: DOMRect, o: DOMRect): boolean =>
+  r.left >= o.left - SUBPIXEL &&
+  r.top >= o.top - SUBPIXEL &&
+  r.right <= o.right + SUBPIXEL &&
+  r.bottom <= o.bottom + SUBPIXEL;
+
+export function holdsFixedChild(el: HTMLElement): boolean {
+  const walker = el.ownerDocument.createTreeWalker(el, NodeFilter.SHOW_ELEMENT);
+  for (let n = 0; n < CONTENT_NODE_LIMIT && walker.nextNode(); n++) {
+    if (getComputedStyle(walker.currentNode as Element).position === "fixed") return true;
+  }
+  return false;
+}
+
+const POSITIONED = new Set(["absolute", "fixed"]);
+const NO_CONTENT = new Set(["none", "normal"]);
+
+export function pseudoBox(el: HTMLElement, which: "::before" | "::after"): Box | null {
+  const cs = getComputedStyle(el, which);
+  if (NO_CONTENT.has(cs.content) || !POSITIONED.has(cs.position)) return null;
+  const left = parseFloat(cs.left) + el.clientLeft;
+  const top = parseFloat(cs.top) + el.clientTop;
+  const width = parseFloat(cs.width);
+  const height = parseFloat(cs.height);
+  if (![left, top, width, height].every(Number.isFinite)) return null;
+  return [left, top, left + width, top + height];
+}
+
 export interface FrameRequest {
   movers: HTMLElement[];
   reader: ReturnType<typeof createPoseReader>;

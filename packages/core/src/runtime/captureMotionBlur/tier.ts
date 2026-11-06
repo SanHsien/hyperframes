@@ -1,4 +1,5 @@
 import type { CaptureDefect } from "../../htmlInCanvasDefects";
+import type { MotionBlurFingerprint } from "../../motionBlurFingerprint";
 
 /** What the runtime drives: capture blur or the filter fallback, the same way. */
 
@@ -39,6 +40,9 @@ export interface Report {
   meanMs: number;
   failures: number;
   failedFrames: number;
+  fingerprint: MotionBlurFingerprint | null;
+  /** Always false on this line: the loud-versus-silent scan upstream reads it from (#7191) is not ported. */
+  readEvents: boolean;
 }
 
 export interface Tier {

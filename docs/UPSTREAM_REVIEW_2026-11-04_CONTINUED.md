@@ -1675,10 +1675,108 @@ core／studio／scripts 三組 `node node_modules/typescript/bin/tsc --noEmit -p
 
 port 樹多出的通過數正是新增測試（studio-server 4、producer bun 7、CLI 2）。既有環境失敗在乾淨 HEAD 一樣出現：studio-server 23；producer bun 8（`chunkAudio`、`projectHash` 的 symlink、`captureSegmentedStage` 零補位）；producer vitest 4（`noNetworkNode` 兩例、`renderDirOwner`、`segmentManifest`）；CLI 31（`offload.undecodableTrack`、`clean`／`transcribe`／`describeProject`／`optionalPackages` 的 symlink 與 inode 0、`lambda/videoImage`、`warmCheck.process` 的 Chrome 啟動）。聚焦跑（telemetry、`check.test.ts`、`utils`）另出現 `checkDeadline.process` 兩例與 `staticProjectServer.charset.browser` 的 Chrome 30 秒啟動逾時，這三個檔在乾淨 HEAD 同樣 5 例失敗。這批沒有重建 dist，也沒有跑 `tools/test_product.ps1 -Full`。
 
-### 最新剩餘快照（水位 `4cf26b5b4`）
+### 剩餘快照（水位 `4cf26b5b4`）
 
-2026-11-06、fork HEAD `4cf9a241d`（工作樹未提交）以寫入後的 `tools/upstream_baseline.json` 重跑 `python tools/check_upstream_updates.py --strict` 仍 exit 1：上游 tip 已前進到 `3e3ba8d0d`，commit 軸尚有 2 個，下一個是 `a874a6324`（#7306，motion blur 報告計數）與 `3e3ba8d0d`（#7318，interrupting set 在 render 的 worker 數不變）；PR #7250 以上 61 筆待審，下一個是 #7251；issue #7223 以上 11 筆；monitored 97 筆（由 96 新增 #7249 open），#6695 的 open head 差異維持原釘選。PR #7251 以後有數筆（#7251、#7252、#7262、#7265 等）已隨 commit 軸有裁決，但 PR 水位依連續規則逐筆核對後才推進，不跳號。現行剩餘數字只在此維護。
+2026-11-06、fork HEAD `4cf9a241d`（工作樹未提交）以寫入後的 `tools/upstream_baseline.json` 重跑 `python tools/check_upstream_updates.py --strict` 仍 exit 1：上游 tip 已前進到 `3e3ba8d0d`，commit 軸尚有 2 個，下一個是 `a874a6324`（#7306，motion blur 報告計數）與 `3e3ba8d0d`（#7318，interrupting set 在 render 的 worker 數不變）；PR #7250 以上 61 筆待審，下一個是 #7251；issue #7223 以上 11 筆；monitored 97 筆（由 96 新增 #7249 open），#6695 的 open head 差異維持原釘選。PR #7251 以後有數筆（#7251、#7252、#7262、#7265 等）已隨 commit 軸有裁決，但 PR 水位依連續規則逐筆核對後才推進，不跳號。這是水位 `4cf26b5b4` 時點的歷史快照，現行剩餘數字見本檔最新節。
 
 ### 維護 gate 收尾
 
 2026-11-06、fork HEAD `4cf9a241d`（工作樹未提交）的 `pwsh -NoProfile -File tools/dev_check.ps1` exit 0，39 passed／0 failed，結尾 `WINDOWS DEV CHECK GREEN`，12 份維護文件、0 個斷鏈；`docs/UPSTREAM.md`、`docs/DECISIONS.md`、`ROADMAP.md` 與 baseline 已同步（commit 水位 `4cf26b5b49e6c4f2b42fb28738a1fb576e7494de`、PR #7250、issue #7223、monitored 97）。
+
+## 2026-11-07：接續至 `3e3ba8d0d`，審查最後 2 個 commit 與 8 筆 PR
+
+以 fork `21158b212` 為起點。起始 `git fetch upstream main` 後 `python tools/check_upstream_updates.py --strict` exit 1：baseline `4cf26b5b4` 之後上游有 2 個 commit（`a874a6324`、`3e3ba8d0d`，上游 tip 即 `3e3ba8d0d`），PR #7250 以上 63 筆。本節審完這 2 個 commit，commit 軸到達上游 tip；PR 軸依順序只審 #7251–#7258 八筆。兩筆 commit 的唯讀 `gh pr view` 與補丁都逐檔讀取，每個 commit 以 `git show --stat` 列出上游動到的全部檔案並逐檔判定。
+
+### commit 軸
+
+| Commit／PR                                                                | 裁決與理由                                                                                                                                                                                                                                                                                                                                                                                               | 上游證據                                                                   | fork 證據                                                        |
+| ------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| `a874a6324`／[#7306](https://github.com/heygen-com/hyperframes/pull/7306) | 部分採用並適配：blur 掃描後回報「composition 持有什麼」的計數（只有數量，沒有 id、class、文字或 URL）；engine 把非零計數放進 `[motion-blur]` 行並交給 perf summary，producer 聚合（第一份報告為準、失敗畫格加總），CLI 在 `render_complete` 加 `motion_blur_*` 屬性，CLI 與 Studio render 兩處都送。沿用既有 telemetry opt-out，不擴大遙測啟用政策（#7176 仍等維護者決定）。不採：`readEvents`（見下）。 | `a874a6324:packages/core/src/runtime/captureMotionBlur/fingerprint.ts:117` | `packages/core/src/runtime/captureMotionBlur/fingerprint.ts:117` |
+| `3e3ba8d0d`／[#7318](https://github.com/heygen-com/hyperframes/pull/7318) | 採用，連同已合併的先決 `aafbd96b7`／#6851：below 分支的 render landing 也 settle 已結束的 overlap，set 打斷 tween 後任何 worker 數都停在 set 的值。#7318 的測試在無 structure 下呼叫 `rerenderGsapTimelineAt`，需要 #6851 的 `ownStructureOf`。                                                                                                                                                          | `3e3ba8d0d:packages/core/src/runtime/adapters/gsap.ts:64`                  | `packages/core/src/runtime/adapters/gsap.ts:64`                  |
+
+#### #7306 的適配
+
+本線的 motion blur 是上游 `4cf26b5b4` 的子集，沒有 #7191 的 `scanMovers`（silent／loud 兩段掃描）、#7295／#7080 的 crop 管線。逐項處理：
+
+- `fingerprint.ts` 需要 `CONTENT_NODE_LIMIT`、`holdsFixedChild`、`within`、`pseudoBox`。本線 `filterTier.ts` 原有私有的前兩者，改移到 `frames.ts` 匯出並由兩個 tier 共用；`within`、`pseudoBox` 是 #7295 的純量測 helper，這裡只給 fingerprint 當讀取用 consumer，沒有搬入 #7295 的 `grownBox`／`contentBox`／crop 成長，所以 #7295 與 #7080 的延後條件不變。
+- 上游 `onFast` 掛在 `scanMovers`，本線沒有該函式，改把 `onFast` 直接加在 `discoverMovers` 的每步迴圈（`discover.ts:234`），兩個 tier 的 `discover()` 各傳 `coverageSampler(root).sample`。上游「scan 只取樣一次」的 `scanMovers` 測試不適用，已省略；`onFast` 每步被呼叫的測試保留。
+- `readEvents` 欄位保留在 `Report`／`PageMotionBlurSummary` 以維持與上游同形，但本線沒有 #7191 的 silent／loud 比對，恆為 `false`（`tier.ts` 註記）；CLI 不送這個欄位，engine 只在為 true 時才印，所以不會產生誤導資料。#7191 到達時再接上。
+- `index.test.ts` 加 `Range.prototype.getBoundingClientRect` stub：上游該檔早有（#7080 鏈），本線沒有，而 fingerprint 掃描會用 `createRange()` 量文字；缺它時 76 個既有案例因 jsdom 沒有 Range 排版而失敗，不是行為回歸。
+- `scripts/package-size-budgets.json`：inspector unpacked `3645432 → 3684092`，與上游同 commit 的增量逐 byte 一致（上游說明 fingerprint 程式被打包進 inspector）；此預算只由 publish workflow 檢查。core／CLI 預算沒有增量，不移用。
+
+#### 上游動到的檔案逐檔判定
+
+| Commit      | 檔案                                                                                                                                                                        | 判定                                                                                                                         |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `a874a6324` | `packages/core/src/motionBlurFingerprint.ts`、`core/src/index.ts`、`captureMotionBlur/fingerprint.ts`、`fingerprint.test.ts`、`tier.ts`                                     | 全部採用（新檔逐 byte 同上游）。                                                                                             |
+| `a874a6324` | `captureMotionBlur/discover.ts`、`discover.test.ts`、`filterTier.ts`、`frames.ts`、`index.ts`、`index.test.ts`                                                              | 手工適配如上：`onFast` 掛 `discoverMovers`、helper 移到 `frames.ts`、省略 `scanMovers` 測試、`index.test.ts` 加 Range stub。 |
+| `a874a6324` | `packages/engine/src/index.ts`、`services/frameCapture.ts`、`services/pageMotionBlur.ts`、`pageMotionBlur.test.ts`、`types.ts`                                              | 全部採用（`types.ts` 的 hunk 因本線 import 較少改為手動套用，內容同上游）。                                                  |
+| `a874a6324` | `packages/producer/src/services/render/perfSummary.ts`、`perfSummary-motionBlur.test.ts`、`renderOrchestrator.ts`                                                           | 全部採用。                                                                                                                   |
+| `a874a6324` | `packages/cli/src/commands/render.ts`、`server/studioRenderTelemetry.ts`、`telemetry/events.ts`、`renderMotionBlur.ts`、`renderMotionBlur.test.ts`、`docs/packages/cli.mdx` | 全部採用；`cli.mdx` 的遙測揭露句因本線已有 `check` stop code 句而手動合併。                                                  |
+| `a874a6324` | `scripts/package-size-budgets.json`                                                                                                                                         | 採用 inspector unpacked 增量（見上）。                                                                                       |
+| `3e3ba8d0d` | `packages/core/src/runtime/adapters/gsap.ts`、`gsap.order.test.ts`                                                                                                          | 兩檔皆採用；`gsap.ts` 需先決 #6851 的同檔改動（下）。                                                                        |
+| `aafbd96b7` | `packages/core/src/runtime/adapters/gsap.ts`、`gsap.steps.test.ts`                                                                                                          | 先決，兩檔皆採用；補丁原樣套用，2026-11-02 清冊當時「依賴上游其他變更未驗證」的疑慮，本批以 #7318 測試實證其獨立。           |
+
+兩個 commit 的上游補丁都沒有動 `*.browser.test.ts` 或 `*.chromium.test.ts`；fork 的 `captureMotionBlur.pixels.browser.test.ts` 不讀 report 的 fingerprint／readEvents，也不經過 `[motion-blur]` 行，不需同步，因此沒有重蹈上一批漏改 engine 瀏覽器測試的覆轍。
+
+### PR 軸
+
+起點 #7251。八筆的唯讀 `gh pr view --repo heygen-com/hyperframes --json state,mergeCommit,headRefOid` 結果如下；merged 的六筆合併 commit 全在 baseline `4cf26b5b4` 以內（`git merge-base --is-ancestor` 為真），裁決承接各自原清冊節，這裡只重新核對 fork 端行號，並用上游合併 commit 的 diff 對 fork 做反向套用檢查（`git apply -R --check`）。
+
+| PR                                                           | 裁決與理由                                                                                                                                                                                                                                                                                                                                                              | 上游證據                                                                                          | fork 證據                                                                                                    |
+| ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| [#7251](https://github.com/heygen-com/hyperframes/pull/7251) | 已採用（`b108f8512` 那節）：outermost timed SVG scene 各有 id scope。fork 的 `snapshot.sceneSvgIds.browser.test.ts` 比上游多一段失敗診斷 `catch`，其餘同上游，所以反向檢查在該檔不全等，屬刻意的超集。                                                                                                                                                                  | MERGED `b108f8512`；`b108f8512:packages/core/src/compiler/svgIdNamespacing.ts:421`                | `packages/core/src/compiler/svgIdNamespacing.ts:414`                                                         |
+| [#7252](https://github.com/heygen-com/hyperframes/pull/7252) | 已採用（`b108f8512` 那節）：comma 清單每個 selector 都算 hidden。反向檢查兩檔皆可乾淨反套用。                                                                                                                                                                                                                                                                           | MERGED `a664f99ec`；`a664f99ec:packages/lint/src/rules/gsap.ts:1021`                              | `packages/lint/src/rules/gsap.ts:993`                                                                        |
+| [#7253](https://github.com/heygen-com/hyperframes/pull/7253) | monitored（open，釘 head `a954196b51cc7603c7dd9bd16a0b80eaff47af03`，外部貢獻者）：browser 下載失敗訊息補 `hyperframes doctor` 指引。本線的 `wrapDownloadFailureWithBrowserPathHint` 只有單一分支且訊息已含該句，PR 改的是上游「已安裝／未找到 Chrome」兩分支結構的第二分支，本線沒有，所以目前無可移植內容。重訪條件：合併後若上游兩分支結構被本線採入再比對最終字串。 | OPEN；`gh pr diff 7253`：`packages/cli/src/browser/manager.ts:721` 一帶 hunk                      | `packages/cli/src/browser/manager.ts:721`（單一分支，`:732` 已有 doctor 句）                                 |
+| [#7254](https://github.com/heygen-com/hyperframes/pull/7254) | 已採用並適配（`b108f8512` 之前的節，見 `2f2195515` 列）：reference 正規化停在 +12 dB／-1.5 dBTP 而不拒絕。反向檢查 `normalize-audio.ts`、`command.test.ts`、`loudness.ts` 各有 hunk 不全等，原因是本線保留「想提高音量時不反向降低」政策的 `fittedGain` 與 `heldAtLimit` 寫法，不是缺漏。                                                                               | MERGED `2f2195515`；`2f2195515:packages/studio-server/src/helpers/loudness.ts:386`                | `packages/studio-server/src/helpers/loudness.ts:385`、`:549`                                                 |
+| [#7255](https://github.com/heygen-com/hyperframes/pull/7255) | 已採用並適配：segmented 與 sequential capture 寫 encoder 前也驗 drawElement 樣本。保留既有 stall clock，不導入 render retry。                                                                                                                                                                                                                                           | MERGED `8df4f21c2`；`8df4f21c2:.../captureSegmentedStage.ts:222`、`captureStreamingStage.ts:1163` | `packages/producer/src/services/render/stages/captureSegmentedStage.ts:220`、`captureStreamingStage.ts:1116` |
+| [#7256](https://github.com/heygen-com/hyperframes/pull/7256) | 已採用：script-load origin／code 移到自由文字前。反向檢查兩檔皆可乾淨反套用。                                                                                                                                                                                                                                                                                           | MERGED `7290ee68c`；`7290ee68c:packages/engine/src/services/frameCapture.ts:2562`                 | `packages/engine/src/services/frameCapture.ts:2522`                                                          |
+| [#7257](https://github.com/heygen-com/hyperframes/pull/7257) | monitored（open，釘 head `ebcddd435e53fee17f25d16697a2f48528d3115c`）：macOS 上沒裝 developer tools 時，git／xcrun／cc 檢查不跳安裝提示。Windows 不受影響（只動 `/usr/bin/git`、`xcrun`、`/usr/bin/cc` 的 mac stub 判斷）。重訪條件：合併後視本線 macOS 支援再決定是否採 `appleStubs.ts`。                                                                              | OPEN；`gh pr diff 7257`：新增 `packages/cli/src/utils/appleStubs.ts`、`apple.ts` 加 guard         | `packages/cli/src/audio/analysis/providers/apple.ts:74`（無 guard）；`utils/appleStubs.ts` 不存在            |
+| [#7258](https://github.com/heygen-com/hyperframes/pull/7258) | 已採用：SVG gradient 文字以 gradient stops 判斷對比，不當黑色。四檔（含 CI-only 的 `contrast-svg-gradient.browser.test.ts`）fork 與上游合併 commit 逐 byte 相同。                                                                                                                                                                                                       | MERGED `478ef2f26`；`478ef2f26:packages/cli/src/commands/contrast-audit.browser.js:192`           | `packages/cli/src/commands/contrast-audit.browser.js:192`                                                    |
+
+PR 水位推進到 #7258，連續且每筆有證據。#7259 為 issue 軸項目，不在此軸。monitored 由 97 增為 99 筆（新增 #7253、#7257 兩筆 open）；#6695 的 open head 差異維持原釘選。
+
+### 依賴、延後與對外邊界
+
+#7191（`scanMovers`、silent／loud 讀取事件偵測）、#7295／#7080（crop 與 SVG 管線）、#6967／#7302 differential harness、#6912（#7309 的先決）、#7182、#7176、#7104／#7168 retry、#6716 的 17 檔遷移、#7134、#7246（#6940 limiter）、#7247（#6621）維持原延後條件。#7306 只用到 #7295 的量測 helper，沒有把 #7295 一併採入。
+
+沒有 golden 或 LFS pointer 變更，需上傳的新 LFS 物件：無。預算增量：只有 inspector unpacked 一筆（上游同 commit）。
+
+採用產品的上游作者為 Vance Ingalls（#7306）與 Miguel Ángel（#7318、#6851）；email 僅供 Co-authored-by，不寫入文件。
+
+### 聚焦紅綠
+
+舊碼為乾淨 HEAD 樹（`git archive HEAD`，依賴以 junction 共用、core／engine／producer／CLI dist 在該樹重建），只把新測試檔複製進去，命令為各套件 cwd 的 `bun x vitest run <files>`。
+
+| 範圍                                                            | 舊碼 pass／fail | 移植   | 失敗原因（舊碼）                                                                                                               |
+| --------------------------------------------------------------- | --------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| core `index.test.ts`＋`discover.test.ts`（#7306）               | 147／4          | 151／0 | 無 `fingerprint`／`readEvents` 欄位、`onFast` 不存在                                                                           |
+| engine `pageMotionBlur.test.ts`（#7306）                        | 16／4           | 20／0  | `[motion-blur]` 行無計數、無 recorder、session 不寫入 summary                                                                  |
+| producer `perfSummary-motionBlur.test.ts`（#7306）              | 1／3            | 4／0   | `aggregateMotionBlur` 不存在，perf summary 無 `motionBlur`                                                                     |
+| core `gsap.order.test.ts`＋`gsap.steps.test.ts`（#7318＋#6851） | 85／4           | 89／0  | 無 `ownStructureOf`：#7318 重播測試與 #6851 三個 first-frame 測試失敗；只採 #6851 時仍有 1 個 #7318 測試失敗，證明兩者缺一不可 |
+
+`fingerprint.test.ts`（新檔）與 CLI `renderMotionBlur.test.ts` 在舊碼因模組不存在而無法載入，屬編譯層紅燈，不當行為重現；它們的行為由上列四組與 CLI telemetry 聚焦 18 files／329 passed 涵蓋。producer `test:classification` 通過（180 檔已分類）。
+
+### 靜態閘門與驗證
+
+core `tsc --noEmit -p tsconfig.runtime.json` exit 0（在 packages/core）；core／studio／scripts 三組 lefthook `tsc --noEmit` 均 exit 0；engine、producer `tsc --noEmit -p tsconfig.json` exit 0；CLI 同指令只剩既有三筆 `check.test.ts` 錯誤（TS18048、兩筆 TS2554），本批未動該檔。`node_modules/.bin/fallow audit --base origin/main --fail-on-issues` exit 0（29 changed files，3 筆既有 finding 被 new-only gate 排除）。28 個變更 TypeScript／JSON 檔 `oxfmt --check` 與 `oxlint` 皆 0 錯誤。
+
+套件完整比較（移植樹對乾淨 `21158b212` 樹，逐名比對失敗清單，兩邊各跑一次）：
+
+| 套件                            | 移植 pass／fail／skip           | 乾淨 HEAD pass／fail／skip | 只在移植樹失敗 |
+| ------------------------------- | ------------------------------- | -------------------------- | -------------- |
+| core（vitest 全套）             | 5655／0／11                     | 不需比較（移植樹 0 失敗）  | 0              |
+| engine（vitest 全套）           | 2627／0／53（1 個 suite error） | 2622／0／53（同 1 個）     | 0              |
+| producer bun lane 逐檔（55 檔） | 916／8（3 檔非零）              | 916／8                     | 0              |
+| producer vitest lane            | 1172／2（含 suite error）       | 1168／2                    | 0              |
+| CLI（vitest 全套）              | 6254／31／307                   | 6242／37／309              | 0              |
+
+既有環境失敗兩邊一致：engine 的 `audioMixer.undecodableTrack` suite；producer bun 的 `chunkAudio`、`projectHash` symlink、`captureSegmentedStage` 零補位，vitest 的兩例；CLI 31 例（symlink／inode、`checkDeadline.process` 與 browser 的 Chrome 啟動逾時等）。乾淨樹多出的 7 個失敗（`colorGradingShaderStages.browser`、`snapshot.lateImages.browser` 四例、`checkDeadline.process` 兩例）是 Chrome 啟動逾時，移植樹同檔通過，不宣稱由本批修正。移植樹多出的通過數為新增測試。沒有執行 `tools/test_product.ps1 -Full`，封裝大小與 CLI 既有失敗未消除，不宣稱完整產品驗收綠燈。
+
+### 最新剩餘快照（水位 `3e3ba8d0d`）
+
+2026-11-07、fork HEAD `21158b212`（工作樹未提交）以寫入後的 `tools/upstream_baseline.json` 重跑 `python tools/check_upstream_updates.py --strict` 仍 exit 1：commit 水位 `3e3ba8d0d`，上游 tip 已再前進到 `18fc75dcd`，commit 軸尚有 2 個，下一個是 `318724f5f`（#7284，Studio Storyboard 分頁）與 `18fc75dcd`（#7324，engine drawElement 無 GPU Linux 後備）；PR #7258 以上 55 筆待審；issue #7223 以上 11 筆；monitored 99 筆，其中 3 筆有移動且尚未讀補丁：#6695（原釘 `8aa9967f3b8bb8c776f7555d065d8ebd939ebe66`，查詢 `3b2321c`）、#6816（原釘 `870f4d952a848d781b11a41ebdb0a7648e20ffb2`，查詢 `9732a8b`）、#7150（原釘 `0e2396e4bbb9353d4bccb830f63b8280bfcc7429` open，現 closed）；這三筆不藉重釘消除。現行剩餘數字只在此維護。
+
+### 維護 gate 收尾
+
+2026-11-07、fork HEAD `21158b212`（工作樹未提交）的 `pwsh -NoProfile -File tools/dev_check.ps1` 結果：exit 0，39 passed／0 failed，結尾 `WINDOWS DEV CHECK GREEN`，12 份維護文件、0 個斷鏈；`docs/UPSTREAM.md`、`docs/DECISIONS.md`、`ROADMAP.md` 與 baseline 已同步（commit 水位 `3e3ba8d0d076f1487b4e0aa9261ed148c26936eb`、PR #7258、issue #7223、monitored 99）。
