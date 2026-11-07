@@ -73,7 +73,11 @@ import {
 import { reportApiError } from "../../cloud/errors.js";
 import { describeSwappedFonts, embedSystemFonts } from "../../cloud/fontPreflight.js";
 import { parseEnumFlag, parseIntFlag, parseNumericFlag } from "../../cloud/parsing.js";
-import { uploadAssetViaDirectUpload, uploadZipViaDirectUpload } from "../../cloud/upload.js";
+import {
+  uploadAssetViaDirectUpload,
+  uploadZipViaDirectUpload,
+  type UploadProgressEvent,
+} from "../../cloud/upload.js";
 import {
   OFFLOAD_MIN_BYTES,
   offloadHeavyMedia,
@@ -287,7 +291,11 @@ export default defineCommand({
     const preparedArchive =
       project.kind === "dir"
         ? await prepareLocalArchive(project, args.composition, asJson, (file) =>
-            uploadAssetViaDirectUpload({ client, ...file }),
+            uploadAssetViaDirectUpload({
+              client,
+              ...file,
+              onProgress: reportUploadProgress(file.filename, asJson),
+            }),
           )
         : undefined;
 
@@ -777,6 +785,33 @@ export function assertArchiveFits(sizeBytes: number, largestFiles: ArchiveFileSu
   failCommand();
 }
 
+/** A line per PUT progress event: JSON on stderr under --json, so a caller can tell a slow upload from a dead one. */
+function reportUploadProgress(name: string, asJson: boolean): (event: UploadProgressEvent) => void {
+  return (event) => {
+    if (event.phase !== "upload" || event.sentBytes === undefined) return;
+    const { percent, sentBytes, totalBytes, attempt = 1 } = event;
+    if (asJson) {
+      console.error(
+        JSON.stringify({
+          event: "upload_progress",
+          file: name,
+          attempt,
+          percent,
+          sent_bytes: sentBytes,
+          total_bytes: totalBytes,
+        }),
+      );
+    } else {
+      const retry = attempt > 1 ? ` (try ${attempt}, from the first byte)` : "";
+      console.log(
+        c.dim(
+          `   ${name}: ${percent}% · ${formatBytes(sentBytes)} of ${formatBytes(totalBytes ?? 0)}${retry}`,
+        ),
+      );
+    }
+  };
+}
+
 function describeOffload(item: OffloadedMedia, dryRun: boolean): string {
   const verb =
     item.action === "cached"
@@ -862,17 +897,17 @@ async function maybeUploadProject(
       bytes: archive.buffer,
       filename: `${project.name}.zip`,
       idempotencyKey,
-      onProgress: !asJson
-        ? (ev) => {
-            if (ev.phase === "initialize") {
-              console.log(c.dim(`   initializing…`));
-            } else if (ev.phase === "upload" && ev.percent === 0) {
-              console.log(c.dim(`   uploading to S3…`));
-            } else if (ev.phase === "complete") {
-              console.log(c.dim(`   finalizing…`));
-            }
-          }
-        : undefined,
+      onProgress: (ev) => {
+        reportUploadProgress(`${project.name}.zip`, asJson)(ev);
+        if (asJson) return;
+        if (ev.phase === "initialize") {
+          console.log(c.dim(`   initializing…`));
+        } else if (ev.phase === "upload" && ev.percent === 0 && ev.attempt === undefined) {
+          console.log(c.dim(`   uploading to S3…`));
+        } else if (ev.phase === "complete") {
+          console.log(c.dim(`   finalizing…`));
+        }
+      },
     });
   } catch (err) {
     reportApiError("Upload failed", err);

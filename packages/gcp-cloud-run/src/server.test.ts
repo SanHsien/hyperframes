@@ -581,6 +581,47 @@ describe("createApp HTTP mapping", () => {
     }
   });
 
+  it("does not retry a chunk whose frame shows an image that never arrived", async () => {
+    const gcs = new FakeGcs();
+    const planBody: PlanEvent = {
+      Action: "plan",
+      ProjectGcsUri: "gs://b/sites/image-missing/project.tar.gz",
+      PlanOutputGcsPrefix: "gs://b/renders/image-missing/",
+      Config: { fps: 30, width: 640, height: 360, format: "mp4" },
+    };
+    await seedProjectTar(gcs, planBody.ProjectGcsUri);
+    const root = mkTmp("hf-image-missing-");
+    const deps = depsWith(gcs, {
+      planV2WithPublisher: async (_projectDir, _config, publisher) => {
+        const v1Dir = join(root, "v1");
+        makeMinimalV1PlanDir(v1Dir, false);
+        return publishPlanV2FromExecutionPlan(v1Dir, publisher);
+      },
+      renderChunk: async () => {
+        throw Object.assign(new Error("test"), { name: "ImageMissingFromFrameError" });
+      },
+    });
+    const planned = await dispatch(planBody, deps);
+    if (!("PlanProtocol" in planned) || planned.PlanProtocol !== "v2") {
+      throw new Error("expected v2 plan result");
+    }
+    const res = await createApp(deps).request("/", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        Action: "renderChunk",
+        PlanV2ManifestGcsUri: planned.PlanV2ManifestGcsUri,
+        PlanV2ArtifactGcsPrefix: planned.PlanV2ArtifactGcsPrefix,
+        PlanHash: planned.PlanHash,
+        ChunkIndex: 0,
+        ChunkOutputGcsPrefix: "gs://b/renders/image-missing/",
+        Format: "mp4",
+      }),
+    });
+    expect(res.status).toBe(400);
+    expect(await res.json()).toMatchObject({ error: "ImageMissingFromFrameError" });
+  });
+
   it.each([
     ["VIDEO_SOURCE_UNRENDERABLE", 400],
     ["VIDEO_EXTRACTION_FAILED", 500],

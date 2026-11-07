@@ -2113,6 +2113,136 @@ monitored 由 110 增為 120 筆。十筆都是未合併的 open 或 draft PR，
 - 本批只改 `tools/upstream_baseline.json` 與四份 Markdown（清冊、`docs/UPSTREAM.md`、`docs/DECISIONS.md`、`ROADMAP.md`），沒有 `packages/` 或 `scripts/` 變更，所以 core runtime typecheck、lefthook typecheck、fallow、套件測試與雙樹比較都沒有被測物；不為了湊數而跑。
 - 反向套用檢查與 `gh` 查詢皆為唯讀；沒有使用 `git apply --reject`，沒有執行 `tools/test_product.ps1 -Full`，沒有建立暫時乾淨樹、junction 或背景行程。
 
-### 最新剩餘快照（水位 `6fab21914`，PR #7335）
+### 剩餘快照（水位 `6fab21914`，PR #7335）
 
 2026-11-07 04:24（+0800）當時 `python tools/check_upstream_updates.py --strict` exit 0（fork HEAD `dfbd01348`，工作樹未提交，以寫入後的 `tools/upstream_baseline.json` 重跑）：commit 軸 0 個（`No new upstream commits`，baseline 與上游 tip `6fab21914` 相同）；PR 軸 `Triaged through #7335`、`No new items above that number`；issue 軸 `Triaged through #7313`、`No new items above that number`；monitored 120 筆，`Every pinned item is still at the head and state it was judged at`。這是該時點的結果：本輪審查期間上游至少新開了 #7330–#7335 並移動過多筆釘選的 head，之後若再出現新 PR 或釘選移動，strict 會再亮燈，屬下一輪範圍，不使本時點的結論失真。現行剩餘數字只在此維護（以此時點為準）。
+
+
+## 2026-11-07：接續至 `555c788a3`，審查 23 個 commit、22 筆 PR、1 筆 issue 與 14 筆釘選移動
+
+以 fork `eea576869`（工作樹未提交）為起點。起始 `python tools/check_upstream_updates.py --strict` exit 1（2026-11-07 17:35 +0800）：commit 軸 21 個（`6fab21914..cf75dfd7a`），PR #7335 以上 21 筆（#7336–#7357，扣掉 issue #7340），issue #7313 以上 1 筆（#7340），120 筆釘選中 14 筆移動。審查中上游又進了 #7355（`9058fd1a7`）與 #7352（`555c788a3`，正是本節已採用的 #7350 的後續修正）兩個 commit 和 release PR #7358，都在最後一次 strict 之前，一併審完，所以本節共 23 個 commit、22 筆 PR。最後一次 strict 之後才出現的項目不追，屬下一輪範圍。
+
+方法：每個 commit 先用 `git show --stat` 列出上游動到的全部檔案，逐檔對 fork 做 `git apply --check`（唯讀），再以 `git apply --3way` 依上游順序套用；先只放測試檔跑出紅燈，再放來源轉綠（紅綠名稱見「紅綠證據」）。三方合併產生的衝突都在本節逐項處理。工作樹沒有 commit，沒有 `git apply --reject`。
+
+### commit 軸
+
+20 個採用（其中 #7304 的 CLI renderDiagnostic 部分不採用），3 個不採用。fork 行號為採用後的工作樹。
+
+| Commit | 裁決 | 上游證據 | fork 證據 |
+| --- | --- | --- | --- |
+| `a9a8d8937` #7304 | 採用，但不含 CLI `renderDiagnostic.ts`／`.test.ts`：render 擷取開始時圖片仍在載入，首次顯示它的畫格等到載入；等不到或載入失敗就停止 render 並點名該圖，非重試錯誤名 `ImageMissingFromFrameError` 同步進 Lambda CDK、Cloud Run 與分散式 chunk。CLI 那一行只是把 `IMAGE_MISSING_FROM_FRAME` 加進 #6725（`ba8ffffa0`，失敗代碼）的 `renderFailureCode`，本線沒有 #6725，`renderDiagnostic.ts` 只有 25 行的 `renderMachineDiagnostic`，該檔三方合併會把 #6725 的整套搬進來，不做；重訪條件：採用 #6725 時補那一行與 `it.each` 一列。`server.test.ts` 的新測試引用本線沒有的 `planBody`，改為測試內自行定義 `PlanEvent`。13 個檔案逐檔：11 個採用，2 個（`renderDiagnostic.ts`、`.test.ts`）不採用 | `a9a8d8937:packages/engine/src/services/frameCapture.ts`（`waitForShownLateImages`）；`git show --stat` 13 個檔案 | `packages/engine/src/services/frameCapture.ts:2513`；`packages/gcp-cloud-run/src/server.ts:935`；`packages/aws-lambda/src/cdk/HyperframesRenderStack.ts:244`；`packages/producer/src/services/distributed/renderChunk.ts:400` |
+| `fe0f54b38` #7331 | 採用：首格前失敗的 render 回報 `Starting frame capture`，不再是最後一次設定的 `Checking browser GPU` 或 `Checking effects`；`scanCssEffectLiveFrames` 新增 `onEnd`，CLI 的 `normalizeStageCode` 把 `\d+ of \d+` 正規化。8 個檔案全部乾淨套用（含 `renderOrchestrator.pageNeverReady.test.ts`） | `fe0f54b38:packages/producer/src/services/renderOrchestrator.ts`（`startingFrameCapture`） | `packages/producer/src/services/renderOrchestrator.ts:3555`；`packages/cli/src/commands/render.ts:1759`；`packages/engine/src/services/riskFrames.ts:85` |
+| `9acdce4a2` #7332 | 採用：`hyperframes login` 的瀏覽器落地頁改由新檔 `callbackPage.ts` 產生，取消與失敗分開說明。`loopback.ts` 衝突：fork 的舊 `successPage`／`errorPage`／`escapeHtml` 被上游整段移除，取上游側 | `9acdce4a2:packages/cli/src/auth/callbackPage.ts` | `packages/cli/src/auth/callbackPage.ts:55`；`packages/cli/src/auth/loopback.ts`（舊頁面函式已刪） |
+| `cfa0d0cef` #7334 | 採用：disk 路徑缺 frame 檔時略過該 self-verify 取樣，不再把 `ENOENT` 當成 ffmpeg 不可用而中止 render。4 個檔案：含 `frameCapture-verifyArming.browser.test.ts`（上游只在 CI 跑，本機 engine 的 vitest browser project 也會執行它：單獨跑通過；整個 engine 套件並行時有一次 5000 ms 逾時，見驗證段；import 的 `captureDeVerificationFrames`、`resolveHeadlessShellPath`、`__fixtures__/loopback` 在 fork 皆存在） | `cfa0d0cef:packages/engine/src/services/parallelCoordinator.ts` | `packages/engine/src/services/parallelCoordinator.ts:783`（`psnrForDiskSample`）；`packages/engine/src/services/frameCapture.ts:5629` |
+| `d2b170ce5` #7337 | 採用：Studio 測試用 Chrome 在開始監聽後卡住時殺掉重試（測試輔助），並更正 `captureStreamingStage.ts` 的預算註解（這就是已關閉的 #7333 想改的那段，見釘選移動）。3 個檔案乾淨 | `d2b170ce5:packages/studio/tests/chromeTestUtils.ts` | `packages/studio/tests/chromeTestUtils.ts:13`；`packages/producer/src/services/render/stages/captureStreamingStage.ts:261` |
+| `ab50e9c14` #7307 | 不適用、不採用：GPT Image 2.6 與參考圖計價，5 個檔案中 `commands/media-use/generate.ts`、`heygen/pricing.ts`、`heygen/generate.test.ts`、`skills/media-use/references/heygen.md` 在本線不存在，與 #7261／#7263 同一邊界。重訪條件：日後成組採用 HeyGen generation 管線時 | `ab50e9c14` 檔案清單 | `packages/cli/src/heygen/` 不存在；`packages/cli/src/commands/media-use.ts` 為 passthrough |
+| `ca64c2a6d` #7336 | 採用：effect scan 先解析選項再掃描，單檔重構，緊接 #7331 的 `riskFrames.ts` 之後乾淨套用 | `ca64c2a6d:packages/engine/src/services/riskFrames.ts` | `packages/engine/src/services/riskFrames.ts` |
+| `539c70cee` #7339 | 採用：set 與另一個屬性的 tween 並存時，render 不再倒轉 timeline。2 個檔案乾淨 | `539c70cee:packages/core/src/runtime/adapters/gsap.ts` | `packages/core/src/runtime/adapters/gsap.ts:60`（`ownStructureOf`） |
+| `6c0cab814` #7289 | 採用：`telemetry status --json`；`--json` 搭配其他子命令丟 `CliUsageError`。`telemetry.ts` import 衝突：本線沒有 `failUsage` 的用途，只取 `CliUsageError`、`failCommand`。`docs/packages/cli.mdx` 加一段 | `6c0cab814:packages/cli/src/commands/telemetry.ts` | `packages/cli/src/commands/telemetry.ts:56`；`docs/packages/cli.mdx` |
+| `a4a84deec` #5594 | 採用：Studio 畫布手勢（移動、縮放、旋轉）顯示位置、大小與角度讀數。3 個新檔加 4 個既有檔，全部乾淨套用 | `a4a84deec:packages/studio/src/components/editor/DomEditGestureReadout.tsx` | `packages/studio/src/components/editor/DomEditGestureReadout.tsx:32` |
+| `f004622a6` #6900 | 採用：元素挑選在 Studio 或預覽按 Escape 取消並還原選取，hover 目標以 `tag#id`／`tag.class` 顯示。9 個檔案乾淨，含 `elementPickerHoverLabel.browser.test.ts`（上游只在 CI 跑；import 的 `tests/chromeTestUtils` 存在；本機結果見驗證段）與 `docs/packages/studio.mdx` | `f004622a6:packages/core/src/runtime/picker.ts` | `packages/studio/src/hooks/elementPickerHoverLabel.ts:6`；`packages/core/src/runtime/picker.ts` |
+| `cc7a760f0` #7322 | 採用：`non_deterministic_code` 加 `crypto.randomUUID()`；#7285、#7325、#7328 的 lint 部分同議題，由這筆合併版取代 | `cc7a760f0:packages/lint/src/rules/core.ts` | `packages/lint/src/rules/core.ts:968` |
+| `25a61016d` #5708 | 延後、不採用：可輸入精確縮放與高倍率像素格線。上游 `NLEPreview.tsx` 已使用本線沒有的 `previewStage.ts`（`resolvePreviewStageSize`、`SHADOW_IFRAME_STYLE`，來自 #6911 `a7075fcb6`）與 `usePreviewZoomOverlay`，本線 `PreviewZoomOverlay.tsx` 匯出的是 `usePreviewNavigator`。單搬會得到半新半舊的混合檔（`PreviewZoomOverlay.tsx`、`previewZoom.ts` 雖然補丁能乾淨套上），已全部還原到 HEAD。重訪條件：與 #6911 的 preview stage 成組採用時一併判定 6 個檔案 | `25a61016d:packages/studio/src/components/nle/NLEPreview.tsx` | `packages/studio/src/components/nle/` 無 `previewStage.ts`；`PreviewZoomOverlay.tsx` 匯出 `usePreviewNavigator` |
+| `1ddd42558` #7342 | 採用：預覽稍後掛載的 scene 在 script 建 timeline 時保有排版，字間空白不再被吃掉。2 個檔案乾淨 | `1ddd42558:packages/core/src/runtime/init.ts` | `packages/core/src/runtime/init.ts:9`（`parkedClips`） |
+| `b37db1122` #7345 | 延後、不採用：`audio --read --layer` 對單音層檔案跳過分離。`read.ts`、`types.ts` 衝突，本線 `READ_VERSION = 4` 而上游為 7，`audio.command.test.ts` 不存在；與已釘 #7321 同一邊界。重訪條件：本線 audio read 追上 `READ_VERSION` 時一併判定 | `b37db1122:packages/cli/src/audio/read/types.ts` | `packages/cli/src/audio/read/types.ts:3`（`READ_VERSION = 4`） |
+| `bc2773d04` #7343 | 採用：韓文數字與量詞算一個詞（逐行閱讀時間）。2 個檔案乾淨 | `bc2773d04:packages/cli/src/utils/craftAudit.ts` | `packages/cli/src/utils/craftAudit.ts` |
+| `65c62f314` #7350 | 採用：雲端上傳在固定時間被切斷時提早停止並顯示進度。`upload.ts` 乾淨；`upload.test.ts` 與 `commands/cloud/render.ts` 衝突：fork 的 `prepareLocalArchive` 沒有 `variables` 引數，只取 `onProgress: reportUploadProgress(...)`；fork 自有的「retries a server error before finalization」測試保留 | `65c62f314:packages/cli/src/cloud/upload.ts` | `packages/cli/src/cloud/upload.ts:67`；`packages/cli/src/commands/cloud/render.ts:297` |
+| `6004508e6` #7348 | 採用：MPEG-2 與 DNxHD 也預先轉出可播放副本。2 個檔案乾淨 | `6004508e6:packages/studio-server/src/helpers/mediaCodecMap.ts` | `packages/studio-server/src/helpers/mediaCodecMap.ts:73` |
+| `9ac2a2387` #7344 | 採用：`check` 在 stderr 命名存檔的 report、每個步驟印一行並每 30 秒重申。`check.ts`、`checkDeadline.ts`、`skills/hyperframes-cli/references/lint-validate-inspect.md` 乾淨；`check.test.ts`／`checkDeadline.test.ts` 衝突時三方合併把本線沒有的 #6705（`idleWindow`）測試帶回來，已刪除並保留 fork 原測試標題；`skills-manifest.json` 以 `bun packages/cli/scripts/gen-skills-manifest.ts` 重生（`hyperframes-cli` hash 為本線內容的 `221faecb36b31f76`，不是上游的 `af4aa1c5232591dd`） | `9ac2a2387:packages/cli/src/utils/checkDeadline.ts` | `packages/cli/src/utils/checkDeadline.ts:123`；`packages/cli/src/commands/check.ts:311` |
+| `6161ae740` #7353 | 採用：雲端 render 的 zip 帶上 composition 參照的 dot-folder 檔案。2 個檔案乾淨 | `6161ae740:packages/cli/src/utils/publishProject.ts` | `packages/cli/src/utils/publishProject.ts` |
+| `cf75dfd7a` #7356 | 採用：沒人列過的 codec 也預先轉出可播放副本。接在 #7348 之後，2 個檔案乾淨 | `cf75dfd7a:packages/studio-server/src/helpers/mediaCodecMap.ts` | `packages/studio-server/src/helpers/mediaCodecMap.ts` |
+| `9058fd1a7` #7355 | 採用：瀏覽器解不了的影片（fetch 停在 header）5 秒後跳過，不再凍住整部影片。`media.test.ts` import 衝突：取 `isUnplayable`，不取本線沒有的 `primeMediaForLaterStarts` | `9058fd1a7:packages/core/src/runtime/media.ts` | `packages/core/src/runtime/media.ts:241` |
+| `555c788a3` #7352 | 採用：上傳測試不再互相拖慢而抖動，兩次在同一個時間點被切斷算同一次。這是 #7350 的後續修正；在此之前 #7350 的「stops after a second identical cut」測試在 8 檔並行時紅燈（`expected 3 to be 2`），單獨跑綠，採用後 21 項全綠（連跑 2 次） | `555c788a3:packages/cli/src/cloud/upload.ts` | `packages/cli/src/cloud/upload.ts:146`（`repeatedCut`） |
+
+採用 commit 的上游作者（供 Co-authored-by）：Miguel Ángel（#7304、#7331、#7332、#7334、#7337、#7336、#7339、#7342、#7343、#7350、#7348、#7344、#7353、#7356、#7355、#7352）、SophiaHuangCc（#7289）、Dante（#5594）、Muzzy5150（#6900）、ump45nose（#7322）。不採用的 #7307、#5708、#7345 作者不列。
+
+### 紅綠證據
+
+先把上游測試檔放進乾淨 HEAD 的工作樹跑出紅燈，再放來源跑綠。同一組命令前後各一次：
+
+| 套件 | 紅（只有測試檔） | 綠（含來源） | 名稱 |
+| --- | --- | --- | --- |
+| core（4 檔） | 5 failed／404 passed | 409 passed | gsap.order「renders forward without rewinding…」、init.swapScenes「lays out a scene…」、media「skips a clip whose fetch stopped at its header…」、picker 兩項 |
+| lint | 1 failed／199 passed | 200 passed | 「detects crypto.randomUUID() in script content」 |
+| studio-server | 6 failed／44 passed | 50 passed | mpeg2video、dnxhd 無 mime、預先轉出，未列 codec 與 `Object.prototype` 鍵 |
+| cli（8 檔） | 24 failed／403 passed | 1 failed／425 passed，加入 #7352 後 upload 21/21 | loopback 3、upload 3、check 1、render 1、telemetry 9、checkDeadline 3、craftAudit 1、publishProject 3 |
+| engine（3 檔） | 7 failed／29 passed | 36 passed | `waitForShownLateImages` 5、disk 取樣缺檔 1、`scanCssEffectLiveFrames` 結束訊號 1 |
+| producer（vitest） | 3 failed／3 passed | 6 passed | pageNeverReady 三項 failed stage |
+| producer（bun） | 0 pass／1 fail | 17 pass／0 fail | `renderChunkFallback.test.ts` |
+| gcp-cloud-run（bun） | 27 pass／1 fail | 28 pass／0 fail | 「does not retry a chunk whose frame shows an image that never arrived」 |
+| aws-lambda（bun） | 25 pass／1 fail | 26 pass／0 fail | `HyperframesRenderStack.snapshot.test.ts` |
+| studio | 8 failed + 2 檔 import 失敗 | 36 passed（3 檔） | `useElementPicker` 取消與 hover 標籤、`DomEditGestureReadout`、`elementPickerHoverLabel` |
+
+沒有紅綠證據的：#7337 的 `chromeTestUtils`（測試輔助，需要本機 Chrome，未執行）；兩個 `*.browser.test.ts`（cfa0d0cef 的 `frameCapture-verifyArming`、f004622a6 的 `elementPickerHoverLabel`）沒有單獨做舊碼紅燈，只在含來源的樹上跑綠，結果見驗證段。
+
+### PR 軸
+
+先用唯讀 `gh pr view --repo heygen-com/hyperframes` 取狀態。MERGED 的 PR 隨各自的 commit 裁決，不重複列；其餘：
+
+| PR | 裁決與理由 | 上游證據 | fork 證據 |
+| --- | --- | --- | --- |
+| [#7338](https://github.com/heygen-com/hyperframes/pull/7338) | monitored（open，釘 head `6bb98481f`，`APPROVED`）：專案或輸出路徑旁的暫存資料夾在 Windows 超過 260 字元就失敗，26 處 `mkdtempSync` 改走 `@hyperframes/core/atomic-file` 的 `createStagingDir`，另有掃描測試防止回退。本線缺口成立（Windows 直接相關）。23 個檔案橫跨 CLI、engine、producer、core、studio-server，含本線沒有的 `templates.ts`。重訪條件：合併後一組採用，逐檔判定 23 個檔案，`templates.ts` 不存在時略過 | OPEN；`gh pr view 7338` 檔案清單 | `packages/cli/src/commands/benchmark.ts:75`、`compare.ts`（`mkdtempSync`）；`createStagingDir` 在 `packages/core/src` 0 筆 |
+| [#7341](https://github.com/heygen-com/hyperframes/pull/7341) | monitored（open，釘 head `c42ff6b07`，`REVIEW_REQUIRED`）：預覽以排版方式（`visibility:hidden !important`）掛載 parked scene，而非 `display:none`，讓掛載時的 tween 不移動字間空白。與已採用的 #7342 修同一個症狀（karaoke 行字間空白消失）但做法不同，檔案相同（`init.ts`、`init.swapScenes.test.ts`）；#7342 已合併進本線。重訪條件：#7341 合併時重讀是否與 #7342 衝突或補充；被關閉就視為已被 #7342 取代 | OPEN；`gh pr view 7341` | `packages/core/src/runtime/init.ts:9`（`parkedClips`）；#7342 已採用 |
+| [#7346](https://github.com/heygen-com/hyperframes/pull/7346) | monitored（open，釘 head `1aae19aef`，`REVIEW_REQUIRED`，作者 James Russo）：Studio 拖曳時間軸時，影片層解碼完成前保持上一張完整畫面。58 個檔案（含 `bun.lock`、core runtime、player、studio），改變預覽行為。重訪條件：合併後一組判定，逐檔對照本線 `init.swapScenes` 與 `video-texture-compat` 的差異 | OPEN；`gh pr view 7346` | `packages/core/src/runtime/init.ts`、`packages/player/src/` 存在，改動面大，待合併 |
+| [#7347](https://github.com/heygen-com/hyperframes/pull/7347) | monitored（open，釘 head `ac007894c`，`REVIEW_REQUIRED`，純測試）：Safari 效能測試失敗時說明哪個等待逾時。4 個檔案：`.github/workflows/player-safari.yml`、`packages/player/tests/perf/browsers/bench-page.js`、`run.ts`、`perf/server.ts`，本線皆存在。重訪條件：合併後單批採用 | OPEN；`gh pr view 7347` | `.github/workflows/player-safari.yml`、`packages/player/tests/perf/browsers/bench-page.js` 存在 |
+| [#7349](https://github.com/heygen-com/hyperframes/pull/7349) | monitored（open，釘 head `f7d763ce5`，`APPROVED`）：HLG 影片的 SEI 標頭很大時，也在 HLG 白點做 tone-map。2 個檔案：`videoFrameExtractor.ts`、`.test.ts`。重訪條件：合併後採用 | OPEN；`gh pr view 7349` 檔案 | `packages/engine/src/services/videoFrameExtractor.ts:911`（以 SPS 讀 transfer 的區段） |
+| [#7357](https://github.com/heygen-com/hyperframes/pull/7357) | monitored（open，釘 head `498dfa297`，尚無 review）：大檔上傳後雲端回 409「仍在檢查」，CLI 原本只等約 5 秒就把整個匯出視為被拒，改為依檔案大小等到最多 10 分鐘。與已採用的 #7350／#7352 同檔（`upload.ts`）。重訪條件：合併後採用 | OPEN；`gh pr view 7357` | `packages/cli/src/cloud/upload.ts`（`completeWithRetry`） |
+| [#7351](https://github.com/heygen-com/hyperframes/pull/7351) | 不適用、不釘（open，已 APPROVED）：GPT Image 價格標為估計並顯示實際扣款額度，9 個檔案落在 `heygen/generate.ts`、`pricing.ts`、`v3.ts`、`media-use` 技能，本線沒有；與 #7307 同一邊界 | OPEN；`gh pr view 7351` 檔案 | `packages/cli/src/heygen/` 不存在 |
+| [#7354](https://github.com/heygen-com/hyperframes/pull/7354) | 重複 PR，不另釘（open，外部貢獻者）：docs 渲染器移除 `**bold**` 標記，與已釘的 #7281 同議題（#7277），都改 `docs.ts`／`docs.test.ts`。追蹤器：#7281（已釘）。重訪條件：其中一筆合併後以 commit 進入審查，採用合併版 | OPEN；`gh pr view 7354` | `packages/cli/src/commands/docs.ts:58`（`formatInlineCode` 只處理反引號） |
+| [#7358](https://github.com/heygen-com/hyperframes/pull/7358) | 不釘（open，`chore: release v0.9.20`）：整版 release 版號與 changelog，沿用 #7270 的版號 PR 不釘慣例 | OPEN；`gh pr view 7358` 檔案：各 `package.json`、`plugin.json`、`releases/v0.9.20.md` | 不適用 |
+
+### issue 軸
+
+| issue | 裁決與理由 |
+| --- | --- |
+| [#7340](https://github.com/heygen-com/hyperframes/issues/7340) | 記錄、不動（OPEN，外部貢獻者 kevinschaich）：提議可選的 shared-browser 並行擷取模式，在 macOS 搭配 GPU 約快 3.5–4.5 倍。是效能提案，沒有對應 PR，也沒有 Windows 數據；本線 `packages/engine/src/services/parallelCoordinator.ts` 的每個 worker 各自啟動瀏覽器的結構不變。重訪條件：上游出現實作的 PR 並合併後，以 commit 進入審查，屆時對照 Windows 行為再判定 |
+
+### 釘選移動（14 筆）
+
+先前 120 筆釘選在起始 strict 中有 14 筆移動，逐筆重讀 `gh pr view` 與 compare 後：
+
+| 釘選 | 移動 | 裁決 |
+| --- | --- | --- |
+| #6900 | open → merged（`f004622a6`） | 已解決：由 commit 軸採用，重釘 closed |
+| #7289 | open → merged（`6c0cab814`） | 已解決：採用，重釘 closed |
+| #7304 | open → merged（`a9a8d8937`） | 已解決：採用（不含 CLI renderDiagnostic），重釘 closed |
+| #7331 | open → merged（`fe0f54b38`） | 已解決：採用，重釘 closed |
+| #7332 | open → merged（`9acdce4a2`） | 已解決：採用，重釘 closed |
+| #7334 | open → merged（`cfa0d0cef`） | 已解決：採用，重釘 closed |
+| #7285 | open → closed（未合併） | 已解決：被合併的 #7322（`cc7a760f0`）取代並已採用，重釘 closed |
+| #7333 | open → closed（未合併） | 已解決：註解更正已由 #7337（`d2b170ce5`）帶入並採用（`captureStreamingStage.ts:261`），重釘 closed |
+| #7249 | head `4dc886748` → `4c89caa88`（open，`APPROVED`） | 重讀：作者重寫做法，現為 11 個檔案（`htmlDocument.ts` +24/-1、`standaloneEntry.ts`、`compositionLoader.ts`、`subCompositionValidity.ts`、`composition.ts` 等），改成 compiler、inliner、lint 共用單一「選第一個 scene template」的函式並對多個 template 發 lint。仍 open，缺口成立，重釘新 head；重訪條件不變（合併後一組採用） |
+| #7281 | head `aaf4a0217` → `a49c2baa2`（open，`APPROVED`） | 重讀：新 commit「preserve literal markdown in docs code spans」（`docs.ts` +7/-7、`docs.test.ts` +8）。仍 open，重釘；追蹤器角色擴及 #7354 |
+| #7282 | head `951cee8ca` → `0faec0a1c`（open，`APPROVED`） | 重讀：新 commit 把 registry lint 回歸整合進 CI（`package.json`、`lint-registry-items.mjs` +21/-17、`.test.mjs` +44/-6）。仍 open，重釘 |
+| #7286 | head `7f372305b` → `3106a7559`（open，`APPROVED`） | 重讀：重新 rebase 成單一 commit，仍是 `lint-rules.mdx`、`composition.ts`、`composition.test.ts` 三個檔案。仍 open，重釘；追蹤器角色不變 |
+| #7291 | head `d22ddb197` → `7a21c7140`（open） | 重讀：新 commit 只從 `media.ts` 移除 6 行 docblock（為了 comment ratchet）。重釘 |
+| #7296 | head `66d747e10` → `a71998752`（open） | 重讀：新 commit 只對 `check-docs-cli-commands.mjs` 做 oxfmt 格式化（+5/-4）。重釘；追蹤器角色擴及 #7335 |
+
+### 新釘選
+
+#7338、#7341、#7346、#7347、#7349、#7357 六筆 open PR 新釘（head 見上表與 `tools/upstream_baseline.json`）。#7352 已合併而採用，#7351、#7354、#7358 不釘。monitored 由 120 增為 126 筆；14 筆移動全部重釘（8 筆轉 closed，6 筆換 head），沒有釘選被移除。
+
+### 預算、LFS 與延後
+
+- 沒有 golden 或 LFS pointer 變更，需上傳的新 LFS 物件：無。
+- 23 個 commit 的 `git show --stat` 沒有 `scripts/package-size-budgets.json` 變動，沒有預算增量要帶。
+- 維持延後：#7191、#7295／#7080、#6967／#7302（#7311 的前置）、#6912（#7309 的先決）、#7182、#7176、#7104／#7168 retry、#6716 的 17 檔遷移、#7134、#6897、#7246、#7247。本輪新增延後：#5708（待 #6911 preview stage）、#7345（待 audio read 追上 `READ_VERSION`）、#6725 在 `renderDiagnostic.ts` 的 `IMAGE_MISSING_FROM_FRAME` 一行。
+
+### 靜態閘門與驗證
+
+- core runtime typecheck（`packages/core` 下 `node ../../node_modules/typescript/bin/tsc --noEmit -p tsconfig.runtime.json`）exit 0；lefthook 的三組 `tsc --noEmit`（`packages/core`、`packages/studio`、`scripts`）全部 exit 0；engine、lint、studio-server、gcp-cloud-run、aws-lambda、producer 的 `tsc --noEmit` exit 0；`packages/cli` 只剩 `check.test.ts` 的 3 個既有型別錯誤（`deadline` possibly undefined、`assertKnownFlags` 引數數量兩處），乾淨 HEAD 同樣 3 個，行號因新增測試位移。
+- oxlint 對 63 個變更檔案 0 error（修掉 `telemetry.ts` 一個未使用的 `failUsage` import），`oxfmt --check` 全部格式正確。
+- `fallow audit --base origin/main --fail-on-issues`：首次 exit 1（`check.ts` 的 `checkReportFile` 多餘 export、`chromeTestUtils.ts` 與 engine `__fixtures__/loopback.ts` 的 `closeTestChrome` 重複碼）；修正後 exit 0（`checkReportFile` 不再 export；`chromeTestUtils.ts` 加 `// fallow-ignore-file code-duplication`，與 `media.test.ts` 同一做法，跨套件測試輔助不能互相 import）。輸出中仍列的 `parallelCoordinator.ts:1147-1165` 重複碼與 `handleRenderError` 複雜度是 `origin/main` 既有的 inherited findings，不在 gate 內。`check:cli-process-ownership`、`scripts/check-large-files.sh`、`check:tracked-artifacts`、`scripts/check-studio-file-size.mjs` 全部 exit 0。
+- 套件完整測試（`vitest run`，各自以乾淨 HEAD 的 `git archive` 樹比對失敗名稱；乾淨樹的 `node_modules` 以 junction 指向本樹，workspace 依賴解析到本樹的 dist，所以只對與本批無關的 Windows 環境失敗做名稱比對）：
+  - core：265 files、5662 passed／11 skipped／0 failed。
+  - lint：1250 passed／1 failed（`projectShaders` symlink 檔），乾淨 HEAD 同一項失敗，只在移植樹失敗＝0。
+  - studio-server：1503 passed／23 failed／61 skipped（12 檔：symlink EPERM、含 `%`／`#`／`?` 檔名、備份建立、`hfIdPersist`、`undecodableAudioTrack`），乾淨 HEAD 對這 12 檔跑出同樣 23 項，名稱逐一相同，只在移植樹失敗＝0。
+  - engine：2657 passed／3 failed／53 skipped；失敗為 `frameCapture-verifyArming.browser`（5000 ms 逾時）、`frameCapture-softwareWebGpu`、`parallelCoordinator-peerAbort`，三檔單獨重跑 15 passed／0 failed，乾淨 HEAD 單獨跑 `softwareWebGpu`、`peerAbort` 也通過，所以是整套並行負載的時序失敗；另有既有的 `audioMixer.undecodableTrack`，乾淨 HEAD 同樣失敗。
+  - cli：整套兩次都在逾時前沒跑完（560 秒 3 workers、590 秒 8 workers，exit 124），屬 incomplete，不是綠燈；改跑本批觸及的目錄與檔案（`src/auth`、`src/cloud`、`src/ui` 與 `checkDeadline`、`craftAudit`、`publishProject`、`telemetry`、`render`、`check` 六個測試檔）：32 files、751 passed／2 failed／8 skipped，兩項失敗都是 `cloud/offload.undecodableTrack`（既有的 ffmpeg 無法解碼音軌，與 studio-server 的 `undecodableAudioTrack` 同族；乾淨樹執行該檔在載入階段就失敗，無法逐名比對）。
+  - studio：整套逾時（560 秒）與觸及目錄 `src/components/editor`、`src/hooks`（280 秒）都沒跑完，incomplete；聚焦的 3 個測試檔 36 passed／0 failed。
+  - producer：vitest 聚焦 `renderOrchestrator.pageNeverReady` 6 passed；bun lane 逐檔 `renderChunkFallback.test.ts` 17 pass／0 fail；gcp-cloud-run `server.test.ts` 28 pass／0 fail；aws-lambda snapshot 26 pass／0 fail。producer 整套 vitest 未跑（本批只改 `renderOrchestrator.ts`、`renderChunk.ts`、`captureStreamingStage.ts` 註解）。
+- 沒有使用 `git apply --reject`，沒有執行 `tools/test_product.ps1 -Full`。暫時乾淨樹是 `git archive HEAD` 解到 scratchpad，驗證完先移除 junction 再刪除。
+
+### 最新剩餘快照（水位 `555c788a3`，PR #7358）
+
+2026-11-07 18:19:01（+0800）當時 `python tools/check_upstream_updates.py --strict` exit 0（fork HEAD `eea576869`，工作樹未提交，以寫入後的 `tools/upstream_baseline.json` 重跑）：commit 軸 `No new upstream commits`（baseline 與上游 tip `555c788a3` 相同）；PR 軸 `Triaged through #7358`、`No new items above that number`；issue 軸 `Triaged through #7340`、`No new items above that number`；monitored 126 筆，`Every pinned item is still at the head and state it was judged at`。這是該時點的結果：之後若上游再出現新 commit、新 PR 或釘選移動，strict 會再亮燈，屬下一輪範圍，不使本時點的結論失真。現行剩餘數字只在此維護（以此時點為準）。

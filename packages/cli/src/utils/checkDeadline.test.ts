@@ -107,6 +107,7 @@ it("an expired check names the phase it was in and the seconds each phase took",
     await vi.advanceTimersByTimeAsync(2_000);
     deadline.start();
     await vi.advanceTimersByTimeAsync(3_000);
+    deadline.enter("copies");
     deadline.enter("settle");
     await vi.advanceTimersByTimeAsync(60_000);
     deadline.enter("samples");
@@ -190,6 +191,52 @@ it("an expired check names the step it was on", async () => {
     await vi.advanceTimersByTimeAsync(120_000);
     await failed;
   } finally {
+    await deadline.close();
+  }
+});
+
+it("names a step once when it is entered again in a loop", () => {
+  const lines: string[] = [];
+  const spy = vi
+    .spyOn(console, "error")
+    .mockImplementation((line: string) => void lines.push(line));
+  const deadline = new CheckDeadline();
+  try {
+    deadline.start();
+    for (let i = 0; i < 5; i += 1) deadline.enter("frames", `frame ${i}`);
+    deadline.enter("crops");
+    deadline.enter("frames");
+    expect(lines).toEqual([
+      "[hyperframes] check: loading the page",
+      "[hyperframes] check: capturing finding frames",
+      "[hyperframes] check: capturing finding crops",
+      "[hyperframes] check: capturing finding frames",
+    ]);
+  } finally {
+    spy.mockRestore();
+  }
+});
+
+it("names each step and repeats it every 30 s on stderr while a step runs long", async () => {
+  vi.useFakeTimers();
+  const lines: string[] = [];
+  const spy = vi
+    .spyOn(console, "error")
+    .mockImplementation((line: string) => void lines.push(line));
+  const deadline = new CheckDeadline();
+  try {
+    deadline.start();
+    deadline.enter("copies");
+    deadline.enter("settle");
+    await vi.advanceTimersByTimeAsync(65_000);
+    expect(lines).toEqual([
+      "[hyperframes] check: loading the page",
+      "[hyperframes] check: waiting for the page to be ready",
+      "[hyperframes] check: still waiting for the page to be ready (30 s in this step)",
+      "[hyperframes] check: still waiting for the page to be ready (60 s in this step)",
+    ]);
+  } finally {
+    spy.mockRestore();
     await deadline.close();
   }
 });
