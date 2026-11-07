@@ -2243,6 +2243,83 @@ monitored 由 110 增為 120 筆。十筆都是未合併的 open 或 draft PR，
   - producer：vitest 聚焦 `renderOrchestrator.pageNeverReady` 6 passed；bun lane 逐檔 `renderChunkFallback.test.ts` 17 pass／0 fail；gcp-cloud-run `server.test.ts` 28 pass／0 fail；aws-lambda snapshot 26 pass／0 fail。producer 整套 vitest 未跑（本批只改 `renderOrchestrator.ts`、`renderChunk.ts`、`captureStreamingStage.ts` 註解）。
 - 沒有使用 `git apply --reject`，沒有執行 `tools/test_product.ps1 -Full`。暫時乾淨樹是 `git archive HEAD` 解到 scratchpad，驗證完先移除 junction 再刪除。
 
-### 最新剩餘快照（水位 `555c788a3`，PR #7358）
+### 剩餘快照（水位 `555c788a3`，PR #7358）
 
-2026-11-07 18:19:01（+0800）當時 `python tools/check_upstream_updates.py --strict` exit 0（fork HEAD `eea576869`，工作樹未提交，以寫入後的 `tools/upstream_baseline.json` 重跑）：commit 軸 `No new upstream commits`（baseline 與上游 tip `555c788a3` 相同）；PR 軸 `Triaged through #7358`、`No new items above that number`；issue 軸 `Triaged through #7340`、`No new items above that number`；monitored 126 筆，`Every pinned item is still at the head and state it was judged at`。這是該時點的結果：之後若上游再出現新 commit、新 PR 或釘選移動，strict 會再亮燈，屬下一輪範圍，不使本時點的結論失真。現行剩餘數字只在此維護（以此時點為準）。
+2026-11-07 18:19:01（+0800）當時 `python tools/check_upstream_updates.py --strict` exit 0（fork HEAD `eea576869`，工作樹未提交，以寫入後的 `tools/upstream_baseline.json` 重跑）：commit 軸 `No new upstream commits`（baseline 與上游 tip `555c788a3` 相同）；PR 軸 `Triaged through #7358`、`No new items above that number`；issue 軸 `Triaged through #7340`、`No new items above that number`；monitored 126 筆，`Every pinned item is still at the head and state it was judged at`。這是該時點的結果：之後若上游再出現新 commit、新 PR 或釘選移動，strict 會再亮燈，屬下一輪範圍，不使本時點的結論失真。這是該時點的歷史快照，現行剩餘數字見本檔最新節。
+
+## 2026-11-07：接續至 `7b1d9cceb`，審查 5 個 commit、4 筆 PR、1 筆 issue 與 2 筆釘選移動
+
+以 fork `a89e88397`（工作樹未提交）為起點。起始 `python tools/check_upstream_updates.py --strict` exit 1（2026-11-07 21:42 +0800）：commit 軸 5 個（`555c788a3..7b1d9cceb`），PR #7358 以上 4 筆（#7359–#7362），issue #7340 以上 1 筆（#7363），126 筆釘選中 2 筆移動（#7347、#7357，都是合併）。最後一次 strict 之後才出現的項目不追，屬下一輪範圍。
+
+方法同前一節：每個 commit 先 `git show --stat` 列出上游動到的全部檔案，逐檔 `git apply --check`（唯讀）；先只放測試檔跑出紅燈，再放來源轉綠；有衝突時用 `git apply --3way` 並在本節逐項處理。沒有 commit，沒有 `git apply --reject`。
+
+### commit 軸
+
+4 個採用、1 個不適用。fork 行號為採用後的工作樹。
+
+| Commit | 裁決 | 上游證據 | fork 證據 |
+| --- | --- | --- | --- |
+| `f46a593a9` #7357 | 採用：大檔上傳後雲端回 409「仍在檢查」，原本只等約 5 秒就把整個匯出視為被拒，改為依檔案大小決定等待上限（`completeBudgetMs`），逾時訊息說明已上傳但雲端尚未檢查完。2 個檔案：`upload.ts` 乾淨套用；`uploadComplete.test.ts` 是新檔（本線沒有，直接加入），其 import 的 `completeWithRetry` 與 `HyperframesApiError` 在 fork 皆存在 | `f46a593a9:packages/cli/src/cloud/upload.ts`（`completeBudgetMs`、`completeWait`） | `packages/cli/src/cloud/upload.ts:397`（`completeWithRetry`）；`packages/cli/src/cloud/uploadComplete.test.ts` |
+| `e206ff6bd` #7358 | 不適用、不採用：`chore: release v0.9.20`，22 個檔案皆為版本號、plugin manifest、`docs/changelog.mdx` 與 `releases/v0.9.20.md`；本線不發佈 npm、不改版本，沿用 #7270、#7290 的版號 PR 慣例 | `git show --stat e206ff6bd`：各 `package.json`、四份 plugin manifest、`releases/v0.9.20.md` | 不適用 |
+| `e827de256` #7360 | 採用：Chrome 啟動 3 分鐘仍未就緒時，`check` 以具名的 `CheckChromeStartError` 結束並說明每個步驟花了多久，提示先跑 `hyperframes browser ensure`；`launch` 不再算在「deadline 之前」，啟動視窗改成獨立的 180 秒。4 個檔案：`checkDeadline.ts` 三方合併只衝突在 docblock，取上游較精確的用語（fork 的 `idleMs` 建構參數早已存在，所以「idle window」成立）；`docs/packages/cli.mdx` 乾淨。`checkDeadline.test.ts` 的 import 衝突：取 `CheckChromeStartError`，不取本線沒有的 `idleWindow`（#6705）；`check.test.ts` 衝突時帶回的「a check given a long --timeout…」依賴 `idleWindow`，已刪除，保留 Chrome 啟動那一項。上游把舊測試「browser provisioning does not spend the check budget…」改寫成「the Chrome start window is spent once…」，並把另一項的期望文字從 `starting Chrome 2.0 (before the deadline)` 改為 `starting Chrome 2.0`，兩者本線都採用 | `e827de256:packages/cli/src/utils/checkDeadline.ts`（`CHROME_START_WINDOW_MS`、`rearm`） | `packages/cli/src/utils/checkDeadline.ts:25`、`:66`、`:181`；`packages/cli/src/commands/check.test.ts:2389`；`packages/cli/src/utils/checkDeadline.test.ts:66`；`docs/packages/cli.mdx:1205` |
+| `336abaa80` #7361 | 採用：呼叫端中止時，等雲端檔案檢查的迴圈立刻停止並拋出「Stopped waiting…」，不再睡到下一輪。接在 #7357 之後乾淨套用，2 個檔案 | `336abaa80:packages/cli/src/cloud/upload.ts` | `packages/cli/src/cloud/upload.ts:419-423`；`packages/cli/src/cloud/uploadComplete.test.ts:73`（上傳呼叫端已傳入 `opts.signal`，`upload.ts:469`） |
+| `7b1d9cceb` #7347 | 採用（測試工具）：Safari 效能測試等不到播放時，錯誤訊息帶出「瀏覽器從沒開始載入」的影片檔名，並在錯誤中保留 `String(e)` 加堆疊。2 個檔案 `bench-page.js`、`run.ts` 乾淨套用；`videos()` 與 `until()` 在本線 `bench-page.js:22`、`:7` 皆存在，`node --check` 語法通過。這兩個檔案只在 Safari 的 CI 工作流跑（`.github/workflows/player-safari.yml`），本機沒有 Safari，無法執行 | `7b1d9cceb:packages/player/tests/perf/browsers/bench-page.js` | `packages/player/tests/perf/browsers/bench-page.js:119-128`；`run.ts:265` |
+
+採用 commit 的上游作者（供 Co-authored-by）：Miguel Ángel（#7357、#7360、#7361、#7347 全部）。
+
+CI 專用檔案判定：本輪 `git show --stat` 動到的檔案沒有 `*.browser.test.ts` 或 `*.chromium.test.ts`；上游沒跟著改、但 fork 有且會受影響的 CI 專用測試，這 5 個 commit 都不涉及（`player/tests/perf/browsers/*` 由 Safari 工作流跑，上面已判定）。
+
+### 紅綠證據
+
+| 套件 | 紅（只有測試檔） | 綠（含來源） | 名稱 |
+| --- | --- | --- | --- |
+| cli `uploadComplete.test.ts`（#7357） | 4 failed（`completeWithRetry is not a function`） | 4 passed | 預算內等待、逾時訊息、非 409 立刻停止等 |
+| cli `uploadComplete.test.ts`（#7361） | 1 failed／4 passed | 5 passed（`src/cloud` 目錄 158 passed，2 failed 為既有 `offload.undecodableTrack`） | 「stops waiting when the caller aborts」 |
+| cli `checkDeadline.test.ts`＋`check.test.ts`（#7360） | 3 failed／171 passed | 4 檔（加 `upload.test.ts`、`uploadComplete.test.ts`）200 passed | check「a Chrome that never becomes ready ends the whole check…」、checkDeadline「a Chrome that never becomes ready ends the check with a named error」與「an expired check names the phase…」 |
+
+沒有紅綠證據的：#7347（Safari 效能測試工具，需要 Safari，本機只做語法檢查與 import 對照）；#7360 的「the Chrome start window is spent once…」與「video copies keep their own budget…」兩項在舊碼上本來就通過（它們固定的是新行為的邊界，不是舊行為的反例）。
+
+### PR 軸
+
+| PR | 裁決與理由 | 上游證據 | fork 證據 |
+| --- | --- | --- | --- |
+| [#7359](https://github.com/heygen-com/hyperframes/pull/7359) | 不釘（CLOSED，draft）：`chore: proof run for the v0.9.20 release gate`，24 個檔案是版號檔加上疊進來的 #7341 `init.ts`，作為 release gate 演練從沒合併，已關閉；沒有獨立的修正 | CLOSED；`gh pr view 7359` | 不適用；#7341 另行釘選 |
+| [#7360](https://github.com/heygen-com/hyperframes/pull/7360) | MERGED（`e827de256`），隨 commit 軸採用 | 見 commit 軸 | 見 commit 軸 |
+| [#7361](https://github.com/heygen-com/hyperframes/pull/7361) | MERGED（`336abaa80`），隨 commit 軸採用 | 見 commit 軸 | 見 commit 軸 |
+| [#7362](https://github.com/heygen-com/hyperframes/pull/7362) | monitored（open，釘 head `331ce783e`，`REVIEW_REQUIRED`，作者 Miguel Ángel）：render 期間頁面的 `setTimeout`／`setInterval` 改走影片時間，在 seek 到達到期時間時依序觸發，回呼內的 `Date.now()`／`performance.now()` 讀到期時間；`__renderReady` 之前仍走牆鐘。本線缺口成立：`buildVirtualTimeShim` 只凍結 `Date`、`performance.now`、rAF，不處理計時器（`fileServer.ts:299` 只保留 `originalSetTimeout`）。7 個檔案：`fileServer.ts`、新測試 `fileServer-virtualTimers.test.ts`（本線不存在，新檔）、`tests/shard-schedule.json`，以及新的 golden 迴歸 `tests/timers-on-film-time/`（`meta.json`、`src/index.html`、`output/compiled.html`、`output/output.mp4`，後者是 LFS 物件）。改變確定性渲染的時間語意，PR 本文提到與 #6599 同改 `buildVirtualTimeShim`，尚未合併。重訪條件：合併後一組採用，golden 要連同 LFS pointer 一併採用並回報要上傳的 LFS 物件，對照本線 `fileServer.ts` 的 shim 與 #6599 的相對順序 | OPEN；`gh pr view 7362` 檔案清單 | `packages/producer/src/services/fileServer.ts:236`（`buildVirtualTimeShim`）、`:299`（`originalSetTimeout`）；`packages/producer/tests/shard-schedule.json` 存在；`fileServer-virtualTimers.test.ts` 不存在 |
+
+### issue 軸
+
+| issue | 裁決與理由 |
+| --- | --- |
+| [#7363](https://github.com/heygen-com/hyperframes/issues/7363) | 記錄、不動（OPEN，外部帳號，標題「global open sourse global」，本文空白）：沒有可執行的內容、沒有重現步驟，也不對應任何程式碼。重訪條件：作者補上具體描述後再判定 |
+
+### 釘選移動（2 筆）
+
+| 釘選 | 移動 | 裁決 |
+| --- | --- | --- |
+| #7347 | open（head `ac007894c`）→ merged（head `157d6e4a7`，`7b1d9cceb`） | 已解決：重讀新 head，檔案由 4 個縮為 2 個（`bench-page.js`、`run.ts`；`player-safari.yml` 與 `perf/server.ts` 不在合併版），採用，重釘 closed 並換新 head |
+| #7357 | open → merged（`f46a593a9`，head 不變 `498dfa297`） | 已解決：採用，重釘 closed |
+
+### 新釘選
+
+#7362 一筆 open PR 新釘（head 見 `tools/upstream_baseline.json`）。#7359 已關閉且為演練 PR 不釘；#7360、#7361 已合併，隨 commit 軸採用。monitored 由 126 增為 127 筆；2 筆移動全部重釘（2 筆轉 closed），沒有釘選被移除。
+
+### 預算、LFS 與延後
+
+- 沒有 golden 或 LFS pointer 變更，需上傳的新 LFS 物件：無（#7362 的 `timers-on-film-time/output/output.mp4` 要等它合併後才採用，屆時才有 LFS 物件）。
+- 5 個 commit 的 `git show --stat` 沒有 `scripts/package-size-budgets.json` 變動，沒有預算增量要帶。
+- 沒有 `skills/` 變動，`skills-manifest.json` 不用重生。
+- 維持延後：#7191、#7295／#7080、#6967／#7302（#7311 的前置）、#6912（#7309 的先決）、#7182、#7176、#7104／#7168 retry、#6716 的 17 檔遷移、#7134、#6897、#7246、#7247、#5708、#7345、#6725 在 `renderDiagnostic.ts` 的一行；本輪新採用的 commit 沒有依賴其中任何一項。
+
+### 靜態閘門與驗證
+
+- core runtime typecheck（`packages/core` 下 `node ../../node_modules/typescript/bin/tsc --noEmit -p tsconfig.runtime.json`）exit 0（本輪不動 core，仍照規定跑）；`packages/cli` 的 `tsc --noEmit` 只剩 `check.test.ts` 的 3 個既有型別錯誤（`deadline` possibly undefined、`assertKnownFlags` 引數數量兩處，行號 2313、3903、3904），與前一節記載的乾淨 HEAD 錯誤相同。
+- oxlint 對 7 個變更檔案 0 warning／0 error；`oxfmt --check` 全部格式正確。
+- `fallow audit --base origin/main --fail-on-issues` exit 0（8 個變更檔案，dead code 0、complexity 0、duplication 0）。
+- cli 測試（只跑觸及的 `src/utils`、`src/cloud` 與 `src/commands/check.test.ts`，不跑整套）：132 個檔案中 4 個有失敗，1906 項中 7 failed／1841 passed／58 skipped。7 項失敗全是既有的 Windows 環境失敗，乾淨 HEAD 的 `git archive` 樹（`node_modules` 以 junction 指向本樹）對這 4 個檔案同樣失敗：`offload.undecodableTrack`（2 項，乾淨樹在載入階段就失敗）、`optionalPackages`（2 項，symlink EPERM，名稱逐一相同）、`checkDeadline.process`（2 項，Chrome 30 秒啟動逾時，名稱逐一相同）；`staticProjectServer.charset.browser`（1 項）在本樹單獨重跑同樣是 `The browser did not finish starting within 30000 ms`，與 `checkDeadline.process` 同一個 Chrome 啟動逾時，乾淨樹因 junction 解不到 `@hyperframes/parsers/slideshow` 而載入失敗，無法逐名比對，該檔不碰本輪修改的任何檔案。只在移植樹失敗＝0（可比對的 6 項）。
+- 沒有使用 `git apply --reject`，沒有執行 `tools/test_product.ps1 -Full`。暫時乾淨樹解到 scratchpad，驗證完先移除 junction 再刪除。
+
+### 最新剩餘快照（水位 `7b1d9cceb`，PR #7362）
+
+2026-11-07 22:01:24 至 22:02:41（+0800）`python tools/check_upstream_updates.py --strict` exit 0（fork HEAD `a89e88397`，工作樹未提交，以寫入後的 `tools/upstream_baseline.json` 重跑）：commit 軸 `No new upstream commits`（baseline 與上游 tip `7b1d9cceb` 相同，behind 0）；PR 軸 `Triaged through #7362`、`No new items above that number`；issue 軸 `Triaged through #7363`、`No new items above that number`；monitored 127 筆，`Every pinned item is still at the head and state it was judged at`。這是該時點的結果：之後若上游再出現新 commit、新 PR 或釘選移動，strict 會再亮燈，屬下一輪範圍，不使本時點的結論失真。現行剩餘數字只在此維護（以此時點為準）。
