@@ -1,4 +1,5 @@
 // fallow-ignore-file code-duplication complexity
+import { wallClearTimeout, wallSetTimeout } from "./wallClock";
 import { setPreviewRasterScale } from "./previewRasterHints";
 import { createFarSceneSkip } from "./farScenes";
 import {
@@ -2543,7 +2544,7 @@ export function initSandboxRuntimeModular(): void {
     return true;
   };
 
-  let metadataRebindDebounceTimerId: number | null = null;
+  let metadataRebindDebounceTimerId: ReturnType<typeof wallSetTimeout> | null = null;
   let metadataRebindApplied = false;
   const metadataBoundMedia = new Set<HTMLMediaElement>();
   const volumeKeyframeCache = new WeakMap<HTMLMediaElement, VolumeKeyframe[]>();
@@ -2555,9 +2556,9 @@ export function initSandboxRuntimeModular(): void {
   const scheduleMetadataDurationHydration = () => {
     if (state.tornDown) return;
     if (metadataRebindDebounceTimerId != null) {
-      window.clearTimeout(metadataRebindDebounceTimerId);
+      wallClearTimeout(metadataRebindDebounceTimerId);
     }
-    metadataRebindDebounceTimerId = window.setTimeout(() => {
+    metadataRebindDebounceTimerId = wallSetTimeout(() => {
       if (state.tornDown) return;
       metadataRebindDebounceTimerId = null;
       // The render/producer capture protocol drives frames deterministically
@@ -3769,7 +3770,7 @@ export function initSandboxRuntimeModular(): void {
     timelinePostAfterSeek = true;
     void seekCompletionsSettled().then(() =>
       window.requestAnimationFrame(() =>
-        setTimeout(() => {
+        wallSetTimeout(() => {
           timelinePostAfterSeek = false;
           jumpLanding = false;
           if (!state.tornDown) postTimeline();
@@ -4219,7 +4220,7 @@ export function initSandboxRuntimeModular(): void {
     if (!recorded || !id || !globalTimeline?.getChildren) return;
     // The gate lets a scene's script wait on fonts only, so their settling ends it.
     await waitForFonts();
-    await new Promise((resolve) => window.setTimeout(resolve, 0));
+    await new Promise((resolve) => wallSetTimeout(resolve, 0));
     // The runtime rebuilds its root while the scene settles; that root, and other scenes' records, are not its.
     const known = new Set<unknown>([...Object.values(recorded).flat(), ...ownedElsewhere([id])]);
     const late = globalTimeline
@@ -4555,7 +4556,7 @@ export function initSandboxRuntimeModular(): void {
   );
   let windowWork: Promise<void> | null = null;
   let windowNear = "";
-  const nextTask = () => new Promise((resolve) => window.setTimeout(resolve, 0));
+  const nextTask = () => new Promise((resolve) => wallSetTimeout(resolve, 0));
   // A host and its stand-in trade style, a display:none the visibility pass wrote included; the way back goes along.
   const moveDisplayHide = (from: Element, to: Element) => {
     const hidden = displayBeforeHide.get(from as StylableElement);
@@ -4822,9 +4823,9 @@ export function initSandboxRuntimeModular(): void {
         for (let clip = img.closest(SKIPPED_CLIP); clip; clip = img.closest(SKIPPED_CLIP))
           clip.setAttribute(STUDIO_PREVIEW_UPCOMING_ATTR, "");
       }
-      let capTimer = 0;
+      let capTimer: ReturnType<typeof wallSetTimeout> | undefined;
       const capped = new Promise<void>((resolve) => {
-        capTimer = window.setTimeout(() => {
+        capTimer = wallSetTimeout(() => {
           if (heldSeek === held) swallow("runtime.init.seekHoldCap", undecoded);
           resolve();
         }, SEEK_HOLD_CAP_MS);
@@ -4833,7 +4834,7 @@ export function initSandboxRuntimeModular(): void {
         undecoded.map((img) => (img.decode ? img.decode().catch(() => {}) : undefined)),
       );
       const landed = Promise.race([decoded, capped]).then(() => {
-        window.clearTimeout(capTimer);
+        wallClearTimeout(capTimer);
         if (heldSeek === held) flushHeldSeek();
       });
       registerSeekCompletion(landed);
@@ -5102,7 +5103,7 @@ export function initSandboxRuntimeModular(): void {
   // timelines in __timelines haven't executed yet (they run in the browser's next
   // microtask). Defer a rebinding attempt to catch them.
   if (externalCompositionsReady) {
-    setTimeout(() => {
+    wallSetTimeout(() => {
       maybePublishRenderReady();
     }, 0);
   }
@@ -5115,7 +5116,7 @@ export function initSandboxRuntimeModular(): void {
   let lastTransportSeekTimeline: RuntimeTimelineLike | null = null;
   let pausedSeekDeferredByManualGesture = false;
   // Set while the transport is parked (see scheduleNextTransportFrame).
-  let transportParkTimerId: number | null = null;
+  let transportParkTimerId: ReturnType<typeof wallSetTimeout> | null = null;
   let slowIdleHeartbeat = false;
   let transportWakeRequested = false;
   let parkedPollWitness = "";
@@ -5497,7 +5498,7 @@ export function initSandboxRuntimeModular(): void {
     `${readCompositionTimingRevision()}|${resolveAdapterDurationFloorSeconds() ?? ""}`;
 
   const armParkTimer = () => {
-    transportParkTimerId = window.setTimeout(
+    transportParkTimerId = wallSetTimeout(
       parkedTransportHeartbeat,
       slowIdleHeartbeat && state.capturedTimeline && childrenBound
         ? SLOW_IDLE_HEARTBEAT_MS
@@ -5526,11 +5527,11 @@ export function initSandboxRuntimeModular(): void {
 
   // Hidden documents run no animation frames but their media plays on, so tick on a timer.
   // Chromium clamps it to ~1 s unless audio is audible: a clip may end up to 1 s late.
-  let transportTickTimerId: number | null = null;
+  let transportTickTimerId: ReturnType<typeof wallSetTimeout> | null = null;
   const transportTickPending = () => state.transportRafId != null || transportTickTimerId != null;
   const requestTransportTick = () => {
     if (document.visibilityState === "hidden") {
-      transportTickTimerId = window.setTimeout(() => {
+      transportTickTimerId = wallSetTimeout(() => {
         transportTickTimerId = null;
         transportTick();
       }, HIDDEN_TRANSPORT_TICK_MS);
@@ -5544,7 +5545,7 @@ export function initSandboxRuntimeModular(): void {
       state.transportRafId = null;
     }
     if (transportTickTimerId != null) {
-      window.clearTimeout(transportTickTimerId);
+      wallClearTimeout(transportTickTimerId);
       transportTickTimerId = null;
     }
   };
@@ -5580,7 +5581,7 @@ export function initSandboxRuntimeModular(): void {
     transportWakeRequested = true;
     if (inTransportTick || transportTickPending()) return;
     if (transportParkTimerId != null) {
-      window.clearTimeout(transportParkTimerId);
+      wallClearTimeout(transportParkTimerId);
       transportParkTimerId = null;
     }
     transportWakeRequested = false;
@@ -6194,13 +6195,13 @@ export function initSandboxRuntimeModular(): void {
     cancelTransportTick();
     document.removeEventListener("visibilitychange", onTransportVisibilityChange);
     if (transportParkTimerId != null) {
-      window.clearTimeout(transportParkTimerId);
+      wallClearTimeout(transportParkTimerId);
       transportParkTimerId = null;
     }
     state.transportClock = null;
     webAudio.destroy();
     if (metadataRebindDebounceTimerId != null) {
-      window.clearTimeout(metadataRebindDebounceTimerId);
+      wallClearTimeout(metadataRebindDebounceTimerId);
       metadataRebindDebounceTimerId = null;
     }
     if (rootStageDiagnosticRafId != null) {

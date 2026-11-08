@@ -1,10 +1,10 @@
 {
   "repo": "https://github.com/heygen-com/hyperframes.git",
   "branch": "main",
-  "reviewed_through": "7b1d9ccebf9c7e2c2bd22b7e9d9487ce975d6425",
-  "reviewed_date": "2026-11-07",
-  "reviewed_pr_through": 7362,
-  "reviewed_issue_through": 7363,
+  "reviewed_through": "f5bde9533f66e80bebc2aea906ec0d6b5ecb6793",
+  "reviewed_date": "2026-11-08",
+  "reviewed_pr_through": 7382,
+  "reviewed_issue_through": 7371,
   "decision_log": "docs/DECISIONS.md",
   "monitored": [
     {
@@ -549,8 +549,8 @@
     },
     {
       "item": "pr#7297",
-      "head": "dbe63cb7e94c98152c079e4b7354c97c835540fa",
-      "state": "open"
+      "head": "4575445a2d119670e359faf45bd41895f559810d",
+      "state": "closed"
     },
     {
       "item": "pr#7300",
@@ -620,7 +620,7 @@
     {
       "item": "pr#7346",
       "head": "1aae19aef60445fec78faccb4b09e34135924cfe",
-      "state": "open"
+      "state": "closed"
     },
     {
       "item": "pr#7347",
@@ -639,7 +639,52 @@
     },
     {
       "item": "pr#7362",
-      "head": "331ce783e8ebb40507ceca4500a7d6ba300ea784",
+      "head": "b6c2bfadf571eb44bafd6c26a57eaa1aad93999d",
+      "state": "closed"
+    },
+    {
+      "item": "pr#7367",
+      "head": "281efa2db6caeb3c27a922259f8871012771c455",
+      "state": "open"
+    },
+    {
+      "item": "pr#7369",
+      "head": "727d08e5d772c99737bc2682bbd7c961b24889f3",
+      "state": "open"
+    },
+    {
+      "item": "pr#7372",
+      "head": "78bc9c15cfae0329b62f4b52d5f099e24bcf820c",
+      "state": "open"
+    },
+    {
+      "item": "pr#7373",
+      "head": "ad02236b7d5f6c46bd269040b21767c5d109cb20",
+      "state": "open"
+    },
+    {
+      "item": "pr#7375",
+      "head": "8249651ad0d7c8e3741d1f22cd3d9bd0ed327130",
+      "state": "open"
+    },
+    {
+      "item": "pr#7378",
+      "head": "4ffd6759d89f3bb73f97bbc1d7e739a7256e9ba8",
+      "state": "open"
+    },
+    {
+      "item": "pr#7379",
+      "head": "faa7546b6e0dee2d6f4eb7c394a6c090a8d5597b",
+      "state": "open"
+    },
+    {
+      "item": "pr#7381",
+      "head": "aa5f2ed8e17b2c3d4169aabb5d7a2956604c1480",
+      "state": "open"
+    },
+    {
+      "item": "pr#7382",
+      "head": "dbf66cc22496732e9fb49883e35589f50a10424c",
       "state": "open"
     }
   ]

@@ -11,6 +11,7 @@
  * Needs html-in-canvas (`drawElementImage`); without it nothing changes.
  */
 
+import { wallClearTimeout, wallSetTimeout } from "../wallClock";
 import {
   htmlInCanvasForm,
   markCaptureCanvas,
@@ -521,7 +522,7 @@ function createInstance(host: CaptureMotionBlurHost, config: Config, form: HtmlI
         const mine = ++seq;
         let timer: ReturnType<typeof setTimeout> | undefined;
         const startTimer = (): void => {
-          timer = setTimeout(() => {
+          timer = wallSetTimeout(() => {
             if (pending?.seq === mine) onPaintTimeout(pending);
             else resolve();
           }, PAINT_TIMEOUT_MS);
@@ -536,7 +537,7 @@ function createInstance(host: CaptureMotionBlurHost, config: Config, form: HtmlI
           startTimer,
           ms: 0,
           settle: () => {
-            clearTimeout(timer);
+            wallClearTimeout(timer);
             resolve();
           },
         };

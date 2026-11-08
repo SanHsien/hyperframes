@@ -2323,3 +2323,92 @@ CI 專用檔案判定：本輪 `git show --stat` 動到的檔案沒有 `*.browse
 ### 最新剩餘快照（水位 `7b1d9cceb`，PR #7362）
 
 2026-11-07 22:01:24 至 22:02:41（+0800）`python tools/check_upstream_updates.py --strict` exit 0（fork HEAD `a89e88397`，工作樹未提交，以寫入後的 `tools/upstream_baseline.json` 重跑）：commit 軸 `No new upstream commits`（baseline 與上游 tip `7b1d9cceb` 相同，behind 0）；PR 軸 `Triaged through #7362`、`No new items above that number`；issue 軸 `Triaged through #7363`、`No new items above that number`；monitored 127 筆，`Every pinned item is still at the head and state it was judged at`。這是該時點的結果：之後若上游再出現新 commit、新 PR 或釘選移動，strict 會再亮燈，屬下一輪範圍，不使本時點的結論失真。現行剩餘數字只在此維護（以此時點為準）。
+
+
+## 2026-11-08：接續至 `f5bde9533`
+
+接續審查 `7b1d9cceb` 至 `f5bde9533` 之間新進之上游項目，包含 10 筆 commit、PR #7364–#7382、issue #7370–#7371，及 3 筆釘選移動（pr#7297、pr#7346、pr#7362）。
+
+### Commit 軸
+
+| Commit | 裁決與理由 | 上游證據 | fork 證據 |
+| --- | --- | --- | --- |
+| `896a77c30` #7297 | 採用：`hyperframes open` 在交出專案前先行關閉背景 preview（`endPreviewBeforeOpening`），更新 `preview` 與 `desktopApp` 提示，適配本 fork 保留既有 Bundle ID 慣例；更新範本 `AGENTS.md` 並跳過上游 `CLAUDE.md`（fork 硬規則）；重生 `skills-manifest.json` | `packages/cli/src/commands/open.ts:36`；`packages/cli/src/utils/desktopApp.ts:26` | `packages/cli/src/commands/open.ts:36`；`packages/cli/src/utils/desktopApp.ts:16`；`open.test.ts`、`desktopApp.test.ts` |
+| `330be7cd2` #7365 | 採用：`layout-audit.browser.js` 於 `content_overlap` 的 `fixHint` 加入裝飾性元素可標註 `data-layout-ignore` | `packages/cli/src/commands/layout-audit.browser.js:1080` | `packages/cli/src/commands/layout-audit.browser.js:1064`；`layout-audit.browser.test.ts` |
+| `a3b8f521d` #7364 | 採用：`layout-audit.browser.js` 中 `visibleTextClientRects` 支援 `mask-image`（linear/radial）、`clip-path: inset` 與 overflow 幾何裁剪，被遮罩或裁切的文字不再誤判重疊；更新 `docs/packages/cli.mdx` | `packages/cli/src/commands/layout-audit.browser.js:309`（mask 判斷在 `:565`） | `packages/cli/src/commands/layout-audit.browser.js:312`（mask 判斷在 `:553`）；`layout-audit.chromium.test.ts` |
+| `9efbbdf5a` #7366 | 採用：`packages/cli/src/whisper/manager.ts` 支援 Windows Visual Studio 產物路徑 `bin/Release/whisper-cli.exe`、winget 指令，並透過 `@hyperframes/core/cache-dir` 讀取快取路徑，提供失敗診斷 | `packages/cli/src/whisper/manager.ts:31` | `packages/cli/src/whisper/manager.ts:31`；`manager.install.test.ts` |
+| `59c2065d6` #7362 | 採用：渲染期間頁面計時器改走影片時間（`fileServer.ts` 中的 `buildVirtualTimeShim` 支援 film-time timers，seek 時在 `flushAnimationFrame` 前依序觸發 due timers；新增 `packages/core/src/runtime/wallClock.ts` 與 `wallClock.test.ts`；更新 core runtime 46 處 bare timers；更新 engine `types.ts`、`browserManager.ts`、`drawElementService.ts`、`frameCapture.ts`；新增 `pageTimers.test.ts`；套用 producer tests 與 LFS 物件） | `packages/producer/src/services/fileServer.ts:380`；`packages/core/src/runtime/wallClock.ts` | `packages/producer/src/services/fileServer.ts:375`；`packages/core/src/runtime/wallClock.ts`；`fileServer-virtualTimers.test.ts`、`wallClock.test.ts`、`pageTimers.test.ts` |
+| `a595755a3` #7368 | 採用：`packages/core/src/runtime/media.ts` 針對 Safari 瀏覽器從未開始載入之影片（`readyState === HAVE_NOTHING && networkState === NETWORK_LOADING && !receivedBytes.has(el)`），在 5 秒後視為 `isUnplayable` 並提示 `the browser never started loading it`，更新 `media.test.ts` 與 `init.test.ts` | `packages/core/src/runtime/media.ts:277` | `packages/core/src/runtime/media.ts:253`；`media.test.ts`、`init.test.ts` |
+| `b418bb24f` #7374 | 採用：`packages/cli/src/cloud/uploadPut.ts` 抽取與 `upload.ts` 重構，將 PUT 串流與重試邏輯模組化 | `packages/cli/src/cloud/uploadPut.ts:1` | `packages/cli/src/cloud/uploadPut.ts:1`；`upload.ts`、`upload.test.ts` |
+| `14e598e5a` #7377 | 延後：`skills/media-use/audio/scripts/audio.mjs` 加入個人錄音為 voice line，因本 fork 保留固定語音與 ffmpeg 封裝管線，待後續整組語音技能重整時再適配 | `skills/media-use/audio/scripts/audio.mjs:127` | 不適用（延後） |
+| `57a75337b` #7376 | 採用：`packages/cli/src/cloud/offload.ts` 限制超過上限之影片檔案在 re-encode 時透過 `-maxrate` 與 `-bufsize` 控制大小；新增 `offload.sizeLimit.test.ts` | `packages/cli/src/cloud/offload.ts:371` | `packages/cli/src/cloud/offload.ts:362`；`offload.sizeLimit.test.ts` |
+| `f5bde9533` #7380 | 延後：`skills/media-use/audio/scripts/lib/voice-credit.mjs`，依賴 #7377 之 recording 結構，待後續整組語音技能重整時再適配 | `skills/media-use/audio/scripts/lib/voice-credit.mjs:1` | 不適用（延後） |
+
+採用 commit 的上游作者（供 Co-authored-by）：Michael Wang（#7297）、Miguel Ángel（#7365、#7364、#7366、#7362、#7368、#7374、#7376）。
+
+### 紅綠證據
+
+| 套件 | 紅（只有測試檔） | 綠（含來源） | 名稱 |
+| --- | --- | --- | --- |
+| cli `open.test.ts`＋`desktopApp.test.ts`（#7297） | 7 failed（`endPreviewBeforeOpening is not a function`）＋2 failed（`previewStopCommandFor is not a function`） | 7 passed＋35 passed（1 skipped） | `hyperframes open` 關閉預覽與提示文字 |
+| cli `layout-audit.browser.test.ts`（#7365） | 1 failed（未包含 `data-layout-ignore`） | 1 passed（218 skipped） | `content_overlap` 裝飾標註提示 |
+| cli `layout-audit.chromium.test.ts`（#7364） | 5 failed／4 passed（遮罩與裁剪案例誤判 overlap） | 9 passed（63 skipped） | 遮罩與 inset 裁剪不計重疊 |
+| cli `manager.install.test.ts`（#7366） | 3 failed（缺少原因、winget 指令、未找到 Release 路徑） | 4 passed | whisper 安裝與診斷提示 |
+| producer `fileServer-virtualTimers.test.ts`（#7362） | 5 failed／3 passed（timer 未依影片時間推進） | 8 passed | 虛擬時間計時器排程 |
+| core `wallClock.test.ts`（#7362） | 1 failed／1 passed（抓出 46 個 bare timer offenders） | 2 passed | runtime 牆鐘計時器轉換 |
+| engine `pageTimers.test.ts`（#7362） | 1 failed／1 passed（抓出 7 個 bare timer offenders） | 2 passed | engine 注入頁面之計時器守衛 |
+| core `media.test.ts`（#7368） | 1 failed／179 skipped（未判定未載入影片） | 1 passed／179 skipped | 未開始載入之影片跳過保護 |
+| core `init.test.ts`（#7368） | 1 failed／265 skipped | 1 passed／265 skipped | 未開始載入影片前進保護 |
+| cli `offload.sizeLimit.test.ts`（#7376） | 6 failed（舊碼無 `sizeLimitArgs`／`limitFor` 函式） | 6 passed | 重新編碼大小上限限制 |
+
+### PR 軸
+
+| PR | 裁決與理由 | 上游證據 | fork 證據 |
+| --- | --- | --- | --- |
+| [#7364](https://github.com/heygen-com/hyperframes/pull/7364) | MERGED（`a3b8f521d`），隨 commit 軸採用 | 見 commit 軸 | 見 commit 軸 |
+| [#7365](https://github.com/heygen-com/hyperframes/pull/7365) | MERGED（`330be7cd2`），隨 commit 軸採用 | 見 commit 軸 | 見 commit 軸 |
+| [#7366](https://github.com/heygen-com/hyperframes/pull/7366) | MERGED（`9efbbdf5a`），隨 commit 軸採用 | 見 commit 軸 | 見 commit 軸 |
+| [#7367](https://github.com/heygen-com/hyperframes/pull/7367) | monitored（open，釘 head `281efa2db`）：`Feat/deploy worker workflow`，工作流改動，釘選追蹤 | OPEN | `tools/upstream_baseline.json` |
+| [#7368](https://github.com/heygen-com/hyperframes/pull/7368) | MERGED（`a595755a3`），隨 commit 軸採用 | 見 commit 軸 | 見 commit 軸 |
+| [#7369](https://github.com/heygen-com/hyperframes/pull/7369) | monitored（open，釘 head `727d08e5d`）：`fix(check): lint and check skip compositions the project never mounts`，合併後採用 | OPEN | `tools/upstream_baseline.json` |
+| [#7372](https://github.com/heygen-com/hyperframes/pull/7372) | monitored（open，釘 head `78bc9c15c`）：`fix(media-use): forward --language to the CLI in transcribe.mjs`，對應 issue #7371，釘選追蹤 | OPEN | `tools/upstream_baseline.json` |
+| [#7373](https://github.com/heygen-com/hyperframes/pull/7373) | monitored（open，釘 head `ad02236b7`）：`fix(core): preview playback moves every frame between an audio track's time updates`，釘選追蹤 | OPEN | `tools/upstream_baseline.json` |
+| [#7374](https://github.com/heygen-com/hyperframes/pull/7374) | MERGED（`b418bb24f`），隨 commit 軸採用 | 見 commit 軸 | 見 commit 軸 |
+| [#7375](https://github.com/heygen-com/hyperframes/pull/7375) | monitored（open，釘 head `8249651ad`）：`feat(cli): cloud uploads send a big file in parts, so a cut connection resends one part`，依賴 #7374 模組化，釘選追蹤 | OPEN | `tools/upstream_baseline.json` |
+| [#7376](https://github.com/heygen-com/hyperframes/pull/7376) | MERGED（`57a75337b`），隨 commit 軸採用 | 見 commit 軸 | 見 commit 軸 |
+| [#7377](https://github.com/heygen-com/hyperframes/pull/7377) | MERGED（`14e598e5a`），延後（見 commit 軸） | 見 commit 軸 | 見 commit 軸 |
+| [#7378](https://github.com/heygen-com/hyperframes/pull/7378) | monitored（open，釘 head `4ffd6759d`）：`fix(core): retain complete preview pictures during native seeks`，釘選追蹤 | OPEN | `tools/upstream_baseline.json` |
+| [#7379](https://github.com/heygen-com/hyperframes/pull/7379) | monitored（open，釘 head `faa7546b6`）：`feat(studio): scrub full-quality video with decoded preview frames`，釘選追蹤 | OPEN | `tools/upstream_baseline.json` |
+| [#7380](https://github.com/heygen-com/hyperframes/pull/7380) | MERGED（`f5bde9533`），延後（見 commit 軸） | 見 commit 軸 | 見 commit 軸 |
+| [#7381](https://github.com/heygen-com/hyperframes/pull/7381) | monitored（open，釘 head `aa5f2ed8e`）：`fix(cli): a media file referenced by its filesystem path goes into the cloud archive`，釘選追蹤 | OPEN | `tools/upstream_baseline.json` |
+| [#7382](https://github.com/heygen-com/hyperframes/pull/7382) | monitored（open，釘 head `dbf66cc22`）：`perf(producer): size a long video's chunks in one plan, no re-plan`，釘選追蹤 | OPEN | `tools/upstream_baseline.json` |
+
+### issue 軸
+
+| issue | 裁決與理由 |
+| --- | --- |
+| [#7370](https://github.com/heygen-com/hyperframes/issues/7370) | 記錄、不動（OPEN）：多 worker 重複靜態幀去重校驗之效能議題，無對應 PR，記錄追蹤 |
+| [#7371](https://github.com/heygen-com/hyperframes/issues/7371) | 記錄、不動（OPEN）：`transcribe.mjs` 缺少 `--language` 參數，已由 open PR #7372 追蹤 |
+
+### 釘選移動（3 筆）
+
+| 釘選 | 移動 | 裁決 |
+| --- | --- | --- |
+| #7297 | open（head `dbe63cb7e`）→ merged（head `4575445a2`，`896a77c30`） | 已解決：採用，重釘 closed |
+| #7346 | open（head `1aae19aef`）→ closed（作者關閉未合併） | 已解決：重釘 closed |
+| #7362 | open（head `331ce783e`）→ merged（head `b6c2bfadf`，`59c2065d6`） | 已解決：採用，重釘 closed |
+
+### 新釘選
+
+新增 9 筆 open PR 釘選：#7367、#7369、#7372、#7373、#7375、#7378、#7379、#7381、#7382（head 見 `tools/upstream_baseline.json`）。monitored 總數由 127 增為 136 筆。
+
+### 預算、LFS 與延後
+
+- LFS 物件：#7362 引入 `packages/producer/tests/timers-on-film-time/output/compiled.html`（oid sha256: `1d552586958450872949cc4a0c7447fe77351f848c6ab9eb29f7c8d7cc39e130`，3196 bytes）與 `output/output.mp4`（oid sha256: `98e1c940acca15aec1581c146d8f48e00cf65735233671bf1fc22f1075f81e76`，8191 bytes）。
+- `scripts/package-size-budgets.json` 無變動。
+- `skills-manifest.json` 已因 #7297 重生（`hyperframes-cli` hash: `1b3a53755befbab2`）。
+- 維持延後：#7377、#7380（media-use 錄音與 voice credit）以及既有延後項目。
+
+### 最新剩餘快照（水位 `f5bde9533`，PR #7382，issue #7371）
+
+2026-11-08 `python tools/check_upstream_updates.py --strict` exit 0：commit 軸 `No new upstream commits`（behind 0）；PR 軸 `Triaged through #7382`、`No new items above that number`；issue 軸 `Triaged through #7371`、`No new items above that number`；monitored 136 筆，`Every pinned item is still at the head and state it was judged at`。

@@ -1149,3 +1149,25 @@ commit 水位 `555c788a333c592e9878139db318ea52f1315cec`，PR #7358、issue #734
 以 fork `a89e88397` 接續，審完 `555c788a3..7b1d9cceb` 共 5 個 commit、PR #7359–#7362 共 4 筆、issue #7363 與 2 筆釘選移動。採用 4 個 commit（#7357 雲端檔案檢查依檔案大小等待、#7360 Chrome 啟動逾時的具名錯誤、#7361 呼叫端中止時停止等待、#7347 Safari 效能測試的逾時說明），#7358 為 v0.9.20 版號 PR 不適用。#7360 的測試衝突取捨：不帶本線沒有的 `idleWindow`（#6705）及依賴它的測試。2 筆釘選移動（#7347、#7357）隨合併轉 closed；新釘 #7362（頁面計時器改走影片時間，含新 golden 迴歸與 LFS 物件，合併後一組採用），#7359 為已關閉的演練 PR 不釘，#7363 為內容空白的 issue 記錄不動。每項程式修正的測試先在舊碼紅燈再轉綠，逐筆來源／fork 行號與紅綠名稱見 [接續清冊](UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-07接續至-7b1d9cceb審查-5-個-commit4-筆-pr1-筆-issue-與-2-筆釘選移動)。
 
 commit 水位 `7b1d9ccebf9c7e2c2bd22b7e9d9487ce975d6425`，PR #7362、issue #7363，monitored 由 126 增為 127 筆。#7191、#7295／#7080、#6967／#7302、#6912、#7182、#7176、#7104／#7168 retry、#6716 的 17 檔遷移、#7134、#6897、#7246 與 #7247 依清冊條件維持延後。沒有 golden／LFS pointer 變更、沒有預算增量；採用的上游程式碼作者為 Miguel Ángel（供 Co-authored-by）。剩餘數字僅記於清冊最後一節，ROADMAP 接續列保留。
+
+
+## 2026-11-08：連續水位 `f5bde9533`（PR #7382）
+
+以 fork `67ff776f2` 接續，審完 `7b1d9cceb..f5bde9533` 共 10 個 commit、PR #7364–#7382 共 17 筆 PR、issue #7370–#7371 與 3 筆釘選移動。
+
+採用 8 個 commit：
+- `896a77c30`（#7297）：`hyperframes open` 關閉專案背景 preview，適配本 fork Bundle ID 慣例與 AGENTS.md 規則，重生 `skills-manifest.json`。
+- `330be7cd2`（#7365）：`layout-audit.browser.js` 加入 `data-layout-ignore` 裝飾提示。
+- `a3b8f521d`（#7364）：`layout-audit.browser.js` 支援遮罩與 inset 裁剪，不誤判為重疊。
+- `9efbbdf5a`（#7366）：`manager.ts` 支援 Windows Visual Studio 產物路徑與 winget 指令。
+- `59c2065d6`（#7362）：`fileServer.ts` 支援 film-time timers，seek 時在 `flushAnimationFrame` 前依序觸發 due timers；新增 `packages/core/src/runtime/wallClock.ts` 與 `wallClock.test.ts`；更新 core runtime 46 處 bare timers；更新 engine `types.ts`、`browserManager.ts`、`drawElementService.ts`、`frameCapture.ts`；新增 `pageTimers.test.ts`；引入 producer 測試與 LFS 物件（`output.mp4` 與 `compiled.html`）。
+- `a595755a3`（#7368）：`media.ts` 加入未開始載入影片跳過保護，更新 `media.test.ts` 與 `init.test.ts`。
+- `b418bb24f`（#7374）：`uploadPut.ts` 模組化抽取與 `upload.ts` 重構。
+- `57a75337b`（#7376）：`offload.ts` 限制超過上限之影片檔案在 re-encode 時透過 `-maxrate` 與 `-bufsize` 控制大小；新增 `offload.sizeLimit.test.ts`。
+
+延後 2 個 commit：
+- `14e598e5a`（#7377）與 `f5bde9533`（#7380）：media-use 錄音與 voice credit，因本 fork 保留固定語音與 ffmpeg 封裝管線，待後續整組語音技能重整時再適配。
+
+3 筆釘選移動（#7297、#7346、#7362）隨合併或作者關閉轉 closed。新釘 9 筆 open PR：#7367、#7369、#7372、#7373、#7375（更新至最新 head）、#7378、#7379、#7381、#7382。issue #7370 記錄效能議題，#7371 已由 open PR #7372 追蹤。
+
+commit 水位 `f5bde9533f66e80bebc2aea906ec0d6b5ecb6793`，PR #7382、issue #7371，monitored 由 127 增為 136 筆。採用的上游程式碼作者為 Michael Wang（#7297）、Miguel Ángel（#7365、#7364、#7366、#7362、#7368、#7374、#7376，供 Co-authored-by）。需上傳的新 LFS 物件：`packages/producer/tests/timers-on-film-time/output/compiled.html` 與 `output.mp4`。

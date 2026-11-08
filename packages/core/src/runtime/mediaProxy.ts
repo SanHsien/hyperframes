@@ -1,3 +1,4 @@
+import { wallSetTimeout } from "./wallClock";
 import { postRuntimeMessage } from "./bridge";
 import { swallow } from "./diagnostics";
 import { evictMediaSyncState, HOLD_CAP_MS, isActiveAtPlayhead } from "./media";
@@ -104,7 +105,7 @@ function shownScale(): Promise<number | null> {
   if (displayScale !== null) return Promise.resolve(displayScale);
   return Promise.race([
     displayScaleKnown.then(() => displayScale),
-    new Promise<null>((give) => setTimeout(() => give(null), DISPLAY_SCALE_WAIT_MS)),
+    new Promise<null>((give) => wallSetTimeout(() => give(null), DISPLAY_SCALE_WAIT_MS)),
   ]);
 }
 
@@ -478,7 +479,7 @@ export function swapToProxy(
   if (lightFacts) return;
   // A frame capture holds for the copy as it held for a loading video before, up to the same cap.
   registerSeekCompletion(
-    Promise.race([swap, new Promise((cap) => setTimeout(cap, HOLD_CAP_MS))]),
+    Promise.race([swap, new Promise((cap) => wallSetTimeout(cap, HOLD_CAP_MS))]),
     "video-frame",
   );
   const codecName = entry?.codecName ?? null;
