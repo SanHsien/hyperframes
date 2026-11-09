@@ -3064,7 +3064,7 @@ CI 專用檔案判定：本輪 `git show --stat` 動到的檔案沒有 `*.browse
 | [#7447](https://github.com/heygen-com/hyperframes/pull/7447) | monitored（draft，釘 head `c1398b6d2`）：`perf(core): Safari plays a long source's audio from its element, not a whole-file decode`；與已採用的 Safari 時鐘鏈（#7383、#7373、#7412）同區，合併後核對 `media.ts`。重訪條件：合併、關閉或 head 移動 | DRAFT | `tools/upstream_baseline.json` |
 | [#7448](https://github.com/heygen-com/hyperframes/pull/7448) | monitored（open，釘 head `c6206c585`）：`fix(cli): reject inherited names as documentation topics`。重訪條件：合併、關閉或 head 移動 | OPEN | `tools/upstream_baseline.json` |
 | [#7449](https://github.com/heygen-com/hyperframes/pull/7449) | monitored（open，釘 head `cd50cd0b3`）：`fix(studio): leave Enter and Escape to an IME that is still composing`。重訪條件：合併、關閉或 head 移動 | OPEN | `tools/upstream_baseline.json` |
-| [#7450](https://github.com/heygen-com/hyperframes/pull/7450) | monitored（open，釘 head `608b5ec13`）：`feat(skills): route a style outside the templates instead of listing them`。重訪條件：合併、關閉或 head 移動 | OPEN | `tools/upstream_baseline.json` |
+| [#7450](https://github.com/heygen-com/hyperframes/pull/7450) | monitored（open，釘 head `86efcc5b3`）：`feat(skills): route a style outside the templates instead of listing them`。重訪條件：合併、關閉或 head 移動 | OPEN | `tools/upstream_baseline.json` |
 
 ### issue 軸
 
