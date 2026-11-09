@@ -1304,3 +1304,17 @@ commit 水位 `c149730819437fbf0d8fda7de6952293bcf69c50`，PR #7452、issue #745
 - hook 測試：把 cli 加進測試專案清單、`lefthook.yml` 維持舊版時，`packages/cli/tsconfig.json type errors must block a commit` 失敗；加上 cli 後兩個測試通過。
 
 **已知限制**：`node --test scripts/lefthook-order.test.mjs` 在這台 Windows 機器上，第二個測試在 `cpSync` 複製 hoisted `typescript` 時就以 `EPERM`（建立符號連結）失敗，與本次改動無關（失敗點在專案清單迴圈之前，只取決於 `node_modules/typescript` 是符號連結）。驗證時用 `dereference: true` 的暫時副本跑同一份測試，兩個測試都通過，暫時副本已刪除；沒有改動被提交的測試去繞過這個限制。新 workflow 未在 GitHub 上跑過（本次不推送），第一次推送後要看 `Typecheck` 這個 job 是否綠。
+
+## 2026-11-10：上游檢查「漏報 #7269 head 移動」查證結果：不是缺陷
+
+獨立審查回報 #7269 的 head 在 17:38Z 移到 `e414818`，但當時 `python tools/check_upstream_updates.py --strict` 只報 #7338 移動、沒報 #7269。
+
+**查證**（唯讀，`gh api .../issues/7269/timeline` 與 `gh pr view`）：
+- #7269 的 head 歷史：`head_ref_force_pushed` 於 `2026-11-09T15:48:05Z`（得到本線釘住的 `8a67eeb`），下一次 `head_ref_force_pushed` 在 `2026-11-09T17:41:44Z`（得到 `e414818`）。`17:38:57Z`／`17:38:58Z` 是兩個 commit 的**提交時間**，不是 head 在 GitHub 上換成它的時間。
+- #7338 在 `17:35:17Z` 合併。所以 `17:35:17Z`–`17:41:44Z` 之間跑檢查，結果就是「只有 #7338 移動」，與審查員看到的一致；#7269 的 head 在那個時間點確實還是 `8a67eeb`。
+- 今天重跑同一個指令：`pr#7269 | 8a67eeb… / open | e414818 / open`、`pr#7338 | … / closed`、`pr#7416 | … / closed` 三筆都報出。比對邏輯（`collect_stale_monitored` 逐筆 `gh pr view`、取較短長度比 SHA 前綴、再比 state）沒有分頁、快取或只看部分 PR 的路徑，165 筆釘選逐筆查。
+- 變異驗證：把 head 比對短路成永遠相等，新增的測試立刻紅（#7269 不再被報出）。
+
+**結論**：不是缺陷，是檢查早於 force-push；沒有改 `tools/check_upstream_updates.py`。順帶發現這條軸（`monitored`）原本**沒有任何測試**，所以在 `tools/tests/test_upstream_updates.py` 補 5 個釘性質的測試：同批有另一筆已合併時，被 force-push 的 open PR 仍被報出；head 與 state 都沒動的釘選（含 7 字元釘選、draft）不被報；空的或短於 7 字元的釘選視為漂移；消失的 PR 報「not found」；`gh` 失敗回 `None`（未檢查）而不是 `[]`（沒有移動）。這些測試在現有程式碼上就是綠的（沒有紅燈階段），變異驗證證明它們擋得住退化。
+
+目前（上游又前進）`--strict` 仍會因 #7453、#7269、#7338、#7416 轉紅，屬正常，本次不推進水位。
