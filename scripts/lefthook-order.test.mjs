@@ -32,6 +32,8 @@ test("typecheck works with only a hoisted compiler and rejects errors in every p
     ["packages/core", "tsconfig.json"],
     ["packages/core", "tsconfig.runtime.json"],
     ["packages/studio", "tsconfig.json"],
+    // cli test files are type-checked by this project only; a hook that skipped it let errors reach main.
+    ["packages/cli", "tsconfig.json"],
     ["scripts", "tsconfig.json"],
   ];
   try {

@@ -1285,3 +1285,22 @@ commit 水位 `ad6f7858f649f44e16f21128a88992ea3c01dd74`，PR #7450、issue #745
 型別與閘門：移植觸及 `packages/core/src/runtime/compositionLoader.ts`，提交前跑 `cd packages/core && bun run typecheck`（含 `typecheck:runtime`）與 CI 同指令 `bun run --filter "@hyperframes/core" test:hyperframe-runtime-ci`，兩者通過；本批沒有使用 `LEFTHOOK_EXCLUDE` 或任何方式跳過 hook。
 
 commit 水位 `c149730819437fbf0d8fda7de6952293bcf69c50`，PR #7452、issue #7451，monitored 維持 165 筆。採用的上游程式碼作者為 Jerrai（#7249）、Miguel Ángel（#7110、#7000，供 Co-authored-by）。無新 LFS 物件。
+
+## 2026-11-10：`packages/cli` 型別錯誤與型別檢查缺口
+
+獨立審查發現 `cd packages/cli && bun run typecheck` 紅燈，本線沒有任何一道 gate 看得到：`ci.yml` 只跑 `tools/dev_check.ps1`（維護工具），`lefthook.yml` 的 `typecheck` 只含 core、core runtime、studio、scripts。
+
+**根因（兩層）**：
+- 三個錯誤都在 `src/commands/check.test.ts`，都是移植時引入、後來沒人檢查：`:2313` `TS18048` 來自 `08cc80bd5`（移植 #6919 時改寫，`runBrowserCheck` 的 `deadline` 參數可選，`typeof deadline.enter` 要先排除 `undefined`）；`:3903`、`:3904` `TS2554` 來自 `12c05b9ea`（上游 `assertKnownFlags` 的第三參數 `path` 是 #6616 `22e6da023` 加的，本線沒移植，函式只收 2 個參數，兩條斷言只比對 `"Unknown flag"` 子字串，拿掉引數後仍成立）。
+- 假綠：上游有 `typecheck` job（`bun run --filter '*' typecheck`），fork 沒有；hook 也漏了 cli。修正前跑 `bun run --filter '*' typecheck`，14 個套件只有 `@hyperframes/cli` 紅（3 個錯誤），其他全部 exit 0。
+
+**改法**：
+- `:2313` 改用 `CheckDeadline["enter"]`（`import { type CheckDeadline }`，類別本來就匯出），不用 `any`、`@ts-ignore` 或型別斷言。`:3903`／`:3904` 拿掉第三個引數。
+- 新增 `.github/workflows/typecheck.yml`（ubuntu-latest，照上游 `typecheck` job：安裝、`bun run build`、`bun run --filter '*' typecheck`、`bun run typecheck:scripts`）。選這條而不是把指令放進 `tools/dev_check.ps1`：dev_check 與 `ci.yml` 的 Windows runner 刻意不安裝產品依賴（`AGENTS.md`「不要把維護 gate 改成完整產品依賴安裝」），塞進去會讓維護 gate 變成要跑完整 `bun install` 與 `bun run build`，也沒有任何 CI 能證明它在乾淨環境能跑。`ci.yml` 被 `test_ci_covers_python_314` 釘為純 Windows，先例（`posix-security-tests.yml`）是另開 workflow。tsc 的輸出與作業系統無關，所以用 ubuntu 沒有 Windows 覆蓋缺口。
+- `lefthook.yml` 的 `typecheck` 加 `packages/cli/tsconfig.json`；`scripts/lefthook-order.test.mjs` 的專案清單加 cli（FORK.md 兩處同步）。`tools/tests/test_fork_docs.py` 新增 `test_every_workspace_package_is_typechecked_in_ci_and_the_hook`，釘住 workflow 與 hook 都含這些檢查。
+
+**先紅後綠**：
+- cli typecheck：修前 3 個錯誤（`TS18048`、2 × `TS2554`），修後 exit 0；`bun run --filter '*' typecheck` 修前 exit 2（僅 cli 紅），修後 exit 0。
+- hook 測試：把 cli 加進測試專案清單、`lefthook.yml` 維持舊版時，`packages/cli/tsconfig.json type errors must block a commit` 失敗；加上 cli 後兩個測試通過。
+
+**已知限制**：`node --test scripts/lefthook-order.test.mjs` 在這台 Windows 機器上，第二個測試在 `cpSync` 複製 hoisted `typescript` 時就以 `EPERM`（建立符號連結）失敗，與本次改動無關（失敗點在專案清單迴圈之前，只取決於 `node_modules/typescript` 是符號連結）。驗證時用 `dereference: true` 的暫時副本跑同一份測試，兩個測試都通過，暫時副本已刪除；沒有改動被提交的測試去繞過這個限制。新 workflow 未在 GitHub 上跑過（本次不推送），第一次推送後要看 `Typecheck` 這個 job 是否綠。

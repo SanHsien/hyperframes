@@ -16,6 +16,7 @@ import { contrastRatio, parseColorRGBA } from "./contrast-bg.js";
 import { createCheckCommand, parseCheckRange } from "./check.js";
 import {
   CheckCopiesUnfinishedError,
+  type CheckDeadline,
   CheckDeadlineError,
   CheckStoppedError,
 } from "../utils/checkDeadline.js";
@@ -2310,7 +2311,7 @@ describe("check pipeline", () => {
         deadline!.start();
         // The analysis starts once the overlap pass hands back to "samples".
         let overlapSeen = false;
-        const enter: typeof deadline.enter = (phase, detail) => {
+        const enter: CheckDeadline["enter"] = (phase, detail) => {
           if (phase === "overlap") overlapSeen = true;
           if (phase === "samples" && overlapSeen) analysing = true;
           deadline!.enter(phase, detail);
@@ -3900,7 +3901,7 @@ describe("check stopped by a signal", () => {
 describe("check --lint-verbose", () => {
   it("is a known flag, as render, preview and publish spell it, and a made-up one still is not", () => {
     const check = createCheckCommand() as never;
-    expect(() => assertKnownFlags(check, ["--lint-verbose", "--json"], "check")).not.toThrow();
-    expect(() => assertKnownFlags(check, ["--lint-loud"], "check")).toThrow("Unknown flag");
+    expect(() => assertKnownFlags(check, ["--lint-verbose", "--json"])).not.toThrow();
+    expect(() => assertKnownFlags(check, ["--lint-loud"])).toThrow("Unknown flag");
   });
 });

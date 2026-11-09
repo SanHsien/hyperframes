@@ -82,6 +82,20 @@ def test_ci_covers_python_314() -> None:
     assert "ubuntu" not in workflow
 
 
+def test_every_workspace_package_is_typechecked_in_ci_and_the_hook() -> None:
+    """ci.yml only runs the maintenance gate, so a package the lefthook hook skips
+    (cli once did) could reach main with type errors and nothing would be red."""
+    workflow = (ROOT / ".github" / "workflows" / "typecheck.yml").read_text(
+        encoding="utf-8"
+    )
+    assert "push:" in workflow
+    assert "pull_request:" in workflow
+    assert "bun run --filter '*' typecheck" in workflow
+    assert "bun run typecheck:scripts" in workflow
+    hook = (ROOT / "lefthook.yml").read_text(encoding="utf-8")
+    assert "-p packages/cli/tsconfig.json" in hook
+
+
 def test_baseline_file_is_valid_and_complete() -> None:
     baseline = checker.load_baseline()
     assert baseline["repo"] == "https://github.com/heygen-com/hyperframes.git"

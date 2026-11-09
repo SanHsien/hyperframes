@@ -1,0 +1,57 @@
+name: Typecheck
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: typecheck-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Mirrors the upstream `typecheck` job. ci.yml only runs tools/dev_check.ps1 (maintenance tools)
+  # and lefthook checks a subset of projects, so a type error in a package the hook skips (cli test
+  # files, for one) used to reach main unnoticed. Kept out of ci.yml, which
+  # tools/tests/test_fork_docs.py pins to Windows-only; tsc output does not depend on the OS.
+  typecheck:
+    name: typecheck (linux / all workspaces)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      HYPERFRAMES_NO_TELEMETRY: "1"
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+
+      - name: Install Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+
+      # ffmpeg-static's postinstall would download a binary; this makes it find one and stop.
+      - name: Prepare FFMPEG_BIN for bun install
+        uses: ./.github/actions/prepare-ffmpeg-bin
+
+      - name: Install dependencies
+        run: bash scripts/ci/install-workspace-dependencies.sh
+
+      # Build first, as the upstream job does: a clean checkout has no dist for packages to resolve.
+      - name: Build
+        run: bun run build
+
+      - name: Typecheck every workspace package
+        run: bun run --filter '*' typecheck
+
+      - name: Typecheck scripts
+        run: bun run typecheck:scripts
