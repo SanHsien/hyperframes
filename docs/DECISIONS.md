@@ -155,7 +155,7 @@
 
 - PR CI 的 `Tests on windows-latest: core` 失敗於上游新增的 `htmlBundler.test.ts`「emits styles and scripts in render order…」：該測試以 `push("n")` 等字面文字找腳本位置，而 fork 的 `wrapScopedCompositionScript` 把作者腳本存成 JSON 字串（引號變成 `\"`），找不到時 `indexOf` 回 -1，兩種模式排出的順序才不同；純上游樹本機通過、合併樹失敗。測試改為先還原跳脫的引號再比對，並新增「三段腳本在兩種模式都必須找得到」的斷言，避免空比對也通過；本機該檔 151 passed。
 
-**未驗證**：producer、engine、player、完整 `bun run test`、`test:scripts`、`test:skills` 與 fallow 全庫、Docker／Lambda、瀏覽器端測試；`generate-catalog-pages` 與目錄產生器的實跑；移植到新路徑的 favicon `normalizeCloudImage` 沒有被通過的測試覆蓋（`logo-provider.test.mjs` 在上游同樣整檔失敗）；符號連結相關測試在本機無權限所以被略過而非通過；LFS「should have been pointers」警告（57 個 producer 輸出檔）是上游既有狀態，未更動。本機工作目錄另有未追蹤的檔案（not tracked: `pnpm-lock.yaml`、not tracked: `pnpm-workspace.yaml`），不屬於任何一側，未提交。
+**未驗證**：producer、engine、player、完整 `bun run test`、`test:scripts`、`test:skills` 與 fallow 全庫、Docker／Lambda、瀏覽器端測試；`generate-catalog-pages` 與目錄產生器的實跑；移植到新路徑的 favicon `normalizeCloudImage` 沒有被通過的測試覆蓋（`logo-provider.test.mjs` 在上游同樣整檔失敗）；符號連結相關測試在本機無權限所以被略過而非通過；LFS「should have been pointers」警告（當時 57 個 producer 輸出檔，2026-11-09 以 `git lfs fsck --pointers` 實測為 55 筆）不是上游既有狀態：`.gitattributes` 規定 `packages/producer/tests/**/output/compiled.html` 走 LFS，本線 HEAD 卻自初始 commit `370725f24` 起存原始 HTML，上游存 pointer；處理方式見 ROADMAP 近期列。本機工作目錄另有未追蹤的檔案（not tracked: `pnpm-lock.yaml`、not tracked: `pnpm-workspace.yaml`），不屬於任何一側，沒有納入該次提交。
 
 ### 合併後審查與修正
 
@@ -1171,3 +1171,81 @@ commit 水位 `7b1d9ccebf9c7e2c2bd22b7e9d9487ce975d6425`，PR #7362、issue #736
 3 筆釘選移動（#7297、#7346、#7362）隨合併或作者關閉轉 closed。新釘 9 筆 open PR：#7367、#7369、#7372、#7373、#7375（更新至最新 head）、#7378、#7379、#7381、#7382。issue #7370 記錄效能議題，#7371 已由 open PR #7372 追蹤。
 
 commit 水位 `f5bde9533f66e80bebc2aea906ec0d6b5ecb6793`，PR #7382、issue #7371，monitored 由 127 增為 136 筆。採用的上游程式碼作者為 Michael Wang（#7297）、Miguel Ángel（#7365、#7364、#7366、#7362、#7368、#7374、#7376，供 Co-authored-by）。需上傳的新 LFS 物件：`packages/producer/tests/timers-on-film-time/output/compiled.html` 與 `output.mp4`。
+
+## 2026-11-08：連續水位 `12906e0bf`（PR #7403）
+
+以 fork `3de999d22` 接續，審完 `f5bde9533..12906e0bf` 共 22 個 commit、PR #7383–#7403 共 21 筆 PR、issue #7404 與 13 筆釘選移動。
+
+採用 15 個 commit：
+- `3d7f12acd`（#7375）：`uploadParts.ts` 大檔案分片上傳，斷線只重傳失敗分片。
+- `c27475b97`（#7382）：`plan.ts` 長影片 chunk 分片預先估算，避免重新計劃。
+- `b559a98d3`（#7349）：`videoFrameExtractor.ts` 處理大型 header SEI 之 HLG 影片時，色調映射正確保持 HLG 白色參考值（npl=203）。
+- `7b79ab429`（#7369）：`project.ts` 與 `checkPipeline.ts` 跳過專案未掛載之 composition 之 lint 與 check；更新 `docs/packages/cli.mdx`。
+- `e0c11bf09`（#7381）：`publishProject.ts` 本機檔案系統絕對路徑引用的媒體資源正確打包進雲端 archive。
+- `841e90ffe`（#7383）：`media.ts` 修復 Safari 影片在剪切點提早落地問題，復原隱藏之 pre-roll；移除 `mediaSteer.ts` 相關冗餘程式碼。
+- `942893eb2`（#7373）：`clock.ts` 預覽播放時在音訊軌的時間更新間隔中平滑推進每一個 frame。
+- `34118d8f2`（#7384）：`chunkFrames.injectorBudget.test.ts` 測試執行後清理 injector，不再遺留 no-op injector。
+- `b87a01f6a`（#7378）：`previewSeek.ts` 與 `init.ts` 在原生 seek 期間保留完整預覽畫面；更新 `docs/packages/player.mdx`。
+- `fed14b016`（#7390）：`fileServer.ts` 虛擬時間排程在任意 worker 數量下皆保持影片排程。
+- `adf14d732`（#7394）：`frameCapture.ts` CDN 腳本失敗回報其函式庫名稱與版本，不暴露完整 URL。
+- `ab785e9c5`（#7395）：`Menu.tsx` 選單列高亮圓角樣式修正。
+- `0f5914dc4`（#7119）：`frameCapture-decodeTimeoutCallers.test.ts` 解碼超時警告傳遞至所有呼叫端之測試驗證。
+- `75fe18c62`（#7397）：`gsap.ts` 與 `gsapAuthoredOrder.ts` 在 tween 前寫入的 set 不再抹除 tween 終點值。
+- `12906e0bf`（#7402）：`timedClipHide.ts`、`studioPreviewMark.ts` 與 `init.ts` 讓 hidden capture 頁面僅載入螢幕上的 clip，seek 離開的 clip 即刻釋放。
+
+延後 3 個 commit：
+- `b7157bdab`（#7379）：57 檔巨型 Studio 預覽重構，待整組 Studio 改版時評估。
+- `fd05a3860`（#7159）：預覽健康度點名 media 元素，依賴本線未採用的早期 buffering 架構。
+- `3151fd213`（#7393）：Studio full-quality playback 與 bound recovery，隨 #7379 一併延後。
+
+不適用 4 個 commit：
+- `a0bbaab43`（#7385）：v0.9.21 發行。
+- `26956ea1f`（#7392）：v0.9.22 發行。
+- `7ad2be96e`（#7399）：v0.9.23 發行。
+- `074de9dd1`（#7401）：CI Linux 安裝 ffmpeg 行動變更。
+
+移植時的取捨：
+- #7373：只帶 `942893eb2` 自己的 `_betweenUpdates`／`aheadOf`；`3eead5432`（#7067）的起步 hold（`AUDIO_START_WAIT_MS`、`_audioStart`）依前述 2026-11-04 的延後條件維持延後，不夾帶。`clock.ts` 本線 61／1，上游 60／2，差在本線保留 `_heldTimeWhenBehind` 分支。
+- #7369：`packages/lint/src/project.ts` 的 `mountedSources` 是 #6827 `bf4717893` 已有的函式，#6827 本身維持 2026-11-02 清冊的延後；本線只帶這個函式，內容與上游逐字相同。
+- #7375：`packages/cli/src/cloud/_gen/types.ts` 本線新增 45 行，上游新增 67 行、改 1 行；差在 `GptImage26Request`、`GptImage26FlareRequest` 與 `ImageCreateRequest` 聯集，本線的 generated types 沒有圖片生成型別，不補。
+- #7382、#7384、#7390：producer 三個 commit 以 `bun test` 先紅後綠移植，實際輸出摘要見清冊的紅綠證據。producer 既有失敗（`fileServer.test.ts` 兩例符號連結 EPERM、`plan.test.ts` 三例 FFmpeg 找不到）在移植前的 HEAD 來源上同樣失敗。
+- fork 改寫的測試：`packages/lint/src/projectShaders.test.ts` 的符號連結案例改用 `symlinkOrSkip`（比照 `packages/studio-server/src/helpers/proxyTranscoder.test.ts`），沒有權限建符號連結的 Windows 帳號會 skip，不會紅燈也不會假綠；上游原樣呼叫 `symlinkSync`。
+- 本批新增的 9 個檔案（`uploadParts.ts`、`uploadParts.test.ts`、`previewSeek.ts`、`init.previewSeek.test.ts`、`gsapAuthoredOrder.ts`、`init.authoredOrder.test.ts`、`clock.steer.test.ts`、`publishProject.absolutePath.test.ts`、`frameCapture-decodeTimeoutCallers.test.ts`）與上游同 commit 版本逐位元相同。
+
+13 筆釘選移動：11 筆（#7119、#7159、#7321、#7349、#7369、#7373、#7375、#7378、#7379、#7381、#7382）轉 closed；2 筆（#6732、#7249）更新 open head。新釘 6 筆 open PR：#7386、#7387、#7388、#7396、#7398、#7403。issue #7404 記錄追蹤。
+
+commit 水位 `12906e0bfba41b72d9aad83d6a98c0c8943e5682`，PR #7403、issue #7404，monitored 由 136 增為 142 筆。採用的上游程式碼作者為 Miguel Ángel（#7375、#7382、#7349、#7369、#7381、#7383、#7373、#7384、#7390、#7394、#7395、#7119、#7397、#7402）、James Russo（#7378，供 Co-authored-by）。
+
+## 2026-11-09：連續水位 `ad6f7858f`（PR #7450，issue #7451）
+
+以 fork `3de999d22` 接續，審完 `12906e0bf..ad6f7858f`（上游 tip）共 17 個 commit、PR #7405–#7450 共 39 筆、issue #7406–#7451 共 8 筆與 6 筆釘選移動。
+
+採用 3 個 commit：
+- `fa2e63515`（#7412）：`media.ts` 靜音影片（`defaultMuted`）在剪切點不再等自己的音軌，`dropSilentAudioTrack` 停用該音軌，修復畫面凍結。
+- `b764a5ffd`（#6150）：`composition.test.ts` 補 `<template>` 根節點 composition 變數宣告的測試；只有測試，沒有來源變更。
+- `a73572c3b`（#7442）：`media.ts` 停在尾格的影片只 seek 一次，不再每個 frame 重 seek。上游補丁 4 個 hunk 有 2 個在本線 `media.ts` 脈絡不同，手工放到對應位置；其餘 2 個 hunk 與測試原樣套用。
+
+延後 10 個 commit（每筆的 `git apply --check` 結果與重訪條件在清冊）：
+- `070b964d7`（#7398）：check 重播快取與 `--no-craft`，需成組引入 `checkCache.ts` 與測試。
+- `eb16510a1`（#7410）：每次 render 固定種子；改渲染確定性，需 Windows render verification 與 regression 驗收，本次未跑。
+- `2927fe615`（#7415）：Studio history 首次複製效能優化，非故障修正。
+- `91ad7fb6e`（#7419）：雲端 render Unicode 檔名正規化，需手工適配並驗雲端上傳路徑。
+- `5e8abd757`（#7418）：1440p 解析度預設，連動 skills manifest 重生。
+- `c14f25890`（#7423）、`c1e96a45b`（#7424）、`7bf65995b`（#7425）、`e35125372`（#7426）：遙測 agent 偵測，屬 ROADMAP 既有的遙測邊界。
+- `c38ac5438`（#7311）：分散式與 range render 的 page motion blur，22 檔，等 blur differential harness 成組採用。
+
+不適用 4 個 commit：
+- `327e20208`（#7414）：v0.9.25 發行。
+- `0c6c7fca4`（#7421）：v0.9.26 發行。
+- `d09584382`（#7422）：v0.9.26 release notes。
+- `ad6f7858f`（#7445）：把 `reverse-any-video`、`style-sampling` 加進核心技能清單；本線 `skills/` 沒有這兩個技能，`reverse-any-video` 先前已列為不採。
+
+6 筆釘選移動：3 筆（#7311、#7367、#7398）轉 closed；3 筆（#7142、#7208、#7403）更新 open head。新釘 23 筆 open／draft PR：#7405、#7409、#7413、#7416、#7427、#7428、#7430、#7432、#7433、#7434、#7435、#7436、#7437、#7438、#7439、#7440、#7441、#7443、#7444、#7447、#7448、#7449、#7450（#7436、#7447 為 draft）。
+
+這 23 筆依 DECISIONS 既有規則（open／draft 釘 monitored）釘選，head 取自 `gh pr list` 當下輸出，沒有逐行讀它們的 diff；重訪條件是合併、關閉或 head 移動。#7411、#7446 為作者關閉，不釘；#7445 在審查期間合併為 `ad6f7858f`，不釘。
+
+#7067（`3eead5432`）依 2026-11-04 的延後條件仍延後；本次未出現延後條件已成立的證據，所以 #7373 沒有帶入它的起步 hold。
+
+`packages/cli/src/cloud/_gen/types.ts` 對 #7375 部分移植（45 行對上游 67 行）的取捨見上方 2026-11-08 節。
+
+commit 水位 `ad6f7858f649f44e16f21128a88992ea3c01dd74`，PR #7450、issue #7451，monitored 由 142 增為 165 筆。#7451 記錄 `hyperframes-cli` 技能在無人值守的 `npx hyperframes` 會停在 npm 確認提示；尚未在本線重現，記錄不動。採用的上游程式碼作者為 Miguel Ángel（#7412、#7442）、ym256-stanford（#6150，供 Co-authored-by）。無新 LFS 物件；倉庫 LFS 現況（HEAD 存原始檔、上游存 pointer、fsck 55 筆）見 ROADMAP 近期列與清冊該節。

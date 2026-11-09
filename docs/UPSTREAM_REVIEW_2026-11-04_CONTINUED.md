@@ -2412,3 +2412,695 @@ CI 專用檔案判定：本輪 `git show --stat` 動到的檔案沒有 `*.browse
 ### 最新剩餘快照（水位 `f5bde9533`，PR #7382，issue #7371）
 
 2026-11-08 `python tools/check_upstream_updates.py --strict` exit 0：commit 軸 `No new upstream commits`（behind 0）；PR 軸 `Triaged through #7382`、`No new items above that number`；issue 軸 `Triaged through #7371`、`No new items above that number`；monitored 136 筆，`Every pinned item is still at the head and state it was judged at`。
+
+
+## 2026-11-08：接續至 `12906e0bf`
+
+以 fork `3de999d22` 為起點接續審查。接續審查 `f5bde9533` 至 `12906e0bf` 之間新進之上游項目，包含 22 筆 commit、PR #7383–#7403、issue #7404，及 13 筆釘選移動（pr#6732、pr#7119、pr#7159、pr#7249、pr#7321、pr#7349、pr#7369、pr#7373、pr#7375、pr#7378、pr#7379、pr#7381、pr#7382）。
+
+### Commit 軸
+
+| Commit | 裁決與理由 | 上游證據 | fork 證據 |
+| --- | --- | --- | --- |
+| `3d7f12acd` #7375 | 採用：雲端上傳超過 `PARTS_ABOVE_BYTES` 的檔案改分片送，斷線只重傳失敗分片（新增 `uploadParts.ts`，`upload.ts` 呼叫 `uploadParts(`）。`_gen/types.ts` 只帶分片所需型別（本線 45 行，上游 67 行另含 `GptImage26Request`、`GptImage26FlareRequest` 與 `ImageCreateRequest` 聯集；本線 generated types 沒有圖片生成型別，不補，取捨見 DECISIONS） | `packages/cli/src/cloud/upload.ts:320`；`packages/cli/src/cloud/uploadParts.ts:87` | `packages/cli/src/cloud/upload.ts:320`；`packages/cli/src/cloud/uploadParts.ts:87`；`uploadParts.test.ts` |
+| `c27475b97` #7382 | 採用（本次移植，先紅後綠，見紅綠證據）：`resolveChunkPlan` 新增 `minParallelChunks` 下限，長影片依 `targetChunkFrames` 加 chunk、短影片保留下限 fan-out；`renderRequest.ts` 與 `renderConfigValidation.ts` 同步接欄位 | `packages/producer/src/services/distributed/plan.ts:777`；`packages/producer/src/renderRequest.ts:35`；`packages/producer/src/services/distributed/renderConfigValidation.ts:225` | `packages/producer/src/services/distributed/plan.ts:770`；`packages/producer/src/renderRequest.ts:35`；`packages/producer/src/services/distributed/renderConfigValidation.ts:225`；`plan.test.ts`、`renderConfigValidation.test.ts`、`renderRequest.test.ts` |
+| `b559a98d3` #7349 | 採用：`readKeyframeTransfers` 在 stderr 串流時只收含 `transfer_characteristics` 的行，header SEI 很大的 HLG 影片不再因 stderr 尾端被擠掉而漏判，色調映射維持 HLG 白色參考（`npl=203`） | `packages/engine/src/services/videoFrameExtractor.ts:958`；`videoFrameExtractor.test.ts:4082` | `packages/engine/src/services/videoFrameExtractor.ts:912`；`videoFrameExtractor.test.ts:4063` |
+| `7b79ab429` #7369 | 採用：`lint`／`check` 跳過專案 `index.html` 沒掛載的 composition，`--include-unmounted` 可加回；更新 `docs/packages/cli.mdx`。`mountedSources` 是 #6827 `bf4717893` 已有的輔助函式，#6827 本身仍延後，本線只帶這個函式（見 DECISIONS） | `packages/lint/src/project.ts:96` 與 `:309`；`packages/cli/src/utils/checkPipeline.ts:35` 與 `:1698` | `packages/lint/src/project.ts:94` 與 `:291`；`packages/cli/src/utils/checkPipeline.ts:33` 與 `:1693`；`project.test.ts`、`lintProject.test.ts`、`lint.test.ts` |
+| `e0c11bf09` #7381 | 採用：以檔案系統絕對路徑引用的媒體資源正確打包進雲端 archive（`filesystemPath` 判斷） | `packages/cli/src/utils/publishProject.ts:470` | `packages/cli/src/utils/publishProject.ts:471`；`publishProject.absolutePath.test.ts` |
+| `841e90ffe` #7383 | 採用：還原 #7265 的一秒隱藏 pre-roll，Safari 影片畫面回到剪切點上；以 `videoStartLatency` 學習啟動延遲取代，刪除 `mediaSteer.ts` 內不再使用的程式碼 | `packages/core/src/runtime/media.ts:453` | `packages/core/src/runtime/media.ts:372`；`media.test.ts`、`media.preseek.test.ts`、`init.videoPreseek.test.ts` |
+| `942893eb2` #7373 | 採用：預覽播放時，音訊軌的 `currentTime` 兩次更新之間，時鐘仍每個顯示 frame 往前走（`_betweenUpdates`、`aheadOf`）。本線不含 #7067 `3eead5432` 的起步 hold（該 commit 維持延後，見 DECISIONS）：`clock.ts` 本線 61/1，上游 60/2，差在本線保留 `_heldTimeWhenBehind` 分支 | `packages/core/src/runtime/clock.ts:135`；`packages/core/src/runtime/init.ts:3829` | `packages/core/src/runtime/clock.ts:130`；`packages/core/src/runtime/init.ts:3697`；`clock.test.ts`、`clock.steer.test.ts` |
+| `a0bbaab43` #7385 | 不適用：上游 v0.9.21 版本發布與 changelog | `.codex-plugin/plugin.json:4` | 不適用（版本號變更） |
+| `34118d8f2` #7384 | 採用（本次移植，先紅後綠，見紅綠證據）：`chunkFrames.injectorBudget.test.ts` 不再用 `mock.module` 取代整個 engine 模組，改換 `chunkFrameInjectorDependencies`，測試後還原 | `packages/producer/src/services/distributed/chunkFrames.ts:52` | `packages/producer/src/services/distributed/chunkFrames.ts:52`；`chunkFrames.injectorBudget.test.ts:31` |
+| `b87a01f6a` #7378 | 採用：原生 seek 期間保留完整預覽畫面（新增 `previewSeek.ts`，`init.ts` 接線）；更新 `docs/packages/player.mdx` | `packages/core/src/runtime/previewSeek.ts:70`；`packages/core/src/runtime/init.ts:4971` | `packages/core/src/runtime/previewSeek.ts:70`；`packages/core/src/runtime/init.ts:4780`；`init.previewSeek.test.ts`、`colorGrading.test.ts`、`entry.test.ts` |
+| `b7157bdab` #7379 | 延後：57 檔、+4474／−153 的 Studio 預覽重構（新增 `pausedVideoDecoder.ts` 428 行等）；`git apply --check` 對本線失敗於 `init.ts:29`、`window.d.ts:11`。待整組 Studio 預覽改版時再評估 | `packages/studio/src/player/lib/pausedVideoDecoder.ts`（新檔） | 延後；本線沒有 `packages/studio/src/player/lib/pausedVideoProvider.ts` |
+| `fed14b016` #7390 | 採用（本次移植，先紅後綠，見紅綠證據）：虛擬時間 shim 的 `seekToTime` 在首格不在 0 的 worker 上先播第 0 格，讓頁面計時器維持單 worker 渲染的排程 | `packages/producer/src/services/fileServer.ts:437` | `packages/producer/src/services/fileServer.ts:432`；`fileServer-virtualTimers.test.ts:92` |
+| `26956ea1f` #7392 | 不適用：上游 v0.9.22 版本發布與 changelog | `.codex-plugin/plugin.json:4` | 不適用（版本號變更） |
+| `fd05a3860` #7159 | 延後：改 `playbackHealth.ts`、`init.ts`、`types.ts` 與 Studio `previewQualitySlice.ts`（8 檔）；`git apply --check` 失敗於 `init.ts:26`，且本線沒有 `init.buffering.test.ts` | `packages/core/src/runtime/playbackHealth.ts` | 延後；本線沒有 `packages/core/src/runtime/init.buffering.test.ts` |
+| `3151fd213` #7393 | 延後：16 檔、+1256／−33，建立在 #7379 的 `pausedVideoDecoder.ts` 上；`git apply --check` 失敗於 `.github/workflows/ci.yml:1009`。隨 #7379 一併重訪 | `packages/studio/src/player/lib/pausedVideoDecoder.ts` | 延後（隨 #7379） |
+| `adf14d732` #7394 | 採用：CDN 腳本載入失敗的回報帶函式庫名稱與版本，不暴露完整 URL | `packages/engine/src/services/frameCapture.ts:2928` | `packages/engine/src/services/frameCapture.ts:2881`；`frameCapture-scriptLoadCause.test.ts` |
+| `ab785e9c5` #7395 | 採用：選單列高亮圓角改為 `rounded-[calc(var(--radius-lg)+6px)]` | `packages/studio/src/components/ui/Menu.tsx:75` | `packages/studio/src/components/ui/Menu.tsx:75`；`Menu.test.tsx` |
+| `0f5914dc4` #7119 | 採用：只新增測試，驗證背景解碼逾時的警告送達所有呼叫端（沒有來源變更，所以沒有紅燈階段） | `packages/engine/src/services/frameCapture-decodeTimeoutCallers.test.ts:120` | `packages/engine/src/services/frameCapture-decodeTimeoutCallers.test.ts:120` |
+| `75fe18c62` #7397 | 採用：tween 之前寫入的 set 不再抹除 tween 的終點值（新增 `gsapAuthoredOrder.ts`） | `packages/core/src/runtime/adapters/gsap.ts:2`；`packages/core/src/runtime/adapters/gsapAuthoredOrder.ts:13` | `packages/core/src/runtime/adapters/gsap.ts:2`；`packages/core/src/runtime/adapters/gsapAuthoredOrder.ts:13`；`gsap.order.test.ts`、`init.authoredOrder.test.ts` |
+| `7ad2be96e` #7399 | 不適用：上游 v0.9.23 版本發布與 changelog | `.codex-plugin/plugin.json:4` | 不適用（版本號變更） |
+| `074de9dd1` #7401 | 不適用：CI Linux 安裝 ffmpeg 行動變更（`.github/actions/install-ffmpeg-linux/action.yml`） | `.github/actions/install-ffmpeg-linux/action.yml:1` | 不適用（CI 專用） |
+| `12906e0bf` #7402 | 採用：hidden capture 頁面只載入螢幕上的 clip，seek 離開的 clip 即刻釋放（`capturePageIn`、`loadsAhead`） | `packages/core/src/studioPreviewMark.ts:20`；`packages/core/src/runtime/init.ts:3007`；`packages/core/src/runtime/timedClipHide.ts:77` | `packages/core/src/studioPreviewMark.ts:4`；`packages/core/src/runtime/init.ts:2936`；`packages/core/src/runtime/timedClipHide.ts:76`；`entry.test.ts` |
+
+
+
+### Commit 逐檔 numstat（`git diff --numstat <c>^1 <c>` 實算）
+
+```text
+=== 3d7f12acd ===
+49	0	packages/cli/src/cloud/_gen/client.ts
+67	1	packages/cli/src/cloud/_gen/types.ts
+134	26	packages/cli/src/cloud/upload.ts
+282	0	packages/cli/src/cloud/uploadParts.test.ts
+183	0	packages/cli/src/cloud/uploadParts.ts
+20	7	packages/cli/src/cloud/uploadPut.ts
+
+=== c27475b97 ===
+2	0	packages/producer/src/renderRequest.test.ts
+4	0	packages/producer/src/renderRequest.ts
+28	0	packages/producer/src/services/distributed/plan.test.ts
+13	5	packages/producer/src/services/distributed/plan.ts
+13	0	packages/producer/src/services/distributed/renderConfigValidation.test.ts
+15	0	packages/producer/src/services/distributed/renderConfigValidation.ts
+
+=== b559a98d3 ===
+36	0	packages/engine/src/services/videoFrameExtractor.test.ts
+12	3	packages/engine/src/services/videoFrameExtractor.ts
+
+=== 7b79ab429 ===
+7	0	docs/packages/cli.mdx
+6	0	packages/cli/src/commands/check.ts
+39	0	packages/cli/src/commands/lint.test.ts
+10	0	packages/cli/src/commands/lint.ts
+8	3	packages/cli/src/utils/checkPipeline.ts
+3	2	packages/cli/src/utils/checkTypes.ts
+33	13	packages/cli/src/utils/lintProject.test.ts
+1	1	packages/cli/src/utils/lintProject.ts
+2	2	packages/lint/src/index.ts
+68	5	packages/lint/src/project.test.ts
+39	15	packages/lint/src/project.ts
+1	1	packages/lint/src/projectShaders.test.ts
+1	1	packages/lint/src/snippetFragment.test.ts
+
+=== e0c11bf09 ===
+63	0	packages/cli/src/utils/publishProject.absolutePath.test.ts
+32	14	packages/cli/src/utils/publishProject.ts
+
+=== 841e90ffe ===
+1	2	packages/core/src/runtime/init.videoPreseek.test.ts
+2	8	packages/core/src/runtime/media.preseek.test.ts
+99	85	packages/core/src/runtime/media.test.ts
+39	26	packages/core/src/runtime/media.ts
+0	14	packages/core/src/runtime/mediaSteer.test.ts
+0	11	packages/core/src/runtime/mediaSteer.ts
+1	1	scripts/package-size-budgets.json
+
+=== 942893eb2 ===
+108	0	packages/core/src/runtime/clock.steer.test.ts
+57	0	packages/core/src/runtime/clock.test.ts
+60	2	packages/core/src/runtime/clock.ts
+1	0	packages/core/src/runtime/init.ts
+2	1	packages/core/src/runtime/media.ts
+
+=== a0bbaab43 ===
+1	1	.claude-plugin/plugin.json
+1	1	.codex-plugin/plugin.json
+1	1	.cursor-plugin/plugin.json
+41	0	docs/changelog.mdx
+1	1	gemini-extension.json
+1	1	packages/aws-lambda/package.json
+1	1	packages/cli/package.json
+1	1	packages/core/package.json
+1	1	packages/engine/package.json
+1	1	packages/gcp-cloud-run/package.json
+1	1	packages/inspector/package.json
+1	1	packages/lint/package.json
+1	1	packages/parsers/package.json
+1	1	packages/player/package.json
+1	1	packages/producer/package.json
+1	1	packages/sdk/package.json
+1	1	packages/shader-transitions/package.json
+1	1	packages/share/package.json
+1	1	packages/studio-server/package.json
+1	1	packages/studio/package.json
+1	1	plugin.json
+40	0	releases/v0.9.21.md
+
+=== 34118d8f2 ===
+26	17	packages/producer/src/services/distributed/chunkFrames.injectorBudget.test.ts
+4	2	packages/producer/src/services/distributed/chunkFrames.ts
+
+=== b87a01f6a ===
+6	0	docs/packages/player.mdx
+21	0	packages/core/src/runtime/colorGrading.test.ts
+2	0	packages/core/src/runtime/colorGrading.ts
+31	0	packages/core/src/runtime/entry.test.ts
+283	0	packages/core/src/runtime/init.previewSeek.test.ts
+38	1	packages/core/src/runtime/init.swapScenes.test.ts
+109	17	packages/core/src/runtime/init.ts
+198	0	packages/core/src/runtime/previewSeek.ts
+1	0	packages/core/src/studioPreviewMark.ts
+
+=== b7157bdab ===
+2	2	bun.lock
+25	0	docs/packages/studio.mdx
+8	0	packages/core/src/compiler/htmlDocument.test.ts
+2	2	packages/core/src/compiler/htmlDocument.ts
+5	0	packages/core/src/index.ts
+2	0	packages/core/src/previewProxyBox.ts
+238	0	packages/core/src/runtime/adapters/video-texture-compat.paused.test.ts
+46	2	packages/core/src/runtime/adapters/video-texture-compat.ts
+4	1	packages/core/src/runtime/colorGrading.ts
+2	0	packages/core/src/runtime/entry.test.ts
+2	0	packages/core/src/runtime/entry.ts
+620	0	packages/core/src/runtime/init.previewSeek.test.ts
+2	0	packages/core/src/runtime/init.swapScenes.test.ts
+208	28	packages/core/src/runtime/init.ts
+5	0	packages/core/src/runtime/media.ts
+329	0	packages/core/src/runtime/pausedVideoCallbacks.test.ts
+171	0	packages/core/src/runtime/pausedVideoCallbacks.ts
+256	0	packages/core/src/runtime/pausedVideoFrames.test.ts
+423	0	packages/core/src/runtime/pausedVideoFrames.ts
+11	0	packages/core/src/runtime/picker.test.ts
+3	1	packages/core/src/runtime/picker.ts
+1	1	packages/core/src/runtime/player.ts
+226	0	packages/core/src/runtime/previewSeek.frames.test.ts
+281	84	packages/core/src/runtime/previewSeek.ts
+1	1	packages/core/src/runtime/types.ts
+2	0	packages/core/src/runtime/window.d.ts
+6	0	packages/core/src/studioPreviewMark.ts
+14	0	packages/studio-server/src/helpers/mediaMetadata.test.ts
+17	1	packages/studio-server/src/helpers/mediaMetadata.ts
+8	4	packages/studio-server/src/helpers/mediaProxyPreview.test.ts
+2	2	packages/studio-server/src/helpers/mediaProxyPreview.ts
+83	0	packages/studio-server/src/routes/preview.test.ts
+3	3	packages/studio-server/src/routes/preview.ts
+1	1	packages/studio/package.json
+75	0	packages/studio/src/components/editor/domEditingDom.preview.test.ts
+19	2	packages/studio/src/components/editor/domEditingDom.ts
+4	1	packages/studio/src/components/nle/NLEContext.tsx
+13	0	packages/studio/src/hooks/useElementPicker.test.ts
+3	2	packages/studio/src/hooks/useElementPicker.ts
+1	1	packages/studio/src/player/components/PlayerControls.test.tsx
+1	1	packages/studio/src/player/components/PlayerControls.tsx
+42	0	packages/studio/src/player/components/PreviewSeekBar.test.tsx
+20	3	packages/studio/src/player/components/PreviewSeekBar.tsx
+1	1	packages/studio/src/player/hooks/usePlaybackKeyboard.test.ts
+2	1	packages/studio/src/player/hooks/usePlaybackKeyboard.ts
+3	1	packages/studio/src/player/hooks/useTimelinePlayer.ts
+3	4	packages/studio/src/player/lib/mediaFetch.test.ts
+644	0	packages/studio/src/player/lib/pausedVideoDecoder.test.ts
+428	0	packages/studio/src/player/lib/pausedVideoDecoder.ts
+53	0	packages/studio/src/player/lib/pausedVideoProvider.test.ts
+54	0	packages/studio/src/player/lib/pausedVideoProvider.ts
+8	2	packages/studio/src/player/lib/playbackTypes.ts
+38	0	packages/studio/src/player/lib/previewVideoTime.test.ts
+39	0	packages/studio/src/player/lib/previewVideoTime.ts
+11	0	packages/studio/src/utils/authoredSource.test.ts
+2	0	packages/studio/src/utils/authoredSource.ts
+1	1	scripts/package-size-budgets.json
+
+=== fed14b016 ===
+10	0	packages/producer/src/services/fileServer-virtualTimers.test.ts
+16	9	packages/producer/src/services/fileServer.ts
+
+=== 26956ea1f ===
+1	1	.claude-plugin/plugin.json
+1	1	.codex-plugin/plugin.json
+1	1	.cursor-plugin/plugin.json
+23	0	docs/changelog.mdx
+1	1	gemini-extension.json
+1	1	packages/aws-lambda/package.json
+1	1	packages/cli/package.json
+1	1	packages/core/package.json
+1	1	packages/engine/package.json
+1	1	packages/gcp-cloud-run/package.json
+1	1	packages/inspector/package.json
+1	1	packages/lint/package.json
+1	1	packages/parsers/package.json
+1	1	packages/player/package.json
+1	1	packages/producer/package.json
+1	1	packages/sdk/package.json
+1	1	packages/shader-transitions/package.json
+1	1	packages/share/package.json
+1	1	packages/studio-server/package.json
+1	1	packages/studio/package.json
+1	1	plugin.json
+22	0	releases/v0.9.22.md
+
+=== fd05a3860 ===
+1	1	packages/core/src/index.ts
+3	2	packages/core/src/runtime/init.buffering.test.ts
+16	7	packages/core/src/runtime/init.ts
+47	0	packages/core/src/runtime/playbackHealth.test.ts
+36	2	packages/core/src/runtime/playbackHealth.ts
+10	0	packages/core/src/runtime/types.ts
+27	0	packages/studio/src/player/store/previewQualitySlice.test.ts
+12	0	packages/studio/src/player/store/previewQualitySlice.ts
+
+=== 3151fd213 ===
+10	1	.github/workflows/ci.yml
+5	3	docs/packages/studio.mdx
+119	11	packages/core/src/runtime/init.previewSeek.test.ts
+13	5	packages/core/src/runtime/init.ts
+22	0	packages/core/src/runtime/pausedVideoCallbacks.test.ts
+13	0	packages/core/src/runtime/pausedVideoFrames.test.ts
+13	0	packages/core/src/runtime/previewSeek.frames.test.ts
+74	1	packages/studio/src/player/lib/pausedVideoDecoder.test.ts
+23	12	packages/studio/src/player/lib/pausedVideoDecoder.ts
+1	0	packages/studio/tests/e2e/fixtures/preview-video-regression/.gitignore
+164	0	packages/studio/tests/e2e/fixtures/preview-video-regression/generate.mjs
+9	0	packages/studio/tests/e2e/fixtures/preview-video-regression/hyperframes.json
+134	0	packages/studio/tests/e2e/fixtures/preview-video-regression/index.html
+64	0	packages/studio/tests/e2e/preview-video-capture-witness.mjs
+143	0	packages/studio/tests/e2e/preview-video-picture.mjs
+449	0	packages/studio/tests/e2e/preview-video-regression.mjs
+
+=== adf14d732 ===
+31	1	packages/engine/src/services/frameCapture-scriptLoadCause.test.ts
+25	2	packages/engine/src/services/frameCapture.ts
+
+=== ab785e9c5 ===
+8	0	packages/studio/src/components/ui/Menu.test.tsx
+1	1	packages/studio/src/components/ui/Menu.tsx
+
+=== 0f5914dc4 ===
+181	0	packages/engine/src/services/frameCapture-decodeTimeoutCallers.test.ts
+
+=== 75fe18c62 ===
+80	1	packages/core/src/runtime/adapters/gsap.order.test.ts
+14	3	packages/core/src/runtime/adapters/gsap.ts
+40	0	packages/core/src/runtime/adapters/gsapAuthoredOrder.ts
+16	0	packages/core/src/runtime/init.authoredOrder.test.ts
+7	3	packages/core/src/runtime/init.ts
+
+=== 7ad2be96e ===
+1	1	.claude-plugin/plugin.json
+1	1	.codex-plugin/plugin.json
+1	1	.cursor-plugin/plugin.json
+25	0	docs/changelog.mdx
+1	1	gemini-extension.json
+1	1	packages/aws-lambda/package.json
+1	1	packages/cli/package.json
+1	1	packages/core/package.json
+1	1	packages/engine/package.json
+1	1	packages/gcp-cloud-run/package.json
+1	1	packages/inspector/package.json
+1	1	packages/lint/package.json
+1	1	packages/parsers/package.json
+1	1	packages/player/package.json
+1	1	packages/producer/package.json
+1	1	packages/sdk/package.json
+1	1	packages/shader-transitions/package.json
+1	1	packages/share/package.json
+1	1	packages/studio-server/package.json
+1	1	packages/studio/package.json
+1	1	plugin.json
+24	0	releases/v0.9.23.md
+
+=== 074de9dd1 ===
+29	5	.github/actions/install-ffmpeg-linux/action.yml
+6	0	.github/workflows/ci.yml
+
+=== 12906e0bf ===
+17	0	packages/core/src/runtime/entry.test.ts
+8	5	packages/core/src/runtime/init.ts
+3	4	packages/core/src/runtime/timedClipHide.ts
+6	0	packages/core/src/studioPreviewMark.ts
+```
+
+採用 commit 的上游作者（供 Co-authored-by）：Miguel Ángel（#7375、#7382、#7349、#7369、#7381、#7383、#7373、#7384、#7390、#7394、#7395、#7119、#7397、#7402）、James Russo（#7378）。
+
+### 紅綠證據
+
+紅＝把該組的來源檔還原成 fork HEAD 的版本（`git show HEAD:<path>`，新檔直接移除），測試檔維持移植後的版本，再跑同一批測試；綠＝來源與測試都在移植後的狀態。所有測試以 BelowNormal 優先權執行，數字是本次實際指令輸出的摘要。producer 三個 commit 逐個先放測試紅、再放來源綠；其餘各組的紅燈是同一組來源一起還原的合計，所以一個測試檔的失敗數可能含相鄰 commit 的測試（表內註明）。
+
+| 套件 | 紅（來源還原為 fork HEAD） | 綠 | 名稱 |
+| --- | --- | --- | --- |
+| cli `uploadParts.test.ts`（#7375） | 5 failed | cli 組 5 檔合計 167 passed／0 failed | 大檔案分片上傳與斷線只重送失敗分片 |
+| producer `plan.test.ts`＋`renderConfigValidation.test.ts`＋`renderRequest.test.ts`（#7382） | 僅放測試：7 failed／96 passed；其中 4 例是 #7382 新增（`resolveChunkPlan` 兩例、`minParallelChunks` 驗證一例、`renderRequest` round-trip 一例），另 3 例 `stitched mp4 plans` 是既有失敗（FFmpeg 找不到） | 放入來源：100 passed／3 failed，只剩那 3 例既有失敗 | 長影片依幀預算加 chunk、短影片保留下限 fan-out |
+| engine `videoFrameExtractor.test.ts`（#7349） | 1 failed（HLG 來源遇大型 header SEI 時以 HLG 白色參考色調映射） | engine 組 3 檔合計 242 passed／2 skipped／0 failed | 大型 header SEI 的 HLG 影片 |
+| lint `project.test.ts`（#7369）＋cli `lint.test.ts` | lint 4 failed；cli `lint.test.ts` 2 failed | lint 組 4 檔合計 403 passed／1 skipped／0 failed；cli 組 167 passed | check 與 lint 跳過未掛載 composition |
+| cli `publishProject.absolutePath.test.ts`（#7381） | 2 failed | cli 組 167 passed | 絕對路徑引用的媒體進入雲端封包 |
+| core `media.test.ts`＋`media.preseek.test.ts`＋`init.videoPreseek.test.ts`（#7383） | 13 failed／1 failed／1 failed（`media.test.ts` 的 13 例含 #7412 與 #7442 各 2 例） | core 組 12 檔合計 616 passed／0 failed | Safari 影片回到剪切點、以學習的啟動延遲取代 pre-roll |
+| core `clock.test.ts`＋`clock.steer.test.ts`（#7373） | 1 failed＋1 failed | core 組 616 passed | 預覽音訊更新間隔內每個顯示 frame 都前進 |
+| producer `chunkFrames.injectorBudget.test.ts`（#7384） | 僅放測試：`SyntaxError: Export named 'chunkFrameInjectorDependencies' not found`（0 pass／1 fail／1 error） | 放入來源：2 passed／0 failed | injector 測試不再取代整個 engine 模組 |
+| core `init.previewSeek.test.ts`＋`colorGrading.test.ts`＋`entry.test.ts`＋`init.swapScenes.test.ts`（#7378） | 6 failed＋1 failed＋1 failed＋1 failed（`entry.test.ts` 另有 1 例屬 #7402） | core 組 616 passed | 原生 seek 期間保留完整預覽畫面 |
+| producer `fileServer-virtualTimers.test.ts`（#7390） | 僅放測試：8 passed／1 failed（首格不在 0 的 worker 計時器排程） | 放入來源：`fileServer-virtualTimers.test.ts`＋`fileServer-seededRandom.test.ts` 19 passed／0 failed | 任意 worker 數下計時器維持影片排程 |
+| engine `frameCapture-scriptLoadCause.test.ts`（#7394） | 4 failed（三個函式庫名稱分類＋失敗警告括號） | engine 組 242 passed／2 skipped | CDN 腳本失敗報告函式庫名稱與版本 |
+| studio `Menu.test.tsx`（#7395） | 1 failed（列高亮圓角大於面板） | studio 1 檔 16 passed／0 failed | 選單列高亮圓角 |
+| engine `frameCapture-decodeTimeoutCallers.test.ts`（#7119） | 無（只新增測試，沒有來源變更） | engine 組 242 passed／2 skipped | 解碼逾時警告送達所有呼叫端 |
+| core `gsap.order.test.ts`＋`init.authoredOrder.test.ts`（#7397） | `gsap.order.test.ts` 載入失敗（找不到 `./gsapAuthoredOrder`）＋`init.authoredOrder.test.ts` 1 failed | core 組 616 passed | tween 之前的 set 不再抹除 tween 終點 |
+| core `entry.test.ts`（#7402） | 1 failed（hidden capture 頁面只載入螢幕上的 clip） | core 組 616 passed | capture 頁面只載入螢幕上 clip |
+
+既有失敗與環境抖動（本次實測）：producer `fileServer.test.ts` 兩例符號連結 EPERM、`plan.test.ts` 三例 FFmpeg 找不到，在移植前的 HEAD 來源上同樣失敗；cli 整包最終一次 9 個檔 32 例失敗（`offload.undecodableTrack`、`clean`、`transcribe`、`describeProject`、`optionalPackages`、`lambda/videoImage`、`warmCheck.process`、`chromeOrphans.process`、`launch.pipeEof`），除 `launch.pipeEof` 外都在 packages 還原為 HEAD 的狀態下同樣失敗；`launch.pipeEof.test.ts` 單獨重跑 1 passed；`snapshot.lateImages.browser`、`captureCompositionFrame.pageCrash.browser`、`checkDeadline.process` 在第一次整包與單獨重跑時失敗（Chrome 30 秒內沒起來），packages 還原為 HEAD 時單獨重跑同樣失敗，最終整包則通過，屬環境抖動；`uploadParts.test.ts` 與 `offload.test.ts` 在第一次整包高負載下各逾時 1 例，單獨低負載重跑通過；core 在預設 5 秒逾時、6 worker 下有 40 例逾時，改 `--maxWorkers=6 --testTimeout=60000` 後 116 檔 2758 passed（最終 `src/runtime` 為 116 檔 2761 passed）；lint 整包曾有 `sourceLocations.test.ts` 的線性時間斷言逾時 1 例，重跑 1255 passed／1 skipped（那 1 例 skipped 是 `projectShaders.test.ts` 的符號連結案例在本帳戶無權限而 skip）。
+
+### PR 軸
+
+| PR | 裁決與理由 | 上游證據 | fork 證據 |
+| --- | --- | --- | --- |
+| [#7383](https://github.com/heygen-com/hyperframes/pull/7383) | MERGED（`841e90ffe`），隨 commit 軸採用 | 見 commit 軸 | 見 commit 軸 |
+| [#7384](https://github.com/heygen-com/hyperframes/pull/7384) | MERGED（`34118d8f2`），隨 commit 軸採用 | 見 commit 軸 | 見 commit 軸 |
+| [#7385](https://github.com/heygen-com/hyperframes/pull/7385) | MERGED（`a0bbaab43`），版號不適用 | 見 commit 軸 | 見 commit 軸 |
+| [#7386](https://github.com/heygen-com/hyperframes/pull/7386) | monitored（open，釘 head `828da2c4a`）：`fix(lint): name the clip without data-duration in the audio overlap hint`，釘選追蹤 | OPEN | `tools/upstream_baseline.json` |
+| [#7387](https://github.com/heygen-com/hyperframes/pull/7387) | monitored（open，釘 head `c1b783485`）：`feat(lint): warn when data-start references an id that does not exist`，釘選追蹤 | OPEN | `tools/upstream_baseline.json` |
+| [#7388](https://github.com/heygen-com/hyperframes/pull/7388) | monitored（open，釘 head `13c6a9711`）：`fix(producer): a render uses the CLI's own GSAP, so the default CDN's file needs no network`，釘選追蹤 | OPEN | `tools/upstream_baseline.json` |
+| [#7389](https://github.com/heygen-com/hyperframes/pull/7389) | open（head `a9b0ffe43`）：`chore(codegen): resync cloud client from EF c28ed684`，codegen PR 不釘 | OPEN | 不適用 |
+| [#7390](https://github.com/heygen-com/hyperframes/pull/7390) | MERGED（`fed14b016`），隨 commit 軸採用 | 見 commit 軸 | 見 commit 軸 |
+| [#7391](https://github.com/heygen-com/hyperframes/pull/7391) | CLOSED（`889647cf3`），作者關閉未合併，不釘 | CLOSED | 不適用 |
+| [#7392](https://github.com/heygen-com/hyperframes/pull/7392) | MERGED（`26956ea1f`），版號不適用 | 見 commit 軸 | 見 commit 軸 |
+| [#7393](https://github.com/heygen-com/hyperframes/pull/7393) | MERGED（`3151fd213`），延後（隨 #7379 延後） | 見 commit 軸 | 見 commit 軸 |
+| [#7394](https://github.com/heygen-com/hyperframes/pull/7394) | MERGED（`adf14d732`），隨 commit 軸採用 | 見 commit 軸 | 見 commit 軸 |
+| [#7395](https://github.com/heygen-com/hyperframes/pull/7395) | MERGED（`ab785e9c5`），隨 commit 軸採用 | 見 commit 軸 | 見 commit 軸 |
+| [#7396](https://github.com/heygen-com/hyperframes/pull/7396) | monitored（open，釘 head `5627c410d`）：`fix(skills): measure seam-gate speed-match on the frame grid`，釘選追蹤 | OPEN | `tools/upstream_baseline.json` |
+| [#7397](https://github.com/heygen-com/hyperframes/pull/7397) | MERGED（`75fe18c62`），隨 commit 軸採用 | 見 commit 軸 | 見 commit 軸 |
+| [#7398](https://github.com/heygen-com/hyperframes/pull/7398) | monitored（open，釘 head `ef994ced2`）：`feat(cli): check replays an unchanged project's last pass and takes --no-craft`，釘選追蹤 | OPEN | `tools/upstream_baseline.json` |
+| [#7399](https://github.com/heygen-com/hyperframes/pull/7399) | MERGED（`7ad2be96e`），版號不適用 | 見 commit 軸 | 見 commit 軸 |
+| [#7400](https://github.com/heygen-com/hyperframes/pull/7400) | CLOSED（`e6582828b`），作者關閉未合併，不釘 | CLOSED | 不適用 |
+| [#7401](https://github.com/heygen-com/hyperframes/pull/7401) | MERGED（`074de9dd1`），CI 不適用 | 見 commit 軸 | 見 commit 軸 |
+| [#7402](https://github.com/heygen-com/hyperframes/pull/7402) | MERGED（`12906e0bf`），隨 commit 軸採用 | 見 commit 軸 | 見 commit 軸 |
+| [#7403](https://github.com/heygen-com/hyperframes/pull/7403) | monitored（open，釘 head `15ce9b24f`）：`feat(media-use): render avatar looks on Avatar 6 and ask for presenter and voice`，釘選追蹤 | OPEN | `tools/upstream_baseline.json` |
+
+### issue 軸
+
+| issue | 裁決與理由 |
+| --- | --- |
+| [#7404](https://github.com/heygen-com/hyperframes/issues/7404) | 記錄、不動（OPEN）：Desktop multi-select projects for bulk move and Trash in All projects，為 Electron 桌面應用議題，記錄追蹤 |
+
+### 釘選移動（13 筆）
+
+| 釘選 | 移動 | 裁決 |
+| --- | --- | --- |
+| #6732 | open（head `a07b25ea9`）→ open（head `b10fd340b`） | 重釘新 head |
+| #7119 | open（head `d5b7ede74`）→ merged（head `0791b2421`，`0f5914dc4`） | 採用，重釘 closed |
+| #7159 | open（head `692f0e3c4`）→ merged（head `872888326`，`fd05a3860`） | 延後，重釘 closed |
+| #7249 | open（head `4c89caa88`）→ open（head `55124485b`） | 重釘新 head |
+| #7321 | draft（head `3fccf55f6`）→ closed（作者關閉未合併） | 重釘 closed |
+| #7349 | open（head `f7d763ce5`）→ merged（head `7a9b5db6b`，`b559a98d3`） | 採用，重釘 closed |
+| #7369 | open（head `727d08e5d`）→ merged（head `727d08e5d`，`7b79ab429`） | 採用，重釘 closed |
+| #7373 | open（head `ad02236b7`）→ merged（head `ca4995c1f`，`942893eb2`） | 採用，重釘 closed |
+| #7375 | open（head `8249651ad`）→ merged（head `8249651ad`，`3d7f12acd`） | 採用，重釘 closed |
+| #7378 | open（head `4ffd6759d`）→ merged（head `4ffd6759d`，`b87a01f6a`） | 採用，重釘 closed |
+| #7379 | open（head `faa7546b6`）→ merged（head `c1b235be7`，`b7157bdab`） | 延後，重釘 closed |
+| #7381 | open（head `aa5f2ed8e`）→ merged（head `f8cdaa920`，`e0c11bf09`） | 採用，重釘 closed |
+| #7382 | open（head `dbf66cc22`）→ merged（head `1bbbfa2c3`，`c27475b97`） | 採用，重釘 closed |
+
+### 新釘選
+
+新增 6 筆 open PR 釘選：#7386、#7387、#7388、#7396、#7398、#7403（head 見 `tools/upstream_baseline.json`）。monitored 總數由 136 增為 142 筆。
+
+### 預算、LFS 與延後
+
+- 本批上游沒有新 LFS 物件。倉庫自身的 LFS 現況：`.gitattributes` 規定 `packages/producer/tests/**/output/compiled.html` 走 LFS，但本線 HEAD 自初始 commit `370725f24` 起存原始 HTML，上游存 pointer（`git show a73572c3b:packages/producer/tests/vfr-screen-recording/output/compiled.html` 是 3 行 pointer）；`git lfs fsck --pointers` 對 HEAD 報 55 筆 should have been a pointer。後果是 clean filter 把 10 個既有 fixture 在 `git status` 顯示為已修改，內容與 HEAD blob 相同（`git hash-object --no-filters` 與 `git rev-parse HEAD:<path>` 逐檔核對），這些檔不 stage、也不用 `assume-unchanged` 隱藏。根治（`git add --renormalize`）排在 ROADMAP 近期列，本批不做。
+- `scripts/package-size-budgets.json`：`@hyperframes/player` 的 `packed` 預算由 158800 改為 157145，取自 #7383 `841e90ffe` 本身的變更（`git diff 841e90ffe^1 841e90ffe -- scripts/package-size-budgets.json`）。延後的 `b7157bdab` 與 `7bf65995b` 各有預算變更，本線沒有採用。
+- 無 `skills/` 變動，`skills-manifest.json` 無需變動。
+- 維持延後：#7379、#7159、#7393 以及既有延後項目。
+
+### 最新剩餘快照（水位 `12906e0bf`，PR #7403，issue #7404）
+
+2026-11-08 `python tools/check_upstream_updates.py --strict` exit 0：commit 軸 `No new upstream commits`（behind 0）；PR 軸 `Triaged through #7403`、`No new items above that number`；issue 軸 `Triaged through #7404`、`No new items above that number`；monitored 142 筆，`Every pinned item is still at the head and state it was judged at`。
+
+
+## 2026-11-09：接續至 `c38ac5438`（推進至最新 tip `ad6f7858f`）
+
+以 fork `3de999d22` 為起點接續審查。接續審查 `12906e0bf` 至 `c38ac5438`（以及審查期間上游合併之 `a73572c3b` #7442、`ad6f7858f` #7445）之間新進之上游項目，包含 17 筆 commit、PR #7405–#7450（39 筆 PR）、issue #7406–#7451（8 筆 issue），及 6 筆釘選移動（pr#7142、pr#7208、pr#7311、pr#7367、pr#7398、pr#7403）。
+
+### Commit 軸
+
+| Commit | 裁決與理由 | 上游證據 | fork 證據 |
+| --- | --- | --- | --- |
+| `070b964d7` #7398 | 延後：check 重播上次通過結果並新增 `--no-craft`；新增 `checkCache.ts`（139 行），7 檔 +405／−6；`git apply --check` 對本線失敗於 `check.test.ts:1`、`check.ts:44`。需要 check 重播時，連同 `check.test.ts` 的 209 行測試與 `docs/packages/cli.mdx` 成組引入 | `packages/cli/src/utils/checkCache.ts`（新檔） | 延後；本線沒有 `packages/cli/src/utils/checkCache.ts`，`check.ts` 沒有 `no-craft` |
+| `eb16510a1` #7410 | 延後：每次 render 都以固定種子產生隨機值，`fileServer.ts` +23／−71，新增 `random-stagger-workers` 回歸 fixture（`compiled.html`、`output.mp4` 在上游是 LFS pointer）；`git apply --check` 對本線乾淨。改的是渲染確定性，ROADMAP 維護方式要求以 Windows render verification 與 regression 驗收，本次未跑這兩項，所以不採用。重訪條件：能跑 producer regression 並接收新 fixture 時，連同 #7390 的 `fileServer.ts` 區塊一併驗 | `packages/producer/src/services/fileServer.ts`；`packages/producer/tests/random-stagger-workers/`（新目錄） | 延後；本線沒有 `packages/producer/tests/random-stagger-workers` |
+| `fa2e63515` #7412 | 採用（先紅後綠，見紅綠證據）：靜音影片（`defaultMuted`）的畫面在剪切點不再等自己的音軌，`dropSilentAudioTrack` 停用該音軌 | `packages/core/src/runtime/media.ts:477`；`packages/core/src/runtime/media.test.ts:1627` | `packages/core/src/runtime/media.ts:395`；`packages/core/src/runtime/media.test.ts:1687` |
+| `b764a5ffd` #6150 | 採用：只新增測試，覆蓋 `<template>` 根節點的 composition 變數宣告（`invalid_composition_variables_declaration`）；沒有來源變更，所以沒有紅燈階段 | `packages/lint/src/rules/composition.test.ts:1275` | `packages/lint/src/rules/composition.test.ts:1275` |
+| `327e20208` #7414 | 不適用：上游 v0.9.25 版本發布與 changelog | `.codex-plugin/plugin.json:4` | 不適用（版本號變更） |
+| `2927fe615` #7415 | 延後：Studio history 首次複製的效能優化（`blobStore.ts` +59、`projectHistory.ts` +33、新測試 `firstCopy.test.ts` 148 行），不是故障修正；`git apply --check` 對本線失敗於 `blobStore.test.ts:107`、`blobStore.ts:1`，需手工適配。有人回報大專案首次複製過慢時再做 | `packages/studio-server/src/history/blobStore.ts` | 延後；本線有 `packages/studio-server/src/history/blobStore.ts`，未改 |
+| `91ad7fb6e` #7419 | 延後：雲端 render 對 Unicode NFC／NFD 檔名正規化（`offload.ts`、`cloud/render.ts`、`publishProject.ts`，5 檔 +129／−11）；`git apply --check` 對本線失敗於 `offload.ts:35`、`cloud/render.ts:49`，需手工適配並驗雲端上傳路徑，本次未做。需要處理 macOS 取得的 NFD 檔名時再做 | `packages/cli/src/cloud/offload.ts`；`packages/cli/src/utils/publishProject.ts` | 延後 |
+| `5e8abd757` #7418 | 延後：新增 1440p 解析度預設（12 檔 +114／−11，含 `parsers/src/types.ts`、`init.ts`、`render.ts`、`plan.ts`、技能文件與 `skills-manifest.json`）；`git apply --check` 對本線失敗於 `init.ts:894`、`skills-manifest.json:10`（需重生技能清單雜湊）。有 1440p 輸出需求或下一次重生 skills manifest 時一併做 | `packages/parsers/src/types.ts`；`packages/cli/src/commands/init.ts` | 延後 |
+| `0c6c7fca4` #7421 | 不適用：上游 v0.9.26 版本發布與 changelog | `.codex-plugin/plugin.json:4` | 不適用（版本號變更） |
+| `d09584382` #7422 | 不適用：上游 v0.9.26 release notes 補充文件 | `releases/v0.9.26.md:5` | 不適用（版本文件） |
+| `c14f25890` #7423 | 延後：遙測的 agent runtime 偵測（`agent_runtime.ts` +336／−68 等 5 檔）；屬 ROADMAP 既有「遙測邊界」，本線先決定遙測政策才移植（先例：#6847、#6925，見 UPSTREAM_REVIEW_2026-11-02）；`git apply --check` 對本線失敗於 `agent_runtime.test.ts:622`、`agent_runtime.ts:89` | `packages/cli/src/telemetry/agent_runtime.ts` | 延後 |
+| `c1e96a45b` #7424 | 延後：遙測偵測優先順序調整（2 檔 +24／−13），接在 #7423 之後，`git apply --check` 失敗於 `agent_runtime.ts:69`；隨 #7423 重訪 | `packages/cli/src/telemetry/agent_runtime.ts` | 延後（隨 #7423） |
+| `7bf65995b` #7425 | 延後：遙測新增其他偵測器使用的 agent 標記（8 檔 +104／−38），本線沒有 `cli.agentMode.test.ts`，`git apply --check` 失敗；隨 #7423 重訪 | `packages/cli/src/telemetry/agent_runtime.ts` | 延後（隨 #7423） |
+| `e35125372` #7426 | 延後：遙測 agent 偵測的註解修正（1 檔 +7／−7），接在 #7423 之後，`git apply --check` 失敗於 `agent_runtime.ts:92`；隨 #7423 重訪 | `packages/cli/src/telemetry/agent_runtime.ts` | 延後（隨 #7423） |
+| `c38ac5438` #7311 | 延後：分散式與 range render 帶入 page motion blur（22 檔 +448／−26，含 `__test_utils__/blurChunkRender.ts` 210 行與一組 `blurChunks.*.integration.test.ts`）；`git apply --check` 對本線失敗於 `docs/guides/motion-blur.mdx:88`，且本線沒有 `packages/cli/src/docs/motion-blur.md`。需要成組採用 blur differential harness（ROADMAP 中期列 #6967／#7302）時一併做 | `packages/producer/src/services/distributed/__test_utils__/blurChunkRender.ts`（新檔） | 延後；本線沒有 `packages/cli/src/docs/motion-blur.md` |
+| `a73572c3b` #7442 | 採用（本次移植，先紅後綠，見紅綠證據）：停在尾格的影片只 seek 一次，不再每個 frame 重 seek（`heldTailSeekedTo`）；上游補丁 4 個 hunk 有 2 個（`media.ts:50`、`:309` 的脈絡）在本線不能直接套用，手工放到本線對應位置，其餘 2 個 hunk 與測試原樣套用 | `packages/core/src/runtime/media.ts:826`（`tailSettled`）；`packages/core/src/runtime/media.test.ts:1283` | `packages/core/src/runtime/media.ts:717`（`tailSettled`）；`packages/core/src/runtime/media.test.ts:1282` |
+| `ad6f7858f` #7445 | 不適用：把 `reverse-any-video` 與 `style-sampling` 加進核心技能清單（`skillsManifest.ts` 的 `isCoreSkill`、`FALLBACK_CORE_SKILLS`）並讓 `/hyperframes` 路由到它們，15 檔 +59／−48；本線 `skills/` 沒有這兩個技能（`ls skills`），`reverse-any-video` 屬 HeyGen 帳戶功能，DECISIONS 已列為不採；`git apply --check` 對本線失敗於 `AGENTS.md:4`、`README.md:66`，且本線沒有 `CLAUDE.md`（只維護 `AGENTS.md`）。本線新增這兩個技能時再重訪 | `packages/cli/src/utils/skillsManifest.ts`（`NAMED_CORE_SKILLS`） | 不適用；本線沒有 `skills/reverse-any-video`、`skills/style-sampling` |
+
+採用 commit 的上游作者（供 Co-authored-by）：Miguel Ángel（#7412、#7442）、ym256-stanford（#6150）；`ad6f7858f`（#7445）不適用，不列作者。
+
+### Commit 逐檔 numstat（`git diff --numstat <c>^1 <c>` 實算）
+
+```text
+=== 070b964d7 ===
+2	0	docs/packages/cli.mdx
+208	1	packages/cli/src/commands/check.test.ts
+49	3	packages/cli/src/commands/check.ts
+139	0	packages/cli/src/utils/checkCache.ts
+3	1	packages/cli/src/utils/checkPipeline.ts
+3	0	packages/cli/src/utils/checkTypes.ts
+1	1	packages/cli/src/warmCheck.process.test.ts
+
+=== eb16510a1 ===
+2	2	packages/producer/src/services/distributed/planFrameCost.ts
+5	6	packages/producer/src/services/distributed/renderChunk.ts
+21	54	packages/producer/src/services/fileServer-seededRandom.test.ts
+2	2	packages/producer/src/services/fileServer-virtualTimers.test.ts
+23	71	packages/producer/src/services/fileServer.ts
+13	0	packages/producer/tests/random-stagger-workers/meta.json
+3	0	packages/producer/tests/random-stagger-workers/output/compiled.html
+3	0	packages/producer/tests/random-stagger-workers/output/output.mp4
+33	0	packages/producer/tests/random-stagger-workers/src/index.html
+1	0	packages/producer/tests/shard-schedule.json
+
+=== fa2e63515 ===
+47	0	packages/core/src/runtime/media.test.ts
+8	0	packages/core/src/runtime/media.ts
+
+=== b764a5ffd ===
+9	0	packages/lint/src/rules/composition.test.ts
+
+=== 327e20208 ===
+1	1	.claude-plugin/plugin.json
+1	1	.codex-plugin/plugin.json
+1	1	.cursor-plugin/plugin.json
+24	0	docs/changelog.mdx
+1	1	gemini-extension.json
+1	1	packages/aws-lambda/package.json
+1	1	packages/cli/package.json
+1	1	packages/core/package.json
+1	1	packages/engine/package.json
+1	1	packages/gcp-cloud-run/package.json
+1	1	packages/inspector/package.json
+1	1	packages/lint/package.json
+1	1	packages/parsers/package.json
+1	1	packages/player/package.json
+1	1	packages/producer/package.json
+1	1	packages/sdk/package.json
+1	1	packages/shader-transitions/package.json
+1	1	packages/share/package.json
+1	1	packages/studio-server/package.json
+1	1	packages/studio/package.json
+1	1	plugin.json
+23	0	releases/v0.9.25.md
+
+=== 2927fe615 ===
+19	0	packages/studio-server/src/history/__fixtures__/dieMidFirstCopy.ts
+22	2	packages/studio-server/src/history/blobStore.test.ts
+55	4	packages/studio-server/src/history/blobStore.ts
+148	0	packages/studio-server/src/history/firstCopy.test.ts
+28	5	packages/studio-server/src/history/projectHistory.ts
+
+=== 91ad7fb6e ===
+28	0	packages/cli/src/cloud/offload.test.ts
+9	4	packages/cli/src/cloud/offload.ts
+7	4	packages/cli/src/commands/cloud/render.ts
+52	0	packages/cli/src/utils/publishProject.test.ts
+33	3	packages/cli/src/utils/publishProject.ts
+
+=== 5e8abd757 ===
+2	2	docs/packages/cli.mdx
+19	0	packages/cli/src/commands/init.test.ts
+4	3	packages/cli/src/commands/init.ts
+15	0	packages/cli/src/commands/render.test.ts
+1	1	packages/cli/src/commands/render.ts
+3	2	packages/cli/src/commands/render/plan.ts
+16	0	packages/core/src/index.test.ts
+40	0	packages/parsers/src/outputResolutionCompatibility.test.ts
+9	0	packages/parsers/src/types.ts
+1	1	skills-manifest.json
+2	2	skills/hyperframes-cli/references/init-and-scaffold.md
+2	0	skills/hyperframes-cli/references/preview-render.md
+
+=== 0c6c7fca4 ===
+1	1	.claude-plugin/plugin.json
+1	1	.codex-plugin/plugin.json
+1	1	.cursor-plugin/plugin.json
+18	0	docs/changelog.mdx
+1	1	gemini-extension.json
+1	1	packages/aws-lambda/package.json
+1	1	packages/cli/package.json
+1	1	packages/core/package.json
+1	1	packages/engine/package.json
+1	1	packages/gcp-cloud-run/package.json
+1	1	packages/inspector/package.json
+1	1	packages/lint/package.json
+1	1	packages/parsers/package.json
+1	1	packages/player/package.json
+1	1	packages/producer/package.json
+1	1	packages/sdk/package.json
+1	1	packages/shader-transitions/package.json
+1	1	packages/share/package.json
+1	1	packages/studio-server/package.json
+1	1	packages/studio/package.json
+1	1	plugin.json
+17	0	releases/v0.9.26.md
+
+=== d09584382 ===
+5	1	docs/changelog.mdx
+5	1	releases/v0.9.26.md
+
+=== c14f25890 ===
+286	2	packages/cli/src/telemetry/agent_runtime.test.ts
+273	63	packages/cli/src/telemetry/agent_runtime.ts
+47	0	packages/cli/src/telemetry/system.test.ts
+3	2	packages/cli/src/telemetry/system.ts
+1	1	packages/cli/src/utils/attendedTerminal.test.ts
+
+=== c1e96a45b ===
+10	0	packages/cli/src/telemetry/agent_runtime.test.ts
+14	13	packages/cli/src/telemetry/agent_runtime.ts
+
+=== 7bf65995b ===
+1	1	packages/cli/src/cli.agentMode.test.ts
+3	2	packages/cli/src/commands/auth/login.test.ts
+46	11	packages/cli/src/telemetry/agent_runtime.test.ts
+44	20	packages/cli/src/telemetry/agent_runtime.ts
+1	1	packages/cli/src/telemetry/system.test.ts
+1	1	packages/cli/src/utils/attendedTerminal.test.ts
+7	1	packages/cli/src/utils/desktopApp.test.ts
+1	1	scripts/package-size-budgets.json
+
+=== e35125372 ===
+7	7	packages/cli/src/telemetry/agent_runtime.ts
+
+=== c38ac5438 ===
+2	1	docs/guides/motion-blur.mdx
+1	1	packages/cli/src/docs/motion-blur.md
+7	0	packages/producer/scripts/integration-tests.json
+5	3	packages/producer/scripts/run-test-lane.mjs
+210	0	packages/producer/src/services/distributed/__test_utils__/blurChunkRender.ts
+21	0	packages/producer/src/services/distributed/blurChunks.callbacks.integration.test.ts
+24	0	packages/producer/src/services/distributed/blurChunks.callbacksFilter.integration.test.ts
+41	0	packages/producer/src/services/distributed/blurChunks.configOff.integration.test.ts
+21	0	packages/producer/src/services/distributed/blurChunks.heldCard.integration.test.ts
+24	0	packages/producer/src/services/distributed/blurChunks.heldCardFilter.integration.test.ts
+21	0	packages/producer/src/services/distributed/blurChunks.onceGuardLabel.integration.test.ts
+21	0	packages/producer/src/services/distributed/blurChunks.scrollList.integration.test.ts
+2	2	packages/producer/src/services/distributed/chunkFrames.test.ts
+1	1	packages/producer/src/services/distributed/chunkFrames.ts
+19	14	packages/producer/src/services/distributed/plan.test.ts
+1	0	packages/producer/src/services/distributed/plan.ts
+1	0	packages/producer/src/services/distributed/renderChunk.ts
+21	0	packages/producer/src/services/distributed/renderConfigValidation.test.ts
+2	1	packages/producer/src/services/distributed/shared.ts
+1	1	scripts/test-reachability.json
+1	1	skills-manifest.json
+1	1	skills/hyperframes/references/motion.md
+
+=== a73572c3b ===
+61	0	packages/core/src/runtime/media.test.ts
+16	1	packages/core/src/runtime/media.ts
+
+=== ad6f7858f ===
+3	1	.claude-plugin/marketplace.json
+3	3	AGENTS.md
+4	4	CLAUDE.md
+5	5	README.md
+2	2	docs/guides/skills.mdx
+16	16	packages/cli/src/commands/skills.installTarget.test.ts
+2	2	packages/cli/src/templates/_shared/AGENTS.md
+2	2	packages/cli/src/templates/_shared/CLAUDE.md
+3	1	packages/cli/src/utils/skillsManifest.test.ts
+9	5	packages/cli/src/utils/skillsManifest.ts
+2	1	scripts/check-core-skills.mjs
+2	2	skills-manifest.json
+3	1	skills/hyperframes/SKILL.md
+2	2	skills/hyperframes/references/skill-lifecycle.md
+1	1	skills/reverse-any-video/SKILL.md
+```
+
+### 紅綠證據
+
+紅綠方法同上一節。
+| 套件 | 紅 | 綠 | 名稱 |
+| --- | --- | --- | --- |
+| core `media.test.ts`（#7412） | 反向套用 `fa2e63515` 在 `media.ts` 的兩個 hunk：2 failed／183 passed（`is switched off for a video the author muted`、`is switched off when the browser lists it after the first tick`） | 185 passed／0 failed | 靜音影片畫面在剪切點不等自己的音軌 |
+| lint `composition.test.ts`（#6150） | 無（只新增測試，沒有來源變更） | lint 組 4 檔合計 403 passed／1 skipped／0 failed | template 根節點 composition 變數宣告檢查 |
+| core `media.test.ts`（#7442） | 還原 `heldTailSeekedTo` 相關變更：2 failed／183 passed（`seeks a held video tail once…`、`seeks a held video tail again when something else moved the element off it`；第三例「paused 每次都 seek」兩邊都過，是防呆） | 185 passed／0 failed | 停在尾格的影片只 seek 一次 |
+
+### PR 軸
+
+| PR | 裁決與理由 | 上游證據 | fork 證據 |
+| --- | --- | --- | --- |
+| [#7405](https://github.com/heygen-com/hyperframes/pull/7405) | monitored（open，釘 head `48e699425`）：`test(core): keep font-locator tests independent of the host's fonts`。重訪條件：合併、關閉或 head 移動 | OPEN | `tools/upstream_baseline.json` |
+| [#7409](https://github.com/heygen-com/hyperframes/pull/7409) | monitored（open，釘 head `6b4db7e7e`）：`feat(check): warn when a line break cuts a Korean word in two`。重訪條件：合併、關閉或 head 移動 | OPEN | `tools/upstream_baseline.json` |
+| [#7410](https://github.com/heygen-com/hyperframes/pull/7410) | MERGED（`eb16510a1`），延後（見 commit 軸） | 見 commit 軸 | 見 commit 軸 |
+| [#7411](https://github.com/heygen-com/hyperframes/pull/7411) | CLOSED（`a15d18634`），作者關閉未合併，不釘 | CLOSED | 不適用 |
+| [#7412](https://github.com/heygen-com/hyperframes/pull/7412) | MERGED（`fa2e63515`），隨 commit 軸採用 | 見 commit 軸 | 見 commit 軸 |
+| [#7413](https://github.com/heygen-com/hyperframes/pull/7413) | monitored（open，釘 head `8077df8d7`）：`fix(render): fail loudly when fontconfig finds no system fonts`；issue #7406 追蹤此問題。重訪條件：合併、關閉或 head 移動 | OPEN | `tools/upstream_baseline.json` |
+| [#7414](https://github.com/heygen-com/hyperframes/pull/7414) | MERGED（`327e20208`），版號不適用 | 見 commit 軸 | 見 commit 軸 |
+| [#7415](https://github.com/heygen-com/hyperframes/pull/7415) | MERGED（`2927fe615`），延後（見 commit 軸） | 見 commit 軸 | 見 commit 軸 |
+| [#7416](https://github.com/heygen-com/hyperframes/pull/7416) | monitored（open，釘 head `baaa8b499`）：`Rename marketplace.json to marketplace.plugin`。重訪條件：合併、關閉或 head 移動 | OPEN | `tools/upstream_baseline.json` |
+| [#7418](https://github.com/heygen-com/hyperframes/pull/7418) | MERGED（`5e8abd757`），延後（見 commit 軸） | 見 commit 軸 | 見 commit 軸 |
+| [#7419](https://github.com/heygen-com/hyperframes/pull/7419) | MERGED（`91ad7fb6e`），延後（見 commit 軸） | 見 commit 軸 | 見 commit 軸 |
+| [#7421](https://github.com/heygen-com/hyperframes/pull/7421) | MERGED（`0c6c7fca4`），版號不適用 | 見 commit 軸 | 見 commit 軸 |
+| [#7422](https://github.com/heygen-com/hyperframes/pull/7422) | MERGED（`d09584382`），文件不適用 | 見 commit 軸 | 見 commit 軸 |
+| [#7423](https://github.com/heygen-com/hyperframes/pull/7423) | MERGED（`c14f25890`），延後（見 commit 軸） | 見 commit 軸 | 見 commit 軸 |
+| [#7424](https://github.com/heygen-com/hyperframes/pull/7424) | MERGED（`c1e96a45b`），延後（見 commit 軸） | 見 commit 軸 | 見 commit 軸 |
+| [#7425](https://github.com/heygen-com/hyperframes/pull/7425) | MERGED（`7bf65995b`），延後（見 commit 軸） | 見 commit 軸 | 見 commit 軸 |
+| [#7426](https://github.com/heygen-com/hyperframes/pull/7426) | MERGED（`e35125372`），延後（見 commit 軸） | 見 commit 軸 | 見 commit 軸 |
+| [#7427](https://github.com/heygen-com/hyperframes/pull/7427) | monitored（open，釘 head `88f4ebfaa`）：`fix(core): fsync atomic writes before publishing`；issue #7417 追蹤此修正。重訪條件：合併、關閉或 head 移動 | OPEN | `tools/upstream_baseline.json` |
+| [#7428](https://github.com/heygen-com/hyperframes/pull/7428) | monitored（open，釘 head `d9abf382b`）：`perf(engine): workers verify static frames only in the range they capture`。重訪條件：合併、關閉或 head 移動 | OPEN | `tools/upstream_baseline.json` |
+| [#7430](https://github.com/heygen-com/hyperframes/pull/7430) | monitored（open，釘 head `e957b8803`）：`fix(registry): registry item lint installs every manifest file, and lints items again`。重訪條件：合併、關閉或 head 移動 | OPEN | `tools/upstream_baseline.json` |
+| [#7432](https://github.com/heygen-com/hyperframes/pull/7432) | monitored（open，釘 head `36ebdb914`）：`fix(studio): keep Code on the last composition selected`；issue #7431 追蹤此修正。重訪條件：合併、關閉或 head 移動 | OPEN | `tools/upstream_baseline.json` |
+| [#7433](https://github.com/heygen-com/hyperframes/pull/7433) | monitored（open，釘 head `1acab6672`）：`feat(cli): add `hyperframes init --timeline` to start a project from an OTIO timeline`。重訪條件：合併、關閉或 head 移動 | OPEN | `tools/upstream_baseline.json` |
+| [#7434](https://github.com/heygen-com/hyperframes/pull/7434) | monitored（open，釘 head `84d3e31b6`）：`docs(captions): add Arabic/RTL caption guidance`。重訪條件：合併、關閉或 head 移動 | OPEN | `tools/upstream_baseline.json` |
+| [#7435](https://github.com/heygen-com/hyperframes/pull/7435) | monitored（open，釘 head `9186556a9`）：`ci(skills): lint skill-root paths and skill names in skill docs`。重訪條件：合併、關閉或 head 移動 | OPEN | `tools/upstream_baseline.json` |
+| [#7436](https://github.com/heygen-com/hyperframes/pull/7436) | monitored（draft，釘 head `6a25337bd`）：`perf(core): Safari clips open at their in-point and are fetched ahead`；與已採用的 Safari 時鐘鏈（#7383、#7373、#7412）同區，合併後核對 `media.ts`。重訪條件：合併、關閉或 head 移動 | DRAFT | `tools/upstream_baseline.json` |
+| [#7437](https://github.com/heygen-com/hyperframes/pull/7437) | monitored（open，釘 head `aebfb99bb`）：`test(engine): nightly motion blur run over generated compositions`；與延後的 #7311（motion blur）同屬 blur 驗證。重訪條件：合併、關閉或 head 移動 | OPEN | `tools/upstream_baseline.json` |
+| [#7438](https://github.com/heygen-com/hyperframes/pull/7438) | monitored（open，釘 head `ce6e1b092`）：`docs: a facts page with the official price, platforms, agents and formats, each dated`。重訪條件：合併、關閉或 head 移動 | OPEN | `tools/upstream_baseline.json` |
+| [#7439](https://github.com/heygen-com/hyperframes/pull/7439) | monitored（open，釘 head `de40901bb`）：`docs(mcp): current ChatGPT and Claude setup steps, the hosted render's real output, and a first prompt that works`。重訪條件：合併、關閉或 head 移動 | OPEN | `tools/upstream_baseline.json` |
+| [#7440](https://github.com/heygen-com/hyperframes/pull/7440) | monitored（open，釘 head `a76748924`）：`docs(studio-app): the Reference read is paid by Pro or a saved HeyGen API key`。重訪條件：合併、關閉或 head 移動 | OPEN | `tools/upstream_baseline.json` |
+| [#7441](https://github.com/heygen-com/hyperframes/pull/7441) | monitored（open，釘 head `f76d06f76`）：`docs(studio-app): cloud exports come with the plan, not only an API key`。重訪條件：合併、關閉或 head 移動 | OPEN | `tools/upstream_baseline.json` |
+| [#7442](https://github.com/heygen-com/hyperframes/pull/7442) | MERGED（`a73572c3b`），隨 commit 軸採用 | 見 commit 軸 | 見 commit 軸 |
+| [#7443](https://github.com/heygen-com/hyperframes/pull/7443) | monitored（open，釘 head `8484f96cd`）：`fix(cli): measure answers the four mistakes agents make most`。重訪條件：合併、關閉或 head 移動 | OPEN | `tools/upstream_baseline.json` |
+| [#7444](https://github.com/heygen-com/hyperframes/pull/7444) | monitored（open，釘 head `08a9d4c15`）：`feat(cli): reverse and templates report their own runs; commands say which skills are installed`。重訪條件：合併、關閉或 head 移動 | OPEN | `tools/upstream_baseline.json` |
+| [#7445](https://github.com/heygen-com/hyperframes/pull/7445) | MERGED（`ad6f7858f`），不適用（見 commit 軸）；審查期間合併，所以不釘 monitored，改走 commit 軸 | 見 commit 軸 | 見 commit 軸 |
+| [#7446](https://github.com/heygen-com/hyperframes/pull/7446) | CLOSED（`53189a3cf`），作者關閉未合併，不釘 | CLOSED | 不適用 |
+| [#7447](https://github.com/heygen-com/hyperframes/pull/7447) | monitored（draft，釘 head `c1398b6d2`）：`perf(core): Safari plays a long source's audio from its element, not a whole-file decode`；與已採用的 Safari 時鐘鏈（#7383、#7373、#7412）同區，合併後核對 `media.ts`。重訪條件：合併、關閉或 head 移動 | DRAFT | `tools/upstream_baseline.json` |
+| [#7448](https://github.com/heygen-com/hyperframes/pull/7448) | monitored（open，釘 head `c6206c585`）：`fix(cli): reject inherited names as documentation topics`。重訪條件：合併、關閉或 head 移動 | OPEN | `tools/upstream_baseline.json` |
+| [#7449](https://github.com/heygen-com/hyperframes/pull/7449) | monitored（open，釘 head `cd50cd0b3`）：`fix(studio): leave Enter and Escape to an IME that is still composing`。重訪條件：合併、關閉或 head 移動 | OPEN | `tools/upstream_baseline.json` |
+| [#7450](https://github.com/heygen-com/hyperframes/pull/7450) | monitored（open，釘 head `608b5ec13`）：`feat(skills): route a style outside the templates instead of listing them`。重訪條件：合併、關閉或 head 移動 | OPEN | `tools/upstream_baseline.json` |
+
+### issue 軸
+
+| issue | 裁決與理由 |
+| --- | --- |
+| [#7406](https://github.com/heygen-com/hyperframes/issues/7406) | 記錄、不動（OPEN）：render 在 Linux 上當 Chromium 找不到系統字型時文字缺失仍 exit 0，記錄追蹤 |
+| [#7407](https://github.com/heygen-com/hyperframes/issues/7407) | 記錄、不動（OPEN）：doctor 核可了 render 不使用的 Chrome 版本且無法預知渲染是否成功，記錄追蹤 |
+| [#7408](https://github.com/heygen-com/hyperframes/issues/7408) | 記錄、不動（OPEN）：render --json 在所有失敗皆報 runtime_error，取消或成功未印出任何內容，記錄追蹤 |
+| [#7417](https://github.com/heygen-com/hyperframes/issues/7417) | 記錄、不動（OPEN）：斷電後 video-state.json 因無 fsync 與解析錯誤導致狀態被清空，已由 open PR #7427 追蹤 |
+| [#7420](https://github.com/heygen-com/hyperframes/issues/7420) | 記錄、不動（OPEN）：支援 1080p 至 1440p 輸出而無需手動分數縮放，已由 commit 5e8abd757 實作，記錄追蹤 |
+| [#7429](https://github.com/heygen-com/hyperframes/issues/7429) | 記錄、不動（OPEN）：Linux AppImage 結束時 Crashpad 拋出 SIGBUS 崩潰，記錄追蹤 |
+| [#7431](https://github.com/heygen-com/hyperframes/issues/7431) | 記錄、不動（OPEN）：Studio Code 在延遲的來源回應後可能切換回舊的 composition，已由 open PR #7432 追蹤 |
+| [#7451](https://github.com/heygen-com/hyperframes/issues/7451) | 記錄、不動（OPEN）：`hyperframes-cli` 技能在無人值守的 `npx hyperframes` 會停在 npm 的 "Ok to proceed?" 提示，固定版本的呼叫仍可能死在 npx 快取步驟；本線尚未重現，記錄追蹤 |
+
+### 釘選移動（6 筆）
+
+| 釘選 | 移動 | 裁決 |
+| --- | --- | --- |
+| #7142 | open（head `af8fbc627`）→ open（head `a954926ce`） | 重釘新 head |
+| #7208 | open（head `d22212561`）→ open（head `4a889bd99`） | 重釘新 head |
+| #7311 | open（head `ed8a035b7`）→ closed（merged `c38ac5438`，head `ef8c6395c`） | 延後，重釘 closed |
+| #7367 | open（head `281efa2db`）→ closed（head `42ef462ca`） | 作者關閉未合併，重釘 closed |
+| #7398 | open（head `ef994ced2`）→ closed（merged `070b964d7`，head `4fc5f8754`） | 延後，重釘 closed |
+| #7403 | open（head `15ce9b24f`）→ open（head `8a1c8b317`） | 重釘新 head |
+
+### 新釘選
+
+依既有規則（open／draft PR 釘 monitored，機器重生的 codegen 與版號 PR、作者關閉未合併者不釘），新增 23 筆：#7405、#7409、#7413、#7416、#7427、#7428、#7430、#7432、#7433、#7434、#7435、#7436、#7437、#7438、#7439、#7440、#7441、#7443、#7444、#7447、#7448、#7449、#7450（head 與 open／draft 狀態見 `tools/upstream_baseline.json`，值取自 `gh pr list` 當下輸出）。本節依標題與狀態釘選，沒有逐行讀這 23 筆的 diff；重訪條件一律是合併（進 commit 軸審）、關閉或 head 移動（`check_upstream_updates.py` 會報）。不釘：#7411、#7446（作者關閉）、#7445（審查期間已合併為 `ad6f7858f`，走 commit 軸）。monitored 由 142 增為 165 筆。
+
+### 預算、LFS 與延後
+
+- 無新 LFS 物件。
+- `scripts/package-size-budgets.json` 本批無變動。
+- 無 `skills/` 變動，`skills-manifest.json` 無需變動。
+- 維持延後：#7398、#7410、#7415、#7419、#7418、#7423、#7424、#7425、#7426、#7311 以及既有延後項目；#7067 依 2026-11-04 的延後條件維持延後，#7373 沒有帶入它的起步 hold。
+
+### 最新剩餘快照（水位 `ad6f7858f`，PR #7450，issue #7451）
+
+2026-11-09 `python tools/check_upstream_updates.py --strict` exit 0：commit 軸 `No new upstream commits`（behind 0）；PR 軸 `Triaged through #7450`、`No new items above that number`；issue 軸 `Triaged through #7451`、`No new items above that number`；monitored 165 筆，`Every pinned item is still at the head and state it was judged at`。審查中途上游前進過兩次（`ad6f7858f`、#7449、#7450、#7445 合併；其後 issue #7451 與 #7434、#7450 換 head），都已併入本節，#7434 與 #7450 在 baseline 重釘新 head。
