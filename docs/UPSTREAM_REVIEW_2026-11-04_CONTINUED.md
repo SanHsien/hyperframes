@@ -3450,7 +3450,7 @@ issue 軸本批沒有新增項目：`Triaged through #7451`，`No new items abov
 | Issue | 裁決與理由 | 證據 |
 | --- | --- | --- |
 | [#7457](https://github.com/heygen-com/hyperframes/issues/7457) | 已由已採用的 commit 修復：Studio 繞過既有跨專案渲染鎖。CLOSED，由 #7459（`4b3f70f`）修；本線 `studioServer.ts:709` 已加鎖 | `gh issue view 7457`：CLOSED；`bf266f367` |
-| [#7458](https://github.com/heygen-com/hyperframes/issues/7458) | 記錄、不動（OPEN，沒有對應 PR）：擷取與軟體 H.264 編碼重疊時 CPU 過度訂閱，回報者說 Windows 整機卡頓。回報自述為程式碼檢視、沒有量測；本線有同樣的程式路徑（`encodeStage.ts:299` 的 `canEncodeWhileCapturing`、`softwareEncoderThreads.ts:6` 預設 `availableParallelism()`）。x264 的位元流取決於執行緒數（`softwareEncoderThreads.ts:5` 的註解），改執行緒預算會改輸出位元組，不能當成無風險修正；先量測再決定，ROADMAP 中期表新增一列 | `gh issue view 7458`：OPEN；`packages/producer/src/services/render/stages/encodeStage.ts:299` |
+| [#7458](https://github.com/heygen-com/hyperframes/issues/7458) | 記錄、不動（OPEN，沒有對應 PR）：擷取與軟體 H.264 編碼重疊時 CPU 過度訂閱，回報者說 Windows 整機卡頓。回報自述為程式碼檢視、沒有量測；本線有同樣的程式路徑（`encodeStage.ts:299` 的 `canEncodeWhileCapturing`、`softwareEncoderThreads.ts:9` 預設 `availableParallelism()`）。x264 的位元流取決於執行緒數（`softwareEncoderThreads.ts:5` 的註解），改執行緒預算會改輸出位元組，不能當成無風險修正；先量測再決定，ROADMAP 中期表新增一列 | `gh issue view 7458`：OPEN；`packages/producer/src/services/render/stages/encodeStage.ts:299` |
 | [#7460](https://github.com/heygen-com/hyperframes/issues/7460) | 已由已採用的 commit 修復：刪除動畫群組時重複解析 GSAP 腳本。CLOSED，由 #7463（`6f90980`）修 | `gh issue view 7460`：CLOSED；`bf266f367` |
 | [#7461](https://github.com/heygen-com/hyperframes/issues/7461) | 記錄、不動（OPEN）：`beats` 換成沒有節拍的音軌後保留舊節拍格；已由 open PR #7462 追蹤並釘選 | `gh issue view 7461`：OPEN |
 | [#7465](https://github.com/heygen-com/hyperframes/issues/7465) | 記錄、不動（OPEN）：清掉 player 的 `src` 後前一支影片仍在播；已由 open PR #7466 追蹤並釘選 | `gh issue view 7465`：OPEN |
