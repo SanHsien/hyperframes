@@ -1,10 +1,10 @@
 {
   "repo": "https://github.com/heygen-com/hyperframes.git",
   "branch": "main",
-  "reviewed_through": "c149730819437fbf0d8fda7de6952293bcf69c50",
+  "reviewed_through": "9e346f9bb793fe53684d7437ac4bed79b11aaa54",
   "reviewed_date": "2026-11-10",
-  "reviewed_pr_through": 7452,
-  "reviewed_issue_through": 7451,
+  "reviewed_pr_through": 7468,
+  "reviewed_issue_through": 7465,
   "decision_log": "docs/DECISIONS.md",
   "monitored": [
     {
@@ -45,7 +45,7 @@
     {
       "item": "pr#6732",
       "head": "b10fd340b385e7febc06f998bbef8019d278fced",
-      "state": "open"
+      "state": "closed"
     },
     {
       "item": "pr#6738",
@@ -474,7 +474,7 @@
     },
     {
       "item": "pr#7209",
-      "head": "bdd3922759527d606b8023b88e1a47c28f8abb93",
+      "head": "6617382469dde05cfec77b319efc975d31a7f07f",
       "state": "open"
     },
     {
@@ -504,13 +504,13 @@
     },
     {
       "item": "pr#7266",
-      "head": "952fd2bb3c099f10c8df088a658a4ec7512afe32",
+      "head": "405c0f4cc2b793e0f4bb9a6447b7fc4c3b3b3e04",
       "state": "open"
     },
     {
       "item": "pr#7269",
-      "head": "8a67eeb088e07e03bda786244184c272a1cac4a3",
-      "state": "open"
+      "head": "e414818398f57deaaa5939633ee1cfc5e2998390",
+      "state": "closed"
     },
     {
       "item": "pr#7281",
@@ -610,7 +610,7 @@
     {
       "item": "pr#7338",
       "head": "e1f7af5133c66eba0d5974680357518601ef78d5",
-      "state": "open"
+      "state": "closed"
     },
     {
       "item": "pr#7341",
@@ -654,7 +654,7 @@
     },
     {
       "item": "pr#7372",
-      "head": "78bc9c15cfae0329b62f4b52d5f099e24bcf820c",
+      "head": "7e2492fda014c3c01ea72ce4c421bb3f94c17ba5",
       "state": "open"
     },
     {
@@ -735,7 +735,7 @@
     {
       "item": "pr#7416",
       "head": "baaa8b499df3155d14f6b777f1b2f3a7aeddd072",
-      "state": "open"
+      "state": "closed"
     },
     {
       "item": "pr#7427",
@@ -759,7 +759,7 @@
     },
     {
       "item": "pr#7433",
-      "head": "1acab6672f64ee63cb2e93432c140221a9306050",
+      "head": "c1b07657d6454cdb439c1bb225913964ce22546b",
       "state": "open"
     },
     {
@@ -769,7 +769,7 @@
     },
     {
       "item": "pr#7435",
-      "head": "9186556a960dc94788b0b137946126e32f760591",
+      "head": "6fcef7788afd32256696ce72f18daf81dbeb65e1",
       "state": "open"
     },
     {
@@ -779,8 +779,8 @@
     },
     {
       "item": "pr#7437",
-      "head": "aebfb99bb6d235e991c86ec278f13a764ec94d87",
-      "state": "open"
+      "head": "cdba44b11c276c286b698cc0f47802010acf99cf",
+      "state": "closed"
     },
     {
       "item": "pr#7438",
@@ -790,7 +790,7 @@
     {
       "item": "pr#7439",
       "head": "de40901bbb8ea4069993f67a13d5c006e114b735",
-      "state": "open"
+      "state": "closed"
     },
     {
       "item": "pr#7440",
@@ -831,6 +831,26 @@
       "item": "pr#7450",
       "head": "86efcc5b34fb8b54a709284ed07bf63ceced0cd1",
       "state": "closed"
+    },
+    {
+      "item": "pr#7462",
+      "head": "4e2c961c4fb8d9a2386499a1061dec7042c52237",
+      "state": "open"
+    },
+    {
+      "item": "pr#7466",
+      "head": "45315cb6c3548bf134a8b8c36732cdee54725f5a",
+      "state": "open"
+    },
+    {
+      "item": "pr#7467",
+      "head": "337aa38e66070f744e568f72ece7c4645d534ecb",
+      "state": "open"
+    },
+    {
+      "item": "pr#7468",
+      "head": "31d1eb7dd91f6d5d6f72c35f2c80ba10cb26d5fd",
+      "state": "open"
     }
   ]
 }

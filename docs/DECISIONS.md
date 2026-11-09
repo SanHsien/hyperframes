@@ -1353,3 +1353,38 @@ commit 水位 `c149730819437fbf0d8fda7de6952293bcf69c50`，PR #7452、issue #745
 - 容差與預算是 packed／unpacked 兩個數字，且量值只在 Windows 取得；本次沒有 ubuntu 環境可確認兩平台同大小，所以不用這組數字重訂預算。
 
 **處置**：預算與容差都不動。ROADMAP「近期」加一列（觸發條件、驗收：在 ubuntu 跑 `bun run build && bun run verify:packed-manifests`，與上表對照，再決定修掉增量或重訂預算）。#7249 那一批留的「core 與 inspector 大小未驗證」同樣由這一列承接；inspector 這次沒有量。
+
+## 2026-11-10：連續水位 `9e346f9bb`（PR #7468，issue #7465）
+
+以 fork `f3cab380a` 接續，審完 `c14973081..9e346f9bb`（上游 tip）共 12 個 commit、PR #7453–#7468 共 11 筆、issue #7457–#7465 共 5 筆與 11 筆釘選移動。逐筆來源、fork 行號、numstat 與紅綠證據見 [接續清冊](UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-10接續至-9e346f9bb上游-tip)。
+
+採用 6 個 commit（兩個 fork commit：`ee26d636a`、`bf266f367`）：
+- `b59fa2083`（#7338）：新增 `createStagingDir(parent, prefix)`（`@hyperframes/core/atomic-file`），Windows 的 `C:\` 與 UNC 路徑加 `\\?\` 前綴建立 `mkdtemp` 資料夾，專案路徑加暫存名稱超過 260 字元時不再失敗；本線 17 個來源檔的 25 個暫存資料夾呼叫點改走它，另把本線獨有的 `videoNormalization.ts` 同樣改掉。測試先紅（core 10 failed）後綠（37 passed／8 skipped）。上游 `commands/measure/frames.ts` 與 `commands/templates.ts` 在本線不存在而略過。
+- `4b3f70f`（#7459，issue #7457）：Studio 渲染與 CLI 取同一把每帳號一個渲染的鎖，等待時顯示原因，Cancel 結束等待。測試先紅（2 failed）後綠（`src/server` 240 passed）。
+- `6f90980`（#7463，issue #7460）：刪除動畫群組只解析一次 GSAP 腳本。測試先紅（`expected "parse" to be called 1 times, but got 7 times`）後綠。
+- `fc13420`（#7454）：`seam-gate` 的 `__player.seek` 改 await，兩份技能鏡像同改，無測試（`check-skill-mirror.mjs` 24 檔相同）。
+- `4d29a64`（#7456）：engine 瀏覽器測試專案 `testTimeout: 30_000`。
+- `48a2b4e`（#7439）：`docs/guides/mcp.mdx` 的目前 Claude／ChatGPT 設定步驟。
+
+已採用，無新增改動 1 個 commit：`0ca2b1ae9`（#6732），本線 2026-10-30 在 `314e023cd` 已移植，合併後的 `contactSheet.ts` 與 `contactSheet.test.ts` 與本線逐位元相同。
+
+延後 2 個 commit：`b95ab79`（#7455，雲端用戶端型別重生，補丁失敗於 `types.ts:79`，隨雲端用戶端整批同步）、`7bf19ab`（#7437，夜間 motion blur 差異測試，缺 `differentialPage.ts` 與 `package.json` 衝突，與 blur differential harness #6967／#7302 同組）。
+
+不適用 3 個 commit：`3ff0b3d`（#7453，上游週報，先例 #7032）、`a4e16d8`（#7269，只動本線不存在的 `commands/templates.ts`）、`9e346f9`（#7464，v0.9.27 版號發行，本線 CLI 版本是 0.8.210）。
+
+PR：#7462（`beats` 清除舊節拍格）、#7466（player 清掉 `src` 要卸載影片）、#7467（無人值守時固定 `npx` 版本的文件與技能）、#7468（`@hf-result` 結果行帶 motion blur 摘要）open 釘 monitored；#7464 版號 PR 不釘。issue：#7457、#7460 已由採用的 commit 修復；#7461、#7465 各由已釘的 #7462、#7466 追蹤；#7458（擷取與軟體 H.264 編碼重疊的 CPU 過度訂閱，Windows 整機卡頓回報）記錄、不動：本線有同一段程式，但回報沒有量測，且 x264 位元流取決於執行緒數，改預算會改輸出位元組，先量測再決定，列入 ROADMAP 中期表。
+
+11 筆釘選移動：#6732、#7269、#7338、#7437、#7439 轉 closed（隨已採用／不適用／延後）；#7416 轉 closed 未合併（0 行增減的 `marketplace.json` 改名，本線 `skillsManifest.test.ts:181` 讀這個路徑，不採）；#7209、#7266、#7372、#7433、#7435 仍 open 而換 head 重讀、重釘（#7372 的 `gh pr diff` 因 314 檔超過上限回 406，改用唯讀 `git fetch upstream refs/pull/7372/head` 的三點 diff，實際只有 4 檔 +27／−4）。重釘的 head 與狀態取自 `gh pr view` 當下輸出。
+
+**判準八掃描**：commit 軸 12 個 commit 共 2,330 行新增行，PR 軸 9 筆 open 或已移動 PR 的目前 head 共 8,644 行新增行，0 個隱藏內容命中；長行與表格填充的檢查見清冊。
+
+**移植時的取捨**：
+- 本線有五個上游沒有的 `mkdtemp` 呼叫點。`cli/src/capture/videoNormalization.ts`（TypeScript、cli 依賴 core）改用 `createStagingDir`。另四個（`cli/src/media-use/lib/freeze-publisher.mjs`、`cli/src/media-use/lib/image-normalize.mjs`：技能內獨立腳本；`core/src/figma/freeze.ts`：`String.raw` 內的子行程腳本；`producer/src/inline-project-publisher.mjs`：`build.mjs` 原樣複製到 `dist` 的獨立腳本）無法 import 套件，加進上游新增測試 `packages/core/src/noBareMkdtemp.test.ts` 的 ALLOWED 並附註解。這是對上游測試檔的 fork 改寫，也是這四處仍可能在超過 260 字元的專案路徑失敗的已知缺口：ROADMAP 中期表新增一列，觸發條件是實際遇到、或這些腳本改為可 import 核心。
+- `fontCompression.ts` 與 `download.ts` 的 import 區塊、`captureHdrResources.ts` 的呼叫點行與上游不同，手工合併，其餘來源補丁乾淨套用。
+- 套件大小：`atomicFile.ts` 新增約 27 行，沒有重新量 packed 大小；`@hyperframes/core` 已超預算（見 2026-11-10「core 套件大小超出預算」），仍由 ROADMAP 近期表那一列承接，下一次在 ubuntu 跑預算檢查時一併量。
+- 本機驗證前提：engine、producer、cli、studio-server 的測試經由 `packages/core/dist` 解析 `@hyperframes/core/atomic-file`，dist 過舊時得到 `createStagingDir is not a function`；移植觸及 core 時要先重建 dist（清冊有指令）。
+- 既有失敗：cli 8 個檔（5 個瀏覽器測試無法啟動 Chrome、2 個瀏覽器套件層級失敗、`offload.undecodableTrack`）、engine `audioMixer.undecodableTrack`、studio-server 3 例、producer 2 例、parsers 1 例符號連結 `EPERM`，都在乾淨 HEAD `f3cab380a` 同樣失敗，逐檔證據在清冊。
+
+**型別與閘門**：每個 fork commit 提交前 `bun run --filter '*' typecheck` 15 個套件全部 exit 0、`cd packages/core && bun run typecheck` exit 0；`bun run --filter "@hyperframes/core" test:hyperframe-runtime-ci` 在第一個 commit 前 exit 0（第二個 commit 沒有動 `packages/core`）；pre-commit 的 lint、format、typecheck、fallow、cli process ownership、largefiles 與 commitlint 都通過。本批沒有使用 `LEFTHOOK_EXCLUDE` 或任何方式跳過 hook。
+
+commit 水位 `9e346f9bb793fe53684d7437ac4bed79b11aaa54`，PR #7468、issue #7465，monitored 由 165 增為 169 筆。採用的上游程式碼作者為 Miguel Ángel（#7338、#7456、#7459）、James Russo（#7454）、Ular Kimsanov（#7439）、Akshar Patel（#7463，供 Co-authored-by）。無新 LFS 物件。

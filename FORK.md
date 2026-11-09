@@ -50,6 +50,8 @@
 
 2026-11-04 另最小移植上游 #7115：FFmpeg 啟動失敗的診斷依序顯示 exit code、OS error code 或 signal，保留既有 Windows DLL 提示與取消行為；差異限 `packages/cli/src/browser/preflight.ts` 與回歸測試。整批同步含此修正時移除這段差異，見 [接續裁決](docs/UPSTREAM_REVIEW_2026-11-04_CONTINUED.md)。
 
+2026-11-10 另採用上游 #7338：`@hyperframes/core/atomic-file` 的 `createStagingDir` 取代 25 處專案路徑旁的裸 `mkdtemp`，修 Windows 暫存資料夾超過 260 字元失敗；與上游的差異限三處：`packages/cli/src/capture/videoNormalization.ts` 也改用 `createStagingDir`（上游已無此檔）、`packages/core/src/noBareMkdtemp.test.ts` 的 ALLOWED 另列本線獨有的四個獨立腳本（`freeze-publisher.mjs`、`image-normalize.mjs`、`core/src/figma/freeze.ts`、`inline-project-publisher.mjs`），以及 `fontCompression.ts`、`download.ts` 的 import 區塊手工合併。上游產品同步包含這些檔時移除這段差異，細節見 [維護決策](docs/DECISIONS.md)。
+
 ## 分支與 remote
 
 - `origin/main`：SanHsien 維護線，也是唯一長期分支。

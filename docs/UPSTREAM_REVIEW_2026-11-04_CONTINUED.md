@@ -3269,3 +3269,228 @@ issue 軸本批沒有新增項目：`Triaged through #7451`，`No new items abov
 ### 最新剩餘快照（水位 `c14973081`，PR #7452，issue #7451）
 
 2026-11-10 `python tools/check_upstream_updates.py --strict` exit 0：commit 軸 `No new upstream commits`（behind 0）；PR 軸 `Triaged through #7452`、`No new items above that number`；issue 軸 `Triaged through #7451`、`No new items above that number`；monitored 165 筆，`Every pinned item is still at the head and state it was judged at`。
+
+## 2026-11-10：接續至 `9e346f9bb`（上游 tip）
+
+以 fork `f3cab380a` 為起點接續審查 `c14973081..9e346f9bb`：12 個 commit、PR #7453–#7468 共 11 筆、issue #7457–#7465 共 5 筆，以及 11 筆釘選移動（pr#6732、pr#7209、pr#7266、pr#7269、pr#7338、pr#7372、pr#7416、pr#7433、pr#7435、pr#7437、pr#7439）。審查期間上游由 2 個 commit（`0ca2b1ae9`）前進到 12 個（`6f9098039`，最後是 `9e346f9bb`），都已併入本節；採用的移植分兩個 fork commit：`ee26d636a`（#7338）與 `bf266f367`（#7459、#7463、#7454、#7456、#7439）。
+
+### Commit 軸
+
+| Commit | 裁決與理由 | 上游證據 | fork 證據 |
+| --- | --- | --- | --- |
+| `b59fa2083` #7338 | 採用（部分，先紅後綠，見紅綠證據）：Windows 上 `mkdtemp` 在 `<專案路徑>/.xxx-` 超過 260 字元時失敗；新增 `createStagingDir(parent, prefix)`，`C:\` 磁碟路徑與 `\\server\share` UNC 路徑加 `\\?\`／`\\?\UNC\` 長路徑前綴建立資料夾，回傳去掉前綴的路徑；已是 `\\?\` 或 `\\.\` 命名空間的路徑與非 Windows 路徑原樣交給 `mkdtempSync`。23 檔 +206／−60；本線 21 檔適用（`atomicFile.ts` 與三份測試、17 個暫存資料夾呼叫點的來源檔），`commands/measure/frames.ts` 與 `commands/templates.ts` 在本線不存在而略過。`git apply --check` 失敗於 `cloud/download.ts:13`、`fonts/fontCompression.ts:1`、`captureHdrResources.ts:464`（import 區塊或呼叫點行與本線不同）及那兩個不存在的檔，其餘 18 檔乾淨套用；三處手工改，改法與上游逐行相同。測試 `noBareMkdtemp.test.ts` 掃描所有套件原始碼，本線有五個上游沒有的暫存資料夾呼叫點，處理見下 | `packages/core/src/atomicFile.ts:192`（`upstream/main` 的 `createStagingDir`）；`packages/core/src/noBareMkdtemp.test.ts:1` | `packages/core/src/atomicFile.ts:192`；`packages/cli/src/cloud/download.ts:21,82`；`packages/core/src/fonts/fontCompression.ts:7,67`；`packages/producer/src/services/render/stages/captureHdrResources.ts:46,468` |
+| `0ca2b1ae9` #6732 | 已採用，無新增改動：本線 2026-10-30 在 `314e023cd` 照 PR 當時 head 移植 `contactSheet.ts` 的 `basename(p)` 與 `contactSheet.test.ts` 的 `labels each SVG thumbnail with its file name`。合併後的兩個檔與本線逐位元相同（`git show 0ca2b1ae9:<檔> \| diff - <檔>` exit 0），`git apply -R --check` 通過，表示補丁已在樹上 | `packages/cli/src/capture/contactSheet.ts:307`（`basename(p)`） | `packages/cli/src/capture/contactSheet.ts:307`、`contactSheet.test.ts:316` |
+| `fc13420` #7454 | 採用（沒有紅燈階段：改的是技能腳本與說明，沒有測試）：上游內部技能 `motion-doctrine` 的 `seam-gate.mjs` in-page `seek`／`sample`／`scan` 改成 `async` 並 `await __player.seek(t)`，四個 `evalJs` 呼叫加 `awaitPromise`，`changelog-video` 的 `SKILL.md`、`build-spec.md` 改成 `await __player.seek(t)`，`seam-gate.md` 補一段說明；`.agents/skills` 與 `.claude/skills` 兩份鏡像同改。8 檔 +28／−20；補丁乾淨套用（`git apply --check` rc 0） | `.agents/skills/motion-doctrine/scripts/seam-gate.mjs:297` | `.agents/skills/motion-doctrine/scripts/seam-gate.mjs:297`、`.claude/skills/motion-doctrine/scripts/seam-gate.mjs:297` |
+| `3ff0b3d` #7453 | 不適用：`docs/weekly-updates.mdx` 前置 88 行的週報，列上游本週功能與 commit 連結並嵌入上游 CDN 影片。本線不照搬上游週報（先例 #7032）；`git apply --check` 也失敗於 `docs/weekly-updates.mdx:12`（本線該檔頭部不同） | `docs/weekly-updates.mdx:15` | 不適用 |
+| `a4e16d8` #7269 | 不適用：`templates pull` 的暫存資料夾改放 `.hyperframes/template-pulls`，2 檔 +43／−13 都是 `commands/templates.ts` 與其測試，兩者在本線不存在（`git apply --check` 失敗於 `No such file or directory`），範本 pull 整組不在本線（見 #7444 的判定）；#7338 帶進的 `createStagingDir` 已在本線，但這個變更的主體仍是 `templates.ts`。本線引入 `templates pull` 時再重訪 | `packages/cli/src/commands/templates.ts`（`removeAbandonedParts(stage, dest)`） | 不適用（`ls packages/cli/src/commands/templates.ts` 無此檔） |
+| `b95ab79` #7455 | 延後：`chore(codegen): resync cloud client`，由 HeyGen 雲端服務的 OpenAPI 重生 `packages/cli/src/cloud/_gen/types.ts`（新增 `ChargedPool`、`ThirdPartyImageCharge`、`max_bitrate`／`buffer_size` 等欄位），1 檔 +11／−1。`git apply --check` 失敗於 `types.ts:79`（本線的重生檔落後上游，上游已重生過多次），單套這一筆不會乾淨；隨雲端用戶端整批同步（HeyGen 雲端／帳戶功能本線不採，同 2026-11-02 邊界） | `packages/cli/src/cloud/_gen/types.ts:79` | 延後；`packages/cli/src/cloud/_gen/types.ts` 未動 |
+| `4d29a64` #7456 | 採用（沒有紅燈階段：改測試設定）：engine 的 `browser` 測試專案加 `testTimeout: 30_000`，慢速 runner 上真 Chrome 的測試不再吃 5 秒預設值。1 檔 +1，乾淨套用 | `packages/engine/vitest.config.ts:22` | `packages/engine/vitest.config.ts:22` |
+| `48a2b4e` #7439 | 採用（文件）：`docs/guides/mcp.mdx` 改為目前 Claude 連接器目錄與 ChatGPT 自訂 MCP 伺服器的設定步驟、託管渲染實際輸出 MP4、第一個提示詞要點名 HyperFrames。1 檔 +24／−15，乾淨套用；這份文件本線原樣沿用上游，沒有 fork 改寫，所以直接跟上游，不另寫差異 | `docs/guides/mcp.mdx:60` | `docs/guides/mcp.mdx:60` |
+| `4b3f70f` #7459 | 採用（先紅後綠，見紅綠證據）：Studio 的 `startRender` 在執行 `executeRenderJob` 前先取 CLI 同一把「每個使用者帳號同時一個渲染」鎖，等待時 `stage` 顯示 `Waiting for another render (…)`，Cancel 結束等待而不釋放別人持有的鎖，失敗時釋放；`HYPERFRAMES_RENDER_LOCK=off` 時並行。修 issue #7457（Studio 繞過既有跨專案渲染鎖）。2 檔 +158／−7，乾淨套用；本線 `utils/renderLock.ts` 已提供 `acquireRenderLock`（`wait`、`signal`、`onWait`）與 `describeRenderLockHolder`，不需先決 | `packages/cli/src/server/studioServer.ts:679` | `packages/cli/src/server/studioServer.ts:709`；`packages/cli/src/utils/renderLock.ts:55,84` |
+| `7bf19ab` #7437 | 延後：夜間 motion blur 對產生的組合跑差異測試，9 檔 +1482／−19（新 `.github/workflows/motion-blur-nightly.yml`、`motionBlur/generate.ts`、`captureMotionBlur.generated.browser.test.ts`、報告腳本）。`git apply --check` 失敗於 `package.json:54`，且 `motionBlur/differentialPage.ts`、`fixtures.ts` 在本線不存在；與已延後的 blur differential harness（#6967／#7302）同屬一組，隨該組採用 | `packages/engine/src/services/__fixtures__/motionBlur/generate.ts` | 延後（`ls packages/engine/src/services/__fixtures__/motionBlur/` 無 `differentialPage.ts`） |
+| `6f90980` #7463 | 採用（先紅後綠，見紅綠證據）：刪除一個動畫群組時，原本對群組內每個 tween 各解析一次 GSAP 腳本，改為整個群組只解析一次：`gsapWriterAcorn.ts` 新增 `removeAnimationsForSelectors`（一次解析後在同一份 MagicString 上移除所有符合的 tween 呼叫，連同變空的語句），`parseGsapScriptAcornForWrite` 多回傳 `timelineDeclaration` 供它定位，`htmlParser.ts` 的 `removeElementWithGsapCascade` 改呼叫它。修 issue #7460。4 檔 +142／−25，乾淨套用 | `packages/parsers/src/htmlParser.ts:738`（`removeElementWithGsapCascade`） | `packages/parsers/src/htmlParser.ts:738`；`packages/parsers/src/gsapWriterAcorn.ts:701` |
+| `9e346f9` #7464 | 不適用：`chore(release): cut v0.9.27` 版號發行，22 檔 +115／−20（`package.json` 版號 0.9.26→0.9.27、各 plugin 清單、`docs/changelog.mdx` 新增 48 行、`releases/v0.9.27.md` 47 行）。本線 `packages/cli/package.json` 的版本是 0.8.210，不同步上游版號與發行；`git apply --check` 失敗於 `.claude-plugin/plugin.json:1` 等。發行說明列出的修正都在其他 commit 軸項目逐筆審過 | `packages/cli/package.json:3`（上游 0.9.27） | 不適用（`packages/cli/package.json:3` 是 0.8.210） |
+
+採用 commit 的上游作者（供 Co-authored-by）：Miguel Ángel（#7338、#7456、#7459）、James Russo（#7454）、Ular Kimsanov（#7439）、Akshar Patel（#7463）。
+
+**#7338 在本線多出的呼叫點與取捨**：
+- 上游 ALLOWED 清單（不走 `createStagingDir` 的 `mkdtemp`）原有 `core/src/atomicFile.ts`、`cli/src/media-use/lib/lut-preset-provider.mjs`、`producer/src/server.ts`、`producer/src/regression-harness.ts`、`aws-lambda/src/s3PlanV2Publisher.ts`、`gcp-cloud-run/src/gcsPlanV2Publisher.ts`。本線另有五處上游沒有的 `mkdtemp`（`git grep` 實查）：`cli/src/capture/videoNormalization.ts:42`（`.hf-video-`，TypeScript，cli 已依賴 core，**改用 `createStagingDir`**，與其他呼叫點同處理）；`cli/src/media-use/lib/freeze-publisher.mjs:166`、`cli/src/media-use/lib/image-normalize.mjs:18`（技能內獨立腳本，與上游已允許的 `lut-preset-provider.mjs` 同類，不能 import 套件）；`core/src/figma/freeze.ts:124`（在 `String.raw` 內的子行程腳本，無法 import）；`producer/src/inline-project-publisher.mjs:55`（由 `build.mjs` 原樣複製到 `dist` 的獨立腳本）。後四處加進 `noBareMkdtemp.test.ts` 的 ALLOWED 並附註解，登記在 DECISIONS、FORK.md 與 ROADMAP；這是對上游新增測試檔的 fork 改寫。
+- 本線 `fontCompression.ts` 沒有上游的 `hyperframesCacheDir` 匯入，import 區塊手工合併；`download.ts` 的 import 順序不同，手工合併。
+- 呼叫點合計：`git grep -c "createStagingDir("`（排除測試）19 檔 27 處，扣掉定義 1 處，26 處呼叫點；其中 25 處在上游同樣改動的 17 個來源檔，1 處是 `videoNormalization.ts`。
+
+### Commit 逐檔 numstat（`git diff --numstat <c>^1 <c>` 實算）
+
+```text
+=== b59fa2083 ===
+3	2	packages/cli/src/capture/captureFile.ts
+3	3	packages/cli/src/cloud/download.ts
+3	2	packages/cli/src/commands/measure/frames.ts
+2	2	packages/cli/src/commands/templates.ts
+3	2	packages/cli/src/registry/publication.ts
+39	1	packages/core/src/atomicFile.test.ts
+27	0	packages/core/src/atomicFile.ts
+33	0	packages/core/src/atomicFile.win32Paths.test.ts
+3	10	packages/core/src/fonts/fontCompression.ts
+48	0	packages/core/src/noBareMkdtemp.test.ts
+3	2	packages/engine/src/services/aacEncode.ts
+7	6	packages/engine/src/services/audioMixer.ts
+3	2	packages/engine/src/services/audioVolumeEnvelope.ts
+2	2	packages/engine/src/services/chunkEncoder.ts
+2	2	packages/engine/src/utils/urlDownloader.ts
+3	3	packages/producer/src/services/distributed/assemble.ts
+4	3	packages/producer/src/services/distributed/mp4Stitch.ts
+5	5	packages/producer/src/services/distributed/planV2.ts
+3	3	packages/producer/src/services/distributed/planV2Publisher.ts
+2	2	packages/producer/src/services/render/audioPadTrim.ts
+3	3	packages/producer/src/services/render/renderDirOwner.ts
+3	3	packages/producer/src/services/render/stages/captureHdrResources.ts
+2	2	packages/studio-server/src/helpers/waveform.ts
+
+=== 0ca2b1ae9 ===
+31	2	packages/cli/src/capture/contactSheet.test.ts
+1	1	packages/cli/src/capture/contactSheet.ts
+
+=== fc13420 ===
+1	1	.agents/skills/changelog-video/SKILL.md
+1	1	.agents/skills/changelog-video/references/build-spec.md
+4	0	.agents/skills/motion-doctrine/references/seam-gate.md
+8	8	.agents/skills/motion-doctrine/scripts/seam-gate.mjs
+1	1	.claude/skills/changelog-video/SKILL.md
+1	1	.claude/skills/changelog-video/references/build-spec.md
+4	0	.claude/skills/motion-doctrine/references/seam-gate.md
+8	8	.claude/skills/motion-doctrine/scripts/seam-gate.mjs
+
+=== 3ff0b3d ===
+88	0	docs/weekly-updates.mdx
+
+=== a4e16d8 ===
+27	3	packages/cli/src/commands/templates.test.ts
+16	10	packages/cli/src/commands/templates.ts
+
+=== b95ab79 ===
+11	1	packages/cli/src/cloud/_gen/types.ts
+
+=== 4d29a64 ===
+1	0	packages/engine/vitest.config.ts
+
+=== 48a2b4e ===
+24	15	docs/guides/mcp.mdx
+
+=== 4b3f70f ===
+136	0	packages/cli/src/server/studioServer.renderLock.test.ts
+22	7	packages/cli/src/server/studioServer.ts
+
+=== 7bf19ab ===
+117	0	.github/workflows/motion-blur-nightly.yml
+1	1	package.json
+66	16	packages/engine/src/services/__fixtures__/motionBlur/differentialPage.ts
+2	2	packages/engine/src/services/__fixtures__/motionBlur/fixtures.ts
+94	0	packages/engine/src/services/__fixtures__/motionBlur/generate.test.ts
+355	0	packages/engine/src/services/__fixtures__/motionBlur/generate.ts
+156	0	packages/engine/src/services/captureMotionBlur.generated.browser.test.ts
+328	0	scripts/ci/motion-blur-nightly-report.mjs
+363	0	scripts/ci/motion-blur-nightly-report.test.mjs
+
+=== 6f90980 ===
+13	2	packages/parsers/src/gsapParserAcorn.ts
+70	6	packages/parsers/src/gsapWriterAcorn.ts
+55	1	packages/parsers/src/htmlParser.test.ts
+4	16	packages/parsers/src/htmlParser.ts
+
+=== 9e346f9 ===
+1	1	.claude-plugin/plugin.json
+1	1	.codex-plugin/plugin.json
+1	1	.cursor-plugin/plugin.json
+48	0	docs/changelog.mdx
+1	1	gemini-extension.json
+1	1	packages/aws-lambda/package.json
+1	1	packages/cli/package.json
+1	1	packages/core/package.json
+1	1	packages/engine/package.json
+1	1	packages/gcp-cloud-run/package.json
+1	1	packages/inspector/package.json
+1	1	packages/lint/package.json
+1	1	packages/parsers/package.json
+1	1	packages/player/package.json
+1	1	packages/producer/package.json
+1	1	packages/sdk/package.json
+1	1	packages/shader-transitions/package.json
+1	1	packages/share/package.json
+1	1	packages/studio-server/package.json
+1	1	packages/studio/package.json
+1	1	plugin.json
+47	0	releases/v0.9.27.md
+```
+
+### 紅綠證據
+
+紅綠方法：先只套用測試檔（不含來源變更），跑測試記下失敗；再套來源變更，跑同一組測試。測試一律用 BelowNormal 優先權、`--maxWorkers=4 --testTimeout=60000`（producer 的 bun 測試逐檔各開一個行程，沿用該套件的 `run-test-lane.mjs` 規則）。
+
+| 套件 | 紅 | 綠 | 名稱 |
+| --- | --- | --- | --- |
+| core（#7338） | 只套測試：`atomicFile.test.ts`、`atomicFile.win32Paths.test.ts`、`noBareMkdtemp.test.ts` 共 10 failed／27 passed／8 skipped（45）：`createStagingDir with Windows parents` 6 例與 `createStagingDir` 的 3 例皆為 `TypeError: createStagingDir is not a function`，`noBareMkdtemp.test.ts` 列出 29 個違規位置（`cli/src/capture/captureFile.ts:21` 起） | 3 檔 37 passed／8 skipped／0 failed；含 Windows 才跑的 `works when the full path passes 260 characters`（路徑 280 字元以上，回傳不帶 `\\?\`） | `createStagingDir` 長路徑與前綴還原；沒有套件在專案路徑旁用裸 `mkdtemp` |
+| cli `studioServer.renderLock.test.ts`（#7459） | 只套測試：2 failed／2 passed（4）：`makes a second render wait, and say so, until the first ends`、`lets Cancel end a wait without freeing the slot the first render holds`，`AssertionError: the given combination of arguments (undefined and string) is invalid`（`stage` 是 `undefined`，沒有等待訊息） | `src/server` 21 檔：20 passed／1 skipped，240 passed／10 skipped／0 failed | Studio 渲染等待跨專案渲染鎖 |
+| parsers `htmlParser.test.ts`（#7463） | 只套測試：1 failed／63 passed／2 todo（66）：`removeElementFromHtml > parses a script once when deleting a subtree with many tweens`，`expected "parse" to be called 1 times, but got 7 times` | parsers 全套 55 檔：54 passed／1 failed，1394 passed／1 failed／7 skipped／3 todo；唯一失敗是既有的 `assetResolution.test.ts` 符號連結 `EPERM`（見下） | 刪除群組只解析腳本一次 |
+
+**環境注意（非 core 套件綠燈的前提）**：engine、producer、cli、studio-server 在 vitest 的 node 條件下把 `@hyperframes/core/atomic-file` 解析到 `packages/core/dist`，那是被 git 忽略的建置產物。dist 是舊的時候，這些套件得到 `TypeError: createStagingDir is not a function`（engine 首次執行 162 failed／12 errors，cli 首次執行 144 failed）；在 `packages/core` 以 `node ../../node_modules/typescript/bin/tsc` 加 `node ../../scripts/rewrite-relative-import-extensions.mjs dist` 重建後，結果見下。CI 先建置所以不受影響；本機移植觸及 `packages/core/src` 時要先重建。
+
+**受影響套件的聚焦結果（重建 core dist 之後，採用 #7338 的樹）**：
+- core 3 檔：見上表。`bun run --filter '*' typecheck` 15 個套件全部 exit 0；`cd packages/core && bun run typecheck` exit 0；`bun run --filter "@hyperframes/core" test:hyperframe-runtime-ci` exit 0。
+- cli `src/capture src/cloud src/registry`：102 檔，8 failed 檔／90 passed／4 skipped，8 failed／1029 passed／50 skipped 例。
+- engine `aacEncode`、`audioMixer`、`audioVolumeEnvelope`、`chunkEncoder`、`urlDownloader`：19 檔，1 failed 檔／18 passed，363 passed／4 skipped 例。
+- studio-server `src/helpers`：44 檔，2 failed 檔／40 passed／2 skipped，3 failed／623 passed／8 skipped 例。
+- producer（逐檔）：`mp4Stitch.test.ts` 13 pass、`planV2.test.ts` 67 pass、`audioPadTrim.test.ts` 45 pass、`assemble.test.ts` 20 pass（bun）；`captureHdrResources.test.ts` 36 passed（vitest）；失敗見下。
+
+**既有失敗（在乾淨 HEAD `f3cab380a` 同樣失敗，與本批無關）**：把本批變更暫存起來後，在乾淨工作樹逐檔重跑，失敗集合完全相同：
+- cli：`captureCompositionFrame.{lateImage,lateSubresources,slowScript,pageCrash,prelaunch}.browser.test.ts` 5 檔 6 例（`explainChromeLaunchFailure` 無法啟動 Chrome）、`navigateForCapture.browser.test.ts` 與 `captureCompositionFrame.webglDraws.browser.test.ts` 兩個套件層級失敗（子測試 skipped）、`cloud/offload.undecodableTrack.test.ts` 2 例；共 8 檔，與採用後樹的 8 failed 檔一致。
+- engine：`audioMixer.undecodableTrack.test.ts` 套件層級失敗（3 例 skipped）。
+- studio-server：`hfIdPersist.test.ts` 2 例（`EPERM: operation not permitted, rename`）、`undecodableAudioTrack.test.ts` 1 例，共 3 例。
+- producer：`renderDirOwner.test.ts` 的 `reclaims only render temp dirs whose owner on this host has exited` 1 例、`planV2RemoteFiles.test.ts` 的 `probes the video by URL and publishes it by digest` 1 例。
+- parsers：`assetResolution.test.ts` 的符號連結 `EPERM`（本機帳號不能建符號連結），先前清冊已記。
+- 一次把 producer 的 `src/services/distributed src/services/render` 全部餵給單一 `bun test` 行程會有 38 個失敗，那是 bun 的 `mock.module` 在同一行程內互相污染（`run-test-lane.mjs` 註解已說明），不是本批造成；逐檔執行後只剩上列兩例。另一次整組執行在 14 分鐘後仍卡在 headless Chrome，已終止並改逐檔。
+
+### PR 軸
+
+| PR | 裁決與理由 | 上游證據 | fork 證據 |
+| --- | --- | --- | --- |
+| [#7453](https://github.com/heygen-com/hyperframes/pull/7453) | MERGED（`3ff0b3d`），不適用（見 commit 軸）；不釘 | 見 commit 軸 | 見 commit 軸 |
+| [#7454](https://github.com/heygen-com/hyperframes/pull/7454) | MERGED（`fc13420`），已採用（見 commit 軸）；審查時是 open，head `b8a354e28`，`gh pr diff` 讀過全文，與合併內容相同 | 見 commit 軸 | 見 commit 軸 |
+| [#7455](https://github.com/heygen-com/hyperframes/pull/7455) | MERGED（`b95ab79`），延後（見 commit 軸）；機器重生的 codegen PR 不釘 | 見 commit 軸 | 見 commit 軸 |
+| [#7456](https://github.com/heygen-com/hyperframes/pull/7456) | MERGED（`4d29a64`），已採用（見 commit 軸） | 見 commit 軸 | 見 commit 軸 |
+| [#7459](https://github.com/heygen-com/hyperframes/pull/7459) | MERGED（`4b3f70f`），已採用（見 commit 軸） | 見 commit 軸 | 見 commit 軸 |
+| [#7462](https://github.com/heygen-com/hyperframes/pull/7462) | monitored（open，釘 head `4e2c961c4`）：`fix(cli): clear stale beat grids when reanalysis finds no beats`，修 issue #7461。讀全文 diff（3 檔 +52／−10）：`beats` 指令重新分析時若新音軌沒有節拍，刪掉該音軌已存的 `beats/…json`（只動那一個檔，解碼失敗時保留），`docs/packages/cli.mdx` 補說明，兩個新測試。`git apply --check` 失敗於 `beats.ts:1` 與 `beats.test.ts:146`（本線 `beats` 的 import 區塊與符號連結測試不同）。重訪條件：合併、關閉或 head 移動 | `packages/cli/src/commands/beats.ts` | `tools/upstream_baseline.json` |
+| [#7463](https://github.com/heygen-com/hyperframes/pull/7463) | MERGED（`6f90980`），已採用（見 commit 軸） | 見 commit 軸 | 見 commit 軸 |
+| [#7464](https://github.com/heygen-com/hyperframes/pull/7464) | MERGED（`9e346f9`），不適用（見 commit 軸）；審查時是 open（head `ec4a6adf1`），`gh pr diff` 讀過全文，與合併內容相同；版號 PR 不釘 | 見 commit 軸 | 見 commit 軸 |
+| [#7466](https://github.com/heygen-com/hyperframes/pull/7466) | monitored（open，釘 head `45315cb6c`）：`fix(player): unload the video when its src is cleared`，修 issue #7465。讀全文 diff（4 檔 +38／−2）：`<hyperframes-player>` 的 `src` 移除或設為空字串時，移除 `<video>` 的 `src` 並 `load()`，播放狀態重設為暫停在 0:00，補文件與測試；補丁乾淨可套用（`git apply --check` rc 0）。重訪條件：合併（合併後與 #7462 一起進下一批）、關閉或 head 移動 | `packages/player/src/hyperframes-player.ts` | `tools/upstream_baseline.json` |
+| [#7467](https://github.com/heygen-com/hyperframes/pull/7467) | monitored（open，釘 head `337aa38e6`）：`docs(cli): pin npx in unattended runs and verify the render`。讀全文 diff（5 檔 +43／−5）：`hyperframes-cli` 技能的 unattended 參考與 `docs/packages/cli.mdx` 說明無人值守時要固定 `npx` 版本、渲染後用 `ffprobe` 驗尺寸與長度；牽動 `skills-manifest.json` 雜湊與 `scripts/check-core-skills.mjs` 預算，`git apply --check` 失敗於 `docs/packages/cli.mdx:130` 與 `check-core-skills.mjs:15`。重訪條件：合併、關閉或 head 移動 | `skills/hyperframes-cli/references/unattended.md` | `tools/upstream_baseline.json` |
+| [#7468](https://github.com/heygen-com/hyperframes/pull/7468) | monitored（open，釘 head `31d1eb7dd`）：`feat(cli): carry the motion blur summary on the @hf-result line`。讀全文 diff（6 檔 +167／−9：`render.ts` 把 `job.perfSummary?.motionBlur` 帶進 `@hf-result` 結果行、`ui/renderResult.ts` 輸出 `motion_blur`（`tier`、`movers`、`failed_frames`、14 項計數的 `fingerprint`）、`renderMotionBlur.ts`、`README.md` 說明與兩份測試）。`git apply --check` 失敗於 `packages/cli/README.md:104` 與 `render.ts:509`（本線的 `@hf-result` 說明與呼叫處不同）。重訪條件：合併、關閉或 head 移動 | `packages/cli/src/ui/renderResult.ts` | `tools/upstream_baseline.json` |
+
+### issue 軸
+
+| Issue | 裁決與理由 | 證據 |
+| --- | --- | --- |
+| [#7457](https://github.com/heygen-com/hyperframes/issues/7457) | 已由已採用的 commit 修復：Studio 繞過既有跨專案渲染鎖。CLOSED，由 #7459（`4b3f70f`）修；本線 `studioServer.ts:709` 已加鎖 | `gh issue view 7457`：CLOSED；`bf266f367` |
+| [#7458](https://github.com/heygen-com/hyperframes/issues/7458) | 記錄、不動（OPEN，沒有對應 PR）：擷取與軟體 H.264 編碼重疊時 CPU 過度訂閱，回報者說 Windows 整機卡頓。回報自述為程式碼檢視、沒有量測；本線有同樣的程式路徑（`encodeStage.ts:299` 的 `canEncodeWhileCapturing`、`softwareEncoderThreads.ts:6` 預設 `availableParallelism()`）。x264 的位元流取決於執行緒數（`softwareEncoderThreads.ts:5` 的註解），改執行緒預算會改輸出位元組，不能當成無風險修正；先量測再決定，ROADMAP 中期表新增一列 | `gh issue view 7458`：OPEN；`packages/producer/src/services/render/stages/encodeStage.ts:299` |
+| [#7460](https://github.com/heygen-com/hyperframes/issues/7460) | 已由已採用的 commit 修復：刪除動畫群組時重複解析 GSAP 腳本。CLOSED，由 #7463（`6f90980`）修 | `gh issue view 7460`：CLOSED；`bf266f367` |
+| [#7461](https://github.com/heygen-com/hyperframes/issues/7461) | 記錄、不動（OPEN）：`beats` 換成沒有節拍的音軌後保留舊節拍格；已由 open PR #7462 追蹤並釘選 | `gh issue view 7461`：OPEN |
+| [#7465](https://github.com/heygen-com/hyperframes/issues/7465) | 記錄、不動（OPEN）：清掉 player 的 `src` 後前一支影片仍在播；已由 open PR #7466 追蹤並釘選 | `gh issue view 7465`：OPEN |
+
+### 釘選移動（11 筆）
+
+每筆都用唯讀 `gh pr view` 取當下 head 與狀態，重釘值取自該輸出。
+
+| 釘選 | 移動 | 裁決 |
+| --- | --- | --- |
+| #6732 | open（head `b10fd340b`）→ closed（merged `0ca2b1ae9`，head `b10fd340b`） | 已採用（見 commit 軸），重釘 closed |
+| #7209 | open（head `bdd392275`）→ open（head `661738246`） | 讀 diff（`gh pr diff`，4 檔 +94／−7：`timedClipHide.ts`／`mediaVolumeEnvelope.ts` 與兩份測試，volume 探測掃描期間解除 until-first-pass 的隱藏，避免 GSAP 把繼承的 `hidden` 記成 autoAlpha tween 的起始值）；補丁乾淨可套用，仍 open，維持「合併後驗 first-pass hide 在 volume sweep 的 detach／restore」；重釘新 head |
+| #7266 | open（head `952fd2bb3`）→ open（head `405c0f4cc`） | 讀 diff（2 檔 +24：`captureCompositionFrame.ts` 的上傳方法清單加 `texSubImage2D`、`copyTexImage2D`、`compressedTexImage2D`、`compressedTexSubImage2D`，與 `webglDraws.browser.test.ts` 的上傳計數）；補丁乾淨可套用，仍 open，症狀為 macOS 專屬；重釘新 head |
+| #7269 | open（head `8a67eeb08`）→ closed（merged `a4e16d8`，head `e41481839`） | 不適用（見 commit 軸），重釘 closed |
+| #7338 | open（head `e1f7af513`）→ closed（merged `b59fa2083`，head `e1f7af513`） | 採用（見 commit 軸），重釘 closed |
+| #7372 | open（head `78bc9c15c`）→ open（head `7e2492fda`） | GitHub 的 `gh pr diff` 回 HTTP 406（314 檔超過 300 檔上限，因為分支落後主線）。改用唯讀 `git fetch upstream refs/pull/7372/head` 後 `git diff upstream/main...FETCH_HEAD`：merge-base 是 `4d29a64b0`，實際只有 4 檔 +27／−4（`skills/media-use/scripts/transcribe.mjs` 轉送 `--language`、其測試、`transcribe.md`、`skills-manifest.json` 雜湊）；補丁失敗於 `skills-manifest.json:18`（需重生雜湊），仍 open，維持原判定；重釘新 head |
+| #7416 | open（head `baaa8b499`）→ closed（未合併，作者關閉） | 讀 diff（`gh pr diff`，0 行增減，只有 `.claude-plugin/marketplace.json` 改名為 `marketplace.plugin`，similarity 100%）：本線 `packages/cli/src/utils/skillsManifest.test.ts:181` 讀 `.claude-plugin/marketplace.json`，改名後該測試找不到檔，不採；重釘 closed |
+| #7433 | open（head `1acab6672`）→ open（head `c1b07657d`） | 讀 diff（`gh pr diff`，46 檔 +7695，新增 `hyperframes init --timeline`、`docs/guides/import-from-otio.mdx`、`docs/schema/timeline-import.json`、`init.timeline.test.ts` 等，並動 `AGENTS.md`、`CLAUDE.md`、`README.md`、`.github/workflows/ci.yml` 這些本線有 fork 改寫的檔）；`git apply --check` 失敗於 `ci.yml:168`、`AGENTS.md:8`，功能屬 OTIO 匯入新指令，維持「合併後逐檔判定，不得蓋掉 fork 的 AGENTS.md／README／CI」；重釘新 head |
+| #7435 | open（head `9186556a9`）→ open（head `6fcef7788`） | 讀 diff（`gh pr diff`，10 檔 +504／−23：`scripts/lint-skills.ts` 新增 `lintSkillPaths`、`buildSkillIndex`、`isWithin` 與一份 allow 標記語法，`lint-skills.test.mjs` 對應測試，並修正技能文件裡過期的路徑，例如 `changelog-video` 的 `skills/hyperframes-media/scripts/heygen-tts.mjs` 改為 `skills/media-use/audio/scripts/heygen-tts.mjs`）：PR 仍 open；`git apply --check` 失敗於 `skills-manifest.json:14`、`skills/media-use/audio/references/tts.md:75`，且 `skills/style-sampling/references/remix.md` 在本線不存在。維持「合併後逐檔判定」，重釘新 head |
+| #7437 | open（head `aebfb99bb`）→ closed（merged `7bf19ab`，head `cdba44b11`） | 延後（見 commit 軸），重釘 closed |
+| #7439 | open（head `de40901bb`）→ closed（merged `48a2b4e`，head `de40901bb`） | 採用（見 commit 軸），重釘 closed |
+
+### 新釘選
+
+#7462（head `4e2c961c4`）、#7466（head `45315cb6c`）、#7467（head `337aa38e6`）、#7468（head `31d1eb7dd`）四筆 open PR，monitored 由 165 增為 169 筆。#7453、#7455、#7464 依規則不釘（週報、機器重生的 codegen、版號 PR）。
+
+### 隱藏內容掃描（判準八）
+
+掃描新增行：空白夾內容（`\S\s{40,}\S`）、`eval(`／`new Function(`、`globalThis.`／`global.require`、`atob(`／`fromCharCode`／`Buffer.from(…base64)`、120 字元以上的 base64、240 字元以上的 hex、零寬與雙向控制字元、400 字元以上單行。
+- commit 軸：12 個 commit 共 2,330 行新增行（206、32、28、88、43、11、1、24、158、1482、142、115）。0 個隱藏內容命中；400 字元以上單行兩處：`3ff0b3d` 的 22 行週報散文（所有連結都指向 `github.com/heygen-com/hyperframes` 的 commit／pull 與一個 `static.heygen.ai` 影片網址）、`7bf19ab` 的 `package.json` 一行 `test:scripts` 指令串。
+- PR 軸（`gh pr diff` 讀目前 head，#7372 用三點 diff；#7464 已合併，內容併入 commit 軸的 115 行）：#7462（52）、#7466（38）、#7467（43）、#7209（94）、#7266（24）、#7372（27）、#7433（7695）、#7435（504）、#7468（167），共 8,644 行新增行。0 個隱藏內容命中；#7433 有 9 行超過 400 字元（技能清單、技能選擇器與 OTIO 文件的散文段落）與 4 行「空白夾內容」（Markdown 表格欄位對齊填充），#7435 有 1 行超過 400 字元（技能說明文字）。
+- #7338、#6732 等已合併的 PR 內容就是 commit 內容；本批沒有再被強推換版的 open PR（#7269 在 2026-11-09 17:41:44Z 強推過一次，已重讀並隨後合併）。
+
+### 預算、LFS 與延後
+
+- 無新 LFS 物件；`packages/producer/tests/*/output/compiled.html` 的 10 筆工作樹差異是 LFS 還原差異，沒有暫存，也不在任何 commit 內。
+- `scripts/package-size-budgets.json` 本批無變動；`createStagingDir` 使 `@hyperframes/core` 的 `atomicFile` 約增 27 行，**沒有重新量 packed 大小**（需全套件建置與 pack，由 ROADMAP 近期的 core 大小列承接）。
+- 無 `skills/` 變動，`skills-manifest.json` 無需變動（#7454 動的是 `.agents/skills`、`.claude/skills` 內部技能，不在 manifest 內；`node scripts/check-skill-mirror.mjs` 回報 24 個檔案兩份鏡像逐位元相同）。
+- 維持延後：#7443／#7444／#7452 一組（隨遙測政策與 reverse／templates 引入）、#7450 路由表一列，以及先前所有延後項目；新增延後 #7455（隨雲端用戶端整批同步）、#7437（隨 blur differential harness 一組）。
+
+### 最新剩餘快照（水位 `9e346f9bb`，PR #7468，issue #7465）
+
+2026-11-10 `python tools/check_upstream_updates.py --strict` exit 0：commit 軸 `No new upstream commits`（behind 0）；PR 軸 `Triaged through #7468`、`No new items above that number`；issue 軸 `Triaged through #7465`、`No new items above that number`；monitored 169 筆，`Every pinned item is still at the head and state it was judged at`。
