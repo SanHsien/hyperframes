@@ -1253,3 +1253,35 @@ commit 水位 `ad6f7858f649f44e16f21128a88992ea3c01dd74`，PR #7450、issue #745
 **修正（同日，Windows render verification 紅燈）**：`1a9bb894e` 移植 #7402 與 #7378 時帶進兩處依賴延後項目的呼叫，`packages/core` 的 `typecheck:runtime`（CI「Run runtime contract test」步驟的第一步）因此報三個型別錯誤。(1) `init.ts` 的 `releaseMedia(el, !loadsAhead || window.__HF_RELEASE_PASSED_MEDIA === true)`：第二參數與 `window.__HF_RELEASE_PASSED_MEDIA` 來自 #6929（`6b3e7a7a9`），它只在 `releaseMedia` 有「整檔已緩衝就不釋放」的守衛時才有意義，該守衛來自 #6785（`9fd90d23c`），本線沒有；本線的 `releaseMedia(el)` 本來就一律釋放，所以呼叫端還原為 `releaseMedia(el)`，行為與上游旗標為 true 時相同，#6929 與 #6785 維持延後。(2) `registerSeekCompletion(landed, "image-decode")`：`SeekHold` 聯集是 #6596（`1e5413f34`）的一部分，延後項目，本線簽名仍是 `kind?: "video-frame"`，呼叫端還原為不帶第二參數（本線只有 `"video-frame"` 會改變行為，沒有任何行為變動）。#7402 其餘的 `loadsAhead` 邏輯與 #7378 不動。
 
 **為什麼本機沒抓到**：`packages/core/tsconfig.json` 排除 `src/runtime`，運行時原始碼只由 `tsconfig.runtime.json` 檢查；先前的 `tsc --noEmit` 只跑前者，`lefthook` 的 `typecheck` 也只跑前者。已把 `-p packages/core/tsconfig.runtime.json` 加進 `lefthook.yml` 的 `typecheck`，`scripts/lefthook-order.test.mjs` 同步釘住「runtime 專案的型別錯誤必須擋下提交」（拿掉該段時測試轉紅）。往後移植觸及 `packages/core/src/runtime/` 時，驗證用 `bun run --filter "@hyperframes/core" test:hyperframe-runtime-ci`，與 CI 一致。
+
+## 2026-11-10：連續水位 `c14973081`（PR #7452，issue #7451）
+
+以 fork `4a7d1594d` 接續，審完 `ad6f7858f..c14973081`（上游 tip）共 8 個 commit、PR #7452 與 10 筆釘選移動；issue 軸無新增。逐筆來源、fork 行號、numstat 與紅綠證據見 [接續清冊](UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-10接續至-c14973081上游-tip)。
+
+採用 3 個 commit：
+- `caa62fe68`（#7249）：`isTemplateEntry` 改以結構判斷，完整 HTML 文件內 `<template>` 持有 composition 根的場景檔不再得到「Composition has zero duration」；編譯器、子組合內嵌與執行期載入器共用 `findSceneTemplate`；多個場景 template 且無 live 根時渲染第一個，新 lint 規則 `multiple_scene_templates` 警告。補丁乾淨套用，測試先紅（core 11 failed、lint 1 failed、producer 1 failed）後綠。
+- `7b30a50b5`（#7110）：whisper 輸出的裸 `nan`／`-nan`／`inf` 與 MSVC 的 `-nan(ind)` 由 `parseWhisperJson` 轉成 `null`；Windows 的 whisper 會寫 `-nan(ind)`，是本線直接受益的修正。本線沒有 `readJsonFileText`，兩個解析呼叫點手工改，新函式與測試和上游逐位元相同。測試先紅（`SyntaxError`）後綠。
+- `c9fe04150`（#7000）：`browserManager.test.ts` 空截圖探測測試改用 fake timers；只有測試，沒有紅燈階段。
+
+延後 2 個 commit：
+- `448f88ff3`（#7444）：reverse／templates 回報自己的執行與 `cli_command` 帶已安裝技能名單；`commands/reverse/`、`commands/templates.ts` 在本線不存在，遙測欄位新增屬先決定遙測政策才移植的範圍（先例：#6847、#6925、#7423）。
+- `3a24da8a8`（#7452）：#7443／#7444 的後續修正，依賴 `spacedPath` 與 #7444 的遙測文件段落，隨 #7443／#7444 重訪。
+
+不適用 3 個 commit：
+- `c14973081`（#7257）：macOS 沒裝 developer tools 時 `git`／`xcrun`／`cc` stub 不跳安裝對話框的判斷；`runsWithoutInstallPrompt` 在非 darwin 平台第一行回傳 true，Windows 行為不變，本線是 Windows 原生維護線，需要 macOS 支援時再重訪。
+- `eb0a52c29`（#7443）：`measure` 指令組的使用錯誤處理；19 檔中 14 檔在本線不存在，`measure` 已列為本線沒有的模組（2026-11-04）。
+- `37f1819f3`（#7450）：`style-sampling` 改指向 `reverse-any-video` 與 `look.md`；本線沒有這兩個技能。路由表一列「Another film's style on a new topic → `references/look.md`」可獨立落地，但觸發端不存在，且需重生 `skills-manifest.json` 雜湊與調整 `check-core-skills.mjs` 預算，隨下一次重生技能清單一併做。
+
+10 筆釘選移動：7 筆轉 closed（#7000、#7110、#7249 隨採用，#7257、#7443、#7444、#7450 隨不適用／延後）；3 筆仍 open 而換 head 重釘（#7434 阿拉伯文與右到左字幕的技能文件，需重生 `skills-manifest.json` 雜湊，隨下一次重生技能清單；#7269 依賴本線沒有的 `templates.ts`；#7338 Windows 260 字元暫存資料夾，缺口成立，維持「合併後一組採用」）。四筆 PR（#7434、#7269、#7338，以及審查期間才合併的 #7257）都以 `gh pr diff` 讀過當時 head 的完整 diff。重釘的 head 與狀態取自 `gh pr view` 當下輸出。
+
+**判準八掃描**：commit 軸 8 個 commit 共 1,205 行新增行，PR 軸 #7434（`368436fbc`）、#7269（`8a67eeb08`）、#7338（`e1f7af513`）共 269 行新增行（#7257 在 open 時以 `5909eb6d5` 掃過 154 行，內容與合併 commit 相同），掃空白夾內容、`eval(`／`new Function(`、`globalThis.`／`global.require`、`atob(`／`fromCharCode`／base64、120 字元以上的 base64、240 字元以上的 hex、零寬與雙向控制字元、400 字元以上單行：0 隱藏內容；唯一的 400 字元以上單行是 #7450 的一段技能說明文字。
+
+移植時的取捨：
+- #7249 一組帶：`findSceneTemplate`（`subCompositionValidity.ts`）、`ParsableDocumentLike` 與 `SceneTemplateLike` 型別、`locateSceneRoot`／`SceneRootLookup`、`multiple_scene_templates` 規則與 `docs/reference/lint-rules.mdx` 的說明，不拆開；沒有依賴延後項目的呼叫。core 測試經由 `@hyperframes/parsers` 的 `dist` 解析，本機要先在 `packages/parsers` 跑 `bun run build`，否則得到 `findSceneTemplate is not a function`（280 failed，重建後全綠）；CI 先建置所以不受影響。
+- #7249 的套件大小：上游 squash 訊息提到兩次 inspector 預算調整，最終 diff 沒有動 `scripts/package-size-budgets.json`；本批沒有跑需要全套件建置的 `bun run verify:packed-manifests`，所以 core 與 inspector 的 packed 大小是否仍在 1% 容差內未驗證，下一次跑 pack 閘門時確認。
+- #7110 對上游的唯一差異：`detectFormat` 與 `loadTranscript` 呼叫 `parseWhisperJson(readFileSync(...))`，上游呼叫 `parseWhisperJson(readJsonFileText(...))`；`readJsonFileText` 屬 `utils/jsonFlag.js`，本線沒有該模組。
+- 既有失敗（乾淨 HEAD 同樣出現）：parsers `assetResolution.test.ts` 一例符號連結 `EPERM`；`packages/cli` 的 `tsc --noEmit` 在 `check.test.ts` 有 3 個型別錯誤（`:2313`、`:3903`、`:3904`）。兩者證據在清冊。
+
+型別與閘門：移植觸及 `packages/core/src/runtime/compositionLoader.ts`，提交前跑 `cd packages/core && bun run typecheck`（含 `typecheck:runtime`）與 CI 同指令 `bun run --filter "@hyperframes/core" test:hyperframe-runtime-ci`，兩者通過；本批沒有使用 `LEFTHOOK_EXCLUDE` 或任何方式跳過 hook。
+
+commit 水位 `c149730819437fbf0d8fda7de6952293bcf69c50`，PR #7452、issue #7451，monitored 維持 165 筆。採用的上游程式碼作者為 Jerrai（#7249）、Miguel Ángel（#7110、#7000，供 Co-authored-by）。無新 LFS 物件。

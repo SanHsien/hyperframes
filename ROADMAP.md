@@ -1,7 +1,7 @@
 # 路線圖
 
 > 本 repo 後續工作的單一真相源。做完一項，就在同一個 commit 刪掉那一列；新工作只加在這裡。
-> 上游審查於 2026-11-09 接續到 commit `ad6f7858f649f44e16f21128a88992ea3c01dd74`（PR #7450、issue #7451）；逐筆裁決見 [接續缺口清冊](docs/UPSTREAM_REVIEW_2026-11-04_CONTINUED.md)。CI／告警保留現況段既有日期快照。
+> 上游審查於 2026-11-10 接續到 commit `c149730819437fbf0d8fda7de6952293bcf69c50`（PR #7452、issue #7451）；逐筆裁決見 [接續缺口清冊](docs/UPSTREAM_REVIEW_2026-11-04_CONTINUED.md)。CI／告警保留現況段既有日期快照。
 
 ## 現況
 
@@ -62,6 +62,8 @@ HyperFrames 將 HTML、CSS 與動畫渲染為影片，本線保留 Windows 渲�
 2026-11-08 以 fork `3de999d22` 接續，審完 `f5bde9533..12906e0bf` 共 22 個 commit、PR #7383–#7403 與 issue #7404：採用 15 個 commit（#7375、#7382、#7349、#7369、#7381、#7383、#7373、#7384、#7378、#7390、#7394、#7395、#7119、#7397、#7402），延後 3 個 commit（#7379、#7159、#7393），不適用 4 個 commit（#7385、#7392、#7399、#7401）；13 筆釘選移動（11 筆轉 closed，2 筆換 head 重釘）；新釘 6 筆 open PR，monitored 由 136 增為 142 筆。`python tools/check_upstream_updates.py --strict` exit 0 全綠（commit 軸 behind 0，PR／issue 軸無待審，monitored 無移動）。逐筆證據見 [接續缺口清冊](docs/UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-08接續至-12906e0bf)。
 
 2026-11-09 以 fork `3de999d22` 接續，審完 `12906e0bf..ad6f7858f`（上游 tip）共 17 個 commit、PR #7405–#7450 與 issue #7406–#7451：採用 3 個 commit（#7412、#6150、#7442），延後 10 個 commit（#7398、#7410、#7415、#7419、#7418、#7423、#7424、#7425、#7426、#7311），不適用 4 個 commit（#7414、#7421、#7422、#7445）；6 筆釘選移動（3 筆轉 closed，3 筆換 head）；新釘 23 筆 open／draft PR，monitored 由 142 增為 165 筆。逐筆證據見 [接續缺口清冊](docs/UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-09接續至-c38ac5438推進至最新-tip-ad6f7858f)。
+
+2026-11-10 以 fork `4a7d1594d` 接續，審完 `ad6f7858f..c14973081`（上游 tip）共 8 個 commit、PR #7452 與 issue 軸無新增：採用 3 個 commit（#7249、#7110、#7000），延後 2 個 commit（#7444、#7452），不適用 3 個 commit（#7257、#7443、#7450）；10 筆釘選移動（7 筆轉 closed，3 筆換 head），monitored 維持 165 筆。逐筆證據見 [接續缺口清冊](docs/UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-10接續至-c14973081上游-tip)。
 
 ## 近期：可以直接動手
 

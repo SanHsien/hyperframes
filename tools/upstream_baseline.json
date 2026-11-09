@@ -1,9 +1,9 @@
 {
   "repo": "https://github.com/heygen-com/hyperframes.git",
   "branch": "main",
-  "reviewed_through": "ad6f7858f649f44e16f21128a88992ea3c01dd74",
-  "reviewed_date": "2026-11-09",
-  "reviewed_pr_through": 7450,
+  "reviewed_through": "c149730819437fbf0d8fda7de6952293bcf69c50",
+  "reviewed_date": "2026-11-10",
+  "reviewed_pr_through": 7452,
   "reviewed_issue_through": 7451,
   "decision_log": "docs/DECISIONS.md",
   "monitored": [
@@ -324,8 +324,8 @@
     },
     {
       "item": "pr#7000",
-      "head": "bf74cbbbebeeb77c8c0f6aa9da2bb2f22af20b99",
-      "state": "open"
+      "head": "0111704c1ec2c3bc9f724762cea1e99857004e46",
+      "state": "closed"
     },
     {
       "item": "pr#7001",
@@ -414,8 +414,8 @@
     },
     {
       "item": "pr#7110",
-      "head": "1e52c9020396c510dcb8b4ea5da5b6d465b47684",
-      "state": "open"
+      "head": "20a11e40c1b2ffdc4bb80046854df0109603efbf",
+      "state": "closed"
     },
     {
       "item": "pr#7119",
@@ -490,7 +490,7 @@
     {
       "item": "pr#7249",
       "head": "55124485bb7fb789f847b46bbab80d24306482ca",
-      "state": "open"
+      "state": "closed"
     },
     {
       "item": "pr#7253",
@@ -499,8 +499,8 @@
     },
     {
       "item": "pr#7257",
-      "head": "ebcddd435e53fee17f25d16697a2f48528d3115c",
-      "state": "open"
+      "head": "5909eb6d5e37c027323bb434fd681509451938c4",
+      "state": "closed"
     },
     {
       "item": "pr#7266",
@@ -509,7 +509,7 @@
     },
     {
       "item": "pr#7269",
-      "head": "7f3931eaf028d2aa69205652a8d040fa1715fdd9",
+      "head": "8a67eeb088e07e03bda786244184c272a1cac4a3",
       "state": "open"
     },
     {
@@ -609,7 +609,7 @@
     },
     {
       "item": "pr#7338",
-      "head": "6bb98481f467b3c8eb458b9de44ece1f530eb8da",
+      "head": "e1f7af5133c66eba0d5974680357518601ef78d5",
       "state": "open"
     },
     {
@@ -764,7 +764,7 @@
     },
     {
       "item": "pr#7434",
-      "head": "84d3e31b6ed30aac5aa7c656db1abf9d19c55e34",
+      "head": "368436fbc10d6a6dea3bbcb50a2fe1af22a7e6bc",
       "state": "open"
     },
     {
@@ -805,12 +805,12 @@
     {
       "item": "pr#7443",
       "head": "8484f96cd00afd3697c2bd46fd3273f2aa761f12",
-      "state": "open"
+      "state": "closed"
     },
     {
       "item": "pr#7444",
       "head": "08a9d4c15401a950d23fc0131d353b3bd352e82f",
-      "state": "open"
+      "state": "closed"
     },
     {
       "item": "pr#7447",
@@ -830,7 +830,7 @@
     {
       "item": "pr#7450",
       "head": "86efcc5b34fb8b54a709284ed07bf63ceced0cd1",
-      "state": "open"
+      "state": "closed"
     }
   ]
 }

@@ -3104,3 +3104,168 @@ CI 專用檔案判定：本輪 `git show --stat` 動到的檔案沒有 `*.browse
 ### 最新剩餘快照（水位 `ad6f7858f`，PR #7450，issue #7451）
 
 2026-11-09 `python tools/check_upstream_updates.py --strict` exit 0：commit 軸 `No new upstream commits`（behind 0）；PR 軸 `Triaged through #7450`、`No new items above that number`；issue 軸 `Triaged through #7451`、`No new items above that number`；monitored 165 筆，`Every pinned item is still at the head and state it was judged at`。審查中途上游前進過兩次（`ad6f7858f`、#7449、#7450、#7445 合併；其後 issue #7451 與 #7434、#7450 換 head），都已併入本節，#7434 與 #7450 在 baseline 重釘新 head。
+
+## 2026-11-10：接續至 `c14973081`（上游 tip）
+
+以 fork `4a7d1594d` 為起點接續審查 `ad6f7858f..c14973081`：8 個 commit、PR #7452（1 筆）、issue 軸無新增（仍到 #7451），以及 10 筆釘選移動（pr#7000、pr#7110、pr#7249、pr#7257、pr#7269、pr#7338、pr#7434、pr#7443、pr#7444、pr#7450）。審查期間上游前進兩次（`7b30a50b5` 之後多了 `c9fe04150`／#7000，再多了 `c14973081`／#7257），都已併入本節。
+
+### Commit 軸
+
+| Commit | 裁決與理由 | 上游證據 | fork 證據 |
+| --- | --- | --- | --- |
+| `eb0a52c29` #7443 | 不適用：`measure` 指令組的使用錯誤處理（沒指定 op 時改跑 `probe`、ffprobe 讀不了檔時帶原因、未加引號的含空白路徑提示、`--from/--to`／`-o` 旗標）。19 檔 +356／−50；19 檔中 14 檔在本線不存在（`commands/measure.ts`、`commands/measure/*`、`measure/*`、`utils/didYouMean*`），`reject-extra-positionals.ts` 的 hunk 依賴 `spacedPath`，`git apply --check` 失敗；DECISIONS 2026-11-04 已把 `measure` 列為本線沒有的模組。本線引入 `measure` 指令組時再重訪 | `packages/cli/src/commands/measure.ts:30`（`MEASURE_OPS`）；`packages/cli/src/utils/didYouMean.ts:77`（`fileHint`） | 不適用；本線沒有 `packages/cli/src/commands/measure.ts`、`packages/cli/src/measure/`、`packages/cli/src/utils/didYouMean.ts` |
+| `448f88ff3` #7444 | 延後：`reverse start`／`templates pull` 回報自己的執行（新事件 `skill_command_ran`）、`cli_command` 帶 `skills_installed`／`skills_outdated` 名單、`auth status` 未登入帶 `NotSignedIn` 原因。11 檔 +269／−9；`commands/reverse/start.ts`、`start.test.ts`、`commands/templates.ts`、`templates.test.ts` 在本線不存在（reverse 與付費樣式範本整組不採，見 2026-11-02 清冊與 #6842、#7084、#7116 的原判定），`auth/status.ts:160`、`telemetry/events.ts:1017`、`skillsUpdateCheck.ts:50`、`skillsUpdateCheck.test.ts:100` 的 hunk 不合。遙測欄位新增屬本線先決定遙測政策才移植的範圍（先例：#6847、#6925、#7423）。重訪條件：決定遙測政策並引入 reverse／templates 時，連同 #7452 一併做 | `packages/cli/src/telemetry/events.ts:1030`（`trackSkillCommandRan`） | 延後；本線沒有 `trackSkillCommandRan`、`skills_installed`，`commands/reverse/` 與 `commands/templates.ts` 不存在 |
+| `caa62fe68` #7249 | 採用（先紅後綠，見紅綠證據）：`isTemplateEntry` 改以結構判斷，完整 HTML 文件內 `<template>` 持有 composition 根的場景檔不再被當成一般檔編譯而得到「Composition has zero duration」；`locateSceneRoot` 與 `findSceneTemplate` 讓編譯器、子組合內嵌與執行期載入器共用同一個「第一個持有 composition 根的 template」；多個場景 template 且無 live 根時渲染第一個，並由新 lint 規則 `multiple_scene_templates` 警告。補丁對本線乾淨套用（`git apply --check` rc 0），11 檔 +326／−17，與上游 numstat 逐檔相同 | `packages/core/src/compiler/htmlDocument.ts:26`；`packages/parsers/src/subCompositionValidity.ts:65`；`packages/lint/src/rules/composition.ts:1968`；`packages/core/src/compiler/standaloneEntry.test.ts:20` | 同行號：`packages/core/src/compiler/htmlDocument.ts:26`；`packages/parsers/src/subCompositionValidity.ts:65`；`packages/lint/src/rules/composition.ts:1968`；`packages/core/src/compiler/standaloneEntry.test.ts:20` |
+| `37f1819f3` #7450 | 不適用：`style-sampling` 回答範本以外風格時改指向 `reverse-any-video` 與 `look.md`，5 檔 +9／−6。`skills/reverse-any-video`、`skills/style-sampling` 在本線不存在（`ls skills`），`git apply --check` 另失敗於 `scripts/check-core-skills.mjs:13`（本線 `hyperframes` 預算為 7168，上游已逐筆加位元組）、`skills-manifest.json:6`（需重生雜湊）、`skills/hyperframes/SKILL.md:63`（本線路由表沒有 `/reverse-any-video`、`/style-sampling` 兩列）。唯一能獨立落地的是路由表一列「Another film's style on a new topic → `references/look.md`」，它的觸發端（`style-sampling` 的回覆）在本線不存在，且要重生 manifest 雜湊與調預算，與 `5e8abd757`（#7418，1440p）一樣等下一次重生技能清單時一併做。重訪條件：本線新增這兩個技能，或下一次重生 `skills-manifest.json` | `skills/hyperframes/SKILL.md:66`；`skills/style-sampling/SKILL.md:30` | 延後；本線 `skills/` 只有 figma、hyperframes、hyperframes-cli、hyperframes-registry、media-use、remotion-to-hyperframes、slideshow |
+| `3a24da8a8` #7452 | 延後：#7443／#7444 的後續修正（含空白路徑提示取最長路徑並讀 `--flag=value`；遙測文件說明 reverse 的 session id）。3 檔 +32／−11；`reject-extra-positionals.ts:46` 的 `spacedPath` 與 `docs/packages/cli.mdx:2307` 的遙測段落都由 #7443／#7444 提供，本線沒有，`git apply --check` 失敗於這兩處加 `reject-extra-positionals.test.ts:1`。隨 #7443／#7444 重訪 | `packages/cli/src/utils/reject-extra-positionals.ts:55`（`spacedPath`） | 延後（隨 #7443／#7444）；本線 `reject-extra-positionals.ts` 沒有 `spacedPath` |
+| `7b30a50b5` #7110 | 採用（先紅後綠，見紅綠證據）：whisper.cpp 在 token 機率寫出裸的 `nan`、`-nan`、`inf` 與 MSVC 的 `-nan(ind)`，`JSON.parse` 讀不了；新增 `parseWhisperJson` 把字串之外的這些值轉成 `null`，`loadTranscript`、`detectFormat` 與 `transcribe` 都改走它。Windows 的 whisper 會寫 `-nan(ind)`，是本線直接受益的修正。補丁的 `normalize.ts` hunk 對本線失敗於 `:41`（本線沒有 `readJsonFileText`，`detectFormat` 直接 `JSON.parse(readFileSync(...))`），所以兩個解析呼叫點手工改；`parseWhisperJson` 與其正規式區塊和測試與上游逐位元相同。3 檔 +48／−4，fork 的 numstat 為 +11／−2、+2／−2、+35／−0，與上游相同 | `packages/cli/src/whisper/normalize.ts:505`；`packages/cli/src/whisper/normalize.test.ts:127` | `packages/cli/src/whisper/normalize.ts:510`；`packages/cli/src/whisper/normalize.test.ts:119` |
+| `c9fe04150` #7000 | 採用：只改測試，`browserManager.test.ts` 的空截圖探測測試改用 fake timers 推進 200 ms，不再等真實的 120 ms 期限，消除機器負載造成的不穩。補丁對本線乾淨套用，沒有來源變更，所以沒有紅燈階段 | `packages/engine/src/services/browserManager.test.ts:87` | `packages/engine/src/services/browserManager.test.ts:87` |
+| `c14973081` #7257 | 不適用：macOS 沒裝 developer tools 時，`git`、`xcrun`、`cc` 是會跳出安裝對話框的 stub，新增 `appleStubs.ts` 的 `runsWithoutInstallPrompt` 讓 `whisper/manager.ts`、`audio/analysis/providers/apple.ts`、`commands/skills.ts` 先判斷再呼叫。6 檔 +154／−3；`runsWithoutInstallPrompt` 在非 darwin 平台第一行就回傳 true，Windows 行為不變；`git apply --check` 對本線失敗於 `commands/skills.ts:1`、`whisper/manager.ts:1`（import 區塊不同）。本線是 Windows 原生維護線，需要 macOS 支援時再重訪 | `packages/cli/src/utils/appleStubs.ts:49`（`runsWithoutInstallPrompt`）；`packages/cli/src/whisper/manager.ts:254` | 不適用；本線沒有 `packages/cli/src/utils/appleStubs.ts`，`whisper/manager.ts:253` 的 `hasGit` 只呼叫 `whichBinary("git")` |
+
+採用 commit 的上游作者（供 Co-authored-by）：Jerrai（#7249）、Miguel Ángel（#7110、#7000）。
+
+### Commit 逐檔 numstat（`git diff --numstat <c>^1 <c>` 實算）
+
+```text
+=== eb0a52c29 ===
+19	1	packages/cli/src/cli.ts
+17	13	packages/cli/src/commands/measure.ts
+2	2	packages/cli/src/commands/measure/curve.ts
+2	2	packages/cli/src/commands/measure/cuts.ts
+2	2	packages/cli/src/commands/measure/events.ts
+1	1	packages/cli/src/commands/measure/extract.ts
+6	1	packages/cli/src/commands/measure/frames.ts
+2	2	packages/cli/src/commands/measure/look.ts
+2	2	packages/cli/src/commands/measure/sync.ts
+1	1	packages/cli/src/measure/command.ts
+97	2	packages/cli/src/measure/media.test.ts
+70	12	packages/cli/src/measure/media.ts
+2	4	packages/cli/src/measure/outFlags.test.ts
+8	2	packages/cli/src/utils/didYouMean.test.ts
+4	2	packages/cli/src/utils/didYouMean.ts
+43	1	packages/cli/src/utils/projectShortcut.test.ts
+27	0	packages/cli/src/utils/projectShortcut.ts
+36	0	packages/cli/src/utils/reject-extra-positionals.test.ts
+15	0	packages/cli/src/utils/reject-extra-positionals.ts
+
+=== 448f88ff3 ===
+2	1	docs/packages/cli.mdx
+10	2	packages/cli/src/commands/auth/status.ts
+41	1	packages/cli/src/commands/reverse/start.test.ts
+15	1	packages/cli/src/commands/reverse/start.ts
+37	2	packages/cli/src/commands/templates.test.ts
+12	0	packages/cli/src/commands/templates.ts
+11	0	packages/cli/src/telemetry/config.ts
+58	1	packages/cli/src/telemetry/events.test.ts
+24	0	packages/cli/src/telemetry/events.ts
+38	0	packages/cli/src/utils/skillsUpdateCheck.test.ts
+21	1	packages/cli/src/utils/skillsUpdateCheck.ts
+
+=== caa62fe68 ===
+6	0	docs/reference/lint-rules.mdx
+47	0	packages/core/src/compiler/htmlBundler.test.ts
+24	1	packages/core/src/compiler/htmlDocument.ts
+79	8	packages/core/src/compiler/standaloneEntry.test.ts
+2	6	packages/core/src/compiler/standaloneEntry.ts
+21	0	packages/core/src/runtime/compositionLoader.test.ts
+7	1	packages/core/src/runtime/compositionLoader.ts
+26	0	packages/lint/src/rules/composition.test.ts
+27	0	packages/lint/src/rules/composition.ts
+15	1	packages/parsers/src/subCompositionValidity.ts
+72	0	packages/producer/src/services/render/stages/compileStage.test.ts
+
+=== 37f1819f3 ===
+2	2	scripts/check-core-skills.mjs
+3	3	skills-manifest.json
+1	0	skills/hyperframes/SKILL.md
+1	1	skills/reverse-any-video/SKILL.md
+2	0	skills/style-sampling/SKILL.md
+
+=== 3a24da8a8 ===
+2	1	docs/packages/cli.mdx
+19	6	packages/cli/src/utils/reject-extra-positionals.test.ts
+11	4	packages/cli/src/utils/reject-extra-positionals.ts
+
+=== 7b30a50b5 ===
+35	0	packages/cli/src/whisper/normalize.test.ts
+11	2	packages/cli/src/whisper/normalize.ts
+2	2	packages/cli/src/whisper/transcribe.ts
+
+=== c9fe04150 ===
+11	4	packages/engine/src/services/browserManager.test.ts
+
+=== c14973081 ===
+2	0	packages/cli/src/audio/analysis/providers/apple.ts
+24	1	packages/cli/src/commands/skills.test.ts
+2	0	packages/cli/src/commands/skills.ts
+59	0	packages/cli/src/utils/appleStubs.test.ts
+63	0	packages/cli/src/utils/appleStubs.ts
+4	2	packages/cli/src/whisper/manager.ts
+```
+
+### 紅綠證據
+
+紅綠方法：先只套用測試檔（不含來源變更），跑測試記下失敗；再套來源變更，跑同一組測試。測試一律用 BelowNormal 優先權、`--maxWorkers=4 --testTimeout=60000`（producer 用 `bun test --timeout 60000`）。
+
+| 套件 | 紅 | 綠 | 名稱 |
+| --- | --- | --- | --- |
+| core（#7249） | 只套測試：`htmlBundler.test.ts`、`standaloneEntry.test.ts`、`compositionLoader.test.ts` 共 11 failed（`recognizes the full-document shape whose composition root lives in the body template`、`keeps a template-first fragment with a live composition root beside it a plain entry`、`finds the scene template when an earlier template holds no composition root` ×3、`renders the first scene template when several hold a composition root and none is live`、`does not refuse when a live root makes the file a plain entry`、`reports no root when no template holds a composition root`、`reads a single template and a template-free document as before`、`mounts the scene template of a fetched file with a card template before the scene`、`mounts the scene template of a file with a card template before the scene`） | core 全套 269 檔 5713 passed／11 skipped／0 failed | template 入口以結構判斷、多 template 場景選取 |
+| lint `composition.test.ts`（#7249） | 1 failed／319 passed（`warns, naming each scene template`） | lint 全套 24 檔 1259 passed／1 skipped／0 failed | `multiple_scene_templates` 警告 |
+| producer `compileStage.test.ts`（#7249） | 1 fail／23 pass（`isolates a full-document scene whose root lives in the body template`：預期 `standalone-entry.html`，實際為 `compositions/scene.html`） | 24 pass／0 fail | 完整文件場景檔隔離為獨立入口 |
+| cli `normalize.test.ts`（#7110） | 1 failed／83 passed（84）：`reads whisper-cli output whose floats are nan, -nan, inf or MSVC's -nan(ind)`，`SyntaxError: Unexpected token 'a', ..."p": nan,`，來自 `JSON.parse(content)` | `src/whisper` 14 檔 223 passed／9 skipped／0 failed | whisper 輸出含 nan／inf |
+| engine `browserManager.test.ts`（#7000） | 無（只改測試，沒有來源變更） | 112 passed／5 skipped／0 failed | 空截圖探測改 fake timers |
+
+**環境注意（core 綠燈的前提）**：vitest 在 node 條件下把 `@hyperframes/parsers/sub-composition-validity` 解析到 `packages/parsers/dist`，那是被 git 忽略的建置產物。dist 是舊的時候，#7249 的 core 測試會得到 `TypeError: findSceneTemplate is not a function`（同一批 compiler 與 compositionLoader 測試 280 failed／465 passed）；在 `packages/parsers` 跑 `bun run build` 後全綠。CI 先建置所以不受影響；本機移植觸及 `packages/parsers/src` 時要先重建。
+
+**既有失敗（在乾淨 HEAD 同樣失敗，與本批無關）**：
+- parsers `src/assetResolution.test.ts` 的 `reports a name too long or a symlink loop as missing, as existsSync did`：`EPERM: operation not permitted, symlink`（本機帳號不能建符號連結）。把 `subCompositionValidity.ts` 還原成乾淨 HEAD 版後單跑該檔，同樣 1 failed／33 passed／1 skipped。parsers 全套於本批後為 55 檔、54 passed、1 failed（1388 passed／1 failed／7 skipped／3 todo）。
+- cli `tsc --noEmit` 在 `src/commands/check.test.ts` 有 3 個型別錯誤（`:2313` `'deadline' is possibly 'undefined'`、`:3903`、`:3904` `Expected 2 arguments, but got 3`），把 `packages/cli/src/whisper` 的變更暫存起來後在乾淨 HEAD 同樣出現；該檔本批沒有觸及。
+
+### PR 軸
+
+| PR | 裁決與理由 | 上游證據 | fork 證據 |
+| --- | --- | --- | --- |
+| [#7452](https://github.com/heygen-com/hyperframes/pull/7452) | MERGED（`3a24da8a8`），延後（見 commit 軸）；審查時已合併，不釘 | 見 commit 軸 | 見 commit 軸 |
+
+### issue 軸
+
+issue 軸本批沒有新增項目：`Triaged through #7451`，`No new items above that number`。
+
+### 釘選移動（10 筆）
+
+每筆都用唯讀 `gh pr view` 取當下 head 與狀態，重釘值取自該輸出。
+
+| 釘選 | 移動 | 裁決 |
+| --- | --- | --- |
+| #7000 | open（head `bf74cbbbe`）→ closed（merged `c9fe04150`，head `0111704c1`） | 採用（見 commit 軸），重釘 closed |
+| #7110 | open（head `1e52c9020`）→ closed（merged `7b30a50b5`，head `20a11e40c`） | 採用（見 commit 軸），重釘 closed |
+| #7249 | open（head `55124485b`）→ closed（merged `caa62fe68`，head `55124485b`） | 採用（見 commit 軸），重釘 closed |
+| #7257 | open（head `ebcddd435`）→ closed（merged `c14973081`，head `5909eb6d5`） | 先以 `gh pr diff` 讀 open 時的 head（6 檔 +154／−3，內容為 `/usr/bin/git`、`xcrun`、`/usr/bin/cc` 的 macOS stub 判斷與 `darwin` 測試），審查期間合併；不適用（見 commit 軸），重釘 closed |
+| #7269 | open（head `7f3931eaf`）→ open（head `8a67eeb08`） | 讀 diff（2 檔 +43／−13，`templates.ts` 與其測試把 `templates pull` 的暫存資料夾改放 `.hyperframes/template-pulls`）：`commands/templates.ts` 在本線不存在，無可移植內容，維持原判定；重釘新 head |
+| #7338 | open（head `6bb98481f`）→ open（head `e1f7af513`） | 讀 diff（23 檔 +206／−60，diff 移除 46 行含 `mkdtempSync` 的行、新增 57 行含 `createStagingDir` 的行，改走 `@hyperframes/core/atomic-file` 並加掃描測試 `noBareMkdtemp.test.ts`）：Windows 260 字元缺口仍成立，PR 仍 open，維持「合併後一組採用」；`git apply --check` 對本線失敗於 `cloud/download.ts:13`、`fonts/fontCompression.ts:1`、`captureHdrResources.ts:464`，且 `commands/measure/frames.ts`、`commands/templates.ts` 不存在，合併後逐檔判定 23 檔，不存在者略過；重釘新 head |
+| #7434 | open（head `84d3e31b6`）→ open（head `368436fbc`） | 讀 diff（`gh pr diff`，2 檔 +20／−1：`skills/hyperframes/references/captions.md` 新增阿拉伯文與右到左文字的字幕指引，`skills-manifest.json` 一個雜湊）：純技能文件，沒有程式；套用到本線的 `skills-manifest.json` 失敗於 `:6`（需重生雜湊），PR 仍 open，維持原判定，合併後隨下一次重生技能清單一併做；重釘新 head |
+| #7443 | open（head `8484f96cd`）→ closed（merged `eb0a52c29`，head `8484f96cd`） | 不適用（見 commit 軸），重釘 closed |
+| #7444 | open（head `08a9d4c15`）→ closed（merged `448f88ff3`，head `08a9d4c15`） | 延後（見 commit 軸），重釘 closed |
+| #7450 | open（head `86efcc5b3`）→ closed（merged `37f1819f3`，head `86efcc5b3`） | 不適用（見 commit 軸），重釘 closed |
+
+### 新釘選
+
+本批無新增（PR 軸只有已合併的 #7452，不釘）。monitored 維持 165 筆，沒有釘選被移除。
+
+### 隱藏內容掃描（判準八）
+
+掃描新增行：空白夾內容（`\S\s{40,}\S`）、`eval(`／`new Function(`、`globalThis.`／`global.require`、`atob(`／`fromCharCode`／`Buffer.from(…base64)`、120 字元以上的 base64、240 字元以上的 hex、零寬與雙向控制字元、400 字元以上單行。
+- commit 軸：8 個 commit 共 1,205 行新增行（356、269、326、9、32、48、11、154）。0 命中隱藏內容；唯一的 400 字元以上單行是 `skills/style-sampling/SKILL.md` 的一段說明文字（#7450），內容是路由說明，沒有程式。
+- PR 軸：仍 open 的移動釘選以目前 head 的 `gh pr diff` 掃：#7269（`8a67eeb08`）43 行、#7338（`e1f7af513`）206 行，共 249 行新增行，0 命中；#7434（`368436fbc`）20 行，0 命中，唯一的 400 字元以上單行是 captions.md 中含阿拉伯文字元範圍與連字單元說明的一段文件文字；#7257 在 open 時以 head `5909eb6d5` 掃過 154 行，0 命中，合併後的 commit 軸 154 行是同一份內容。
+- 已合併的 PR 內容就是 commit 內容；本批沒有再被強推換版的 open PR。
+
+### 預算、LFS 與延後
+
+- 無新 LFS 物件；`packages/producer/tests/*/output/compiled.html` 的 10 筆工作樹差異是 LFS 還原差異，沒有暫存，也不在任何 commit 內。
+- `scripts/package-size-budgets.json` 本批無變動。上游 #7249 的 squash 訊息列了兩次 inspector 預算調整，但最終 diff 沒有動這個檔案；`bun run verify:packed-manifests` 需要全套件建置與 pack，本批沒有跑，所以 core 與 inspector 的 packed 大小是否仍在 1% 容差內沒有驗證，下一次跑 pack 閘門時確認。
+- 無 `skills/` 變動，`skills-manifest.json` 無需變動。
+- 維持延後：#7443／#7444／#7452 一組（隨遙測政策與 reverse／templates 引入）、#7450 路由表一列（隨下一次重生技能清單），以及先前所有延後項目。
+
+### 最新剩餘快照（水位 `c14973081`，PR #7452，issue #7451）
+
+2026-11-10 `python tools/check_upstream_updates.py --strict` exit 0：commit 軸 `No new upstream commits`（behind 0）；PR 軸 `Triaged through #7452`、`No new items above that number`；issue 軸 `Triaged through #7451`、`No new items above that number`；monitored 165 筆，`Every pinned item is still at the head and state it was judged at`。
