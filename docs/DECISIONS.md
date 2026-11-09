@@ -1292,12 +1292,12 @@ commit 水位 `c149730819437fbf0d8fda7de6952293bcf69c50`，PR #7452、issue #745
 
 **根因（兩層）**：
 - 三個錯誤都在 `src/commands/check.test.ts`，都是移植時引入、後來沒人檢查：`:2313` `TS18048` 來自 `08cc80bd5`（移植 #6919 時改寫，`runBrowserCheck` 的 `deadline` 參數可選，`typeof deadline.enter` 要先排除 `undefined`）；`:3903`、`:3904` `TS2554` 來自 `12c05b9ea`（上游 `assertKnownFlags` 的第三參數 `path` 是 #6616 `22e6da023` 加的，本線沒移植，函式只收 2 個參數，兩條斷言只比對 `"Unknown flag"` 子字串，拿掉引數後仍成立）。
-- 假綠：上游有 `typecheck` job（`bun run --filter '*' typecheck`），fork 沒有；hook 也漏了 cli。修正前跑 `bun run --filter '*' typecheck`，14 個套件只有 `@hyperframes/cli` 紅（3 個錯誤），其他全部 exit 0。
+- 假綠：上游有 `typecheck` job（`bun run --filter '*' typecheck`），fork 沒有；hook 也漏了 cli。修正前跑 `bun run --filter '*' typecheck`，15 個套件只有 `@hyperframes/cli` 紅（3 個錯誤），其他全部 exit 0。
 
 **改法**：
 - `:2313` 改用 `CheckDeadline["enter"]`（`import { type CheckDeadline }`，類別本來就匯出），不用 `any`、`@ts-ignore` 或型別斷言。`:3903`／`:3904` 拿掉第三個引數。
 - 新增 `.github/workflows/typecheck.yml`（ubuntu-latest，照上游 `typecheck` job：安裝、`bun run build`、`bun run --filter '*' typecheck`、`bun run typecheck:scripts`）。選這條而不是把指令放進 `tools/dev_check.ps1`：dev_check 與 `ci.yml` 的 Windows runner 刻意不安裝產品依賴（`AGENTS.md`「不要把維護 gate 改成完整產品依賴安裝」），塞進去會讓維護 gate 變成要跑完整 `bun install` 與 `bun run build`，也沒有任何 CI 能證明它在乾淨環境能跑。`ci.yml` 被 `test_ci_covers_python_314` 釘為純 Windows，先例（`posix-security-tests.yml`）是另開 workflow。tsc 的輸出與作業系統無關，所以用 ubuntu 沒有 Windows 覆蓋缺口。
-- `lefthook.yml` 的 `typecheck` 加 `packages/cli/tsconfig.json`；`scripts/lefthook-order.test.mjs` 的專案清單加 cli（FORK.md 兩處同步）。`tools/tests/test_fork_docs.py` 新增 `test_every_workspace_package_is_typechecked_in_ci_and_the_hook`，釘住 workflow 與 hook 都含這些檢查。
+- `lefthook.yml` 的 `typecheck` 加 `packages/cli/tsconfig.json`；`scripts/lefthook-order.test.mjs` 的專案清單加 cli（FORK.md 兩處同步）。`tools/tests/test_fork_docs.py` 新增 `test_ci_typechecks_every_workspace_and_hook_covers_cli`，釘住三件事：每個 `packages/*/package.json` 都有 `typecheck` script（新套件沒有 script 會被 `--filter '*'` 靜默跳過）、workflow 含這些指令、lefthook 的 typecheck 含 cli（hook 只涵蓋 core、core runtime、studio、cli、scripts，不是全部套件，全部由 workflow 負責）。
 
 **先紅後綠**：
 - cli typecheck：修前 3 個錯誤（`TS18048`、2 × `TS2554`），修後 exit 0；`bun run --filter '*' typecheck` 修前 exit 2（僅 cli 紅），修後 exit 0。
@@ -1310,8 +1310,8 @@ commit 水位 `c149730819437fbf0d8fda7de6952293bcf69c50`，PR #7452、issue #745
 獨立審查回報 #7269 的 head 在 17:38Z 移到 `e414818`，但當時 `python tools/check_upstream_updates.py --strict` 只報 #7338 移動、沒報 #7269。
 
 **查證**（唯讀，`gh api .../issues/7269/timeline` 與 `gh pr view`）：
-- #7269 的 head 歷史：`head_ref_force_pushed` 於 `2026-11-09T15:48:05Z`（得到本線釘住的 `8a67eeb`），下一次 `head_ref_force_pushed` 在 `2026-11-09T17:41:44Z`（得到 `e414818`）。`17:38:57Z`／`17:38:58Z` 是兩個 commit 的**提交時間**，不是 head 在 GitHub 上換成它的時間。
-- #7338 在 `17:35:17Z` 合併。所以 `17:35:17Z`–`17:41:44Z` 之間跑檢查，結果就是「只有 #7338 移動」，與審查員看到的一致；#7269 的 head 在那個時間點確實還是 `8a67eeb`。
+- #7269 的 head 歷史：`head_ref_force_pushed` 於 `2026-11-09T15:48:05Z`（得到 `7544677`；本線釘住的 `8a67eeb` 是之後以一般推送上去的，提交時間 `16:18:12Z`，沒有 force-push 事件），下一次 `head_ref_force_pushed` 在 `2026-11-09T17:41:44Z`（得到 `e414818`）。`17:38:57Z`／`17:38:58Z` 是兩個 commit 的**提交時間**，不是 head 在 GitHub 上換成它的時間。
+- #7338 在 `17:35:15Z` 合併。所以 `17:35:15Z`–`17:41:44Z` 之間跑檢查，結果就是「只有 #7338 移動」，與審查員看到的一致；#7269 的 head 在那個時間點確實還是 `8a67eeb`。
 - 今天重跑同一個指令：`pr#7269 | 8a67eeb… / open | e414818 / open`、`pr#7338 | … / closed`、`pr#7416 | … / closed` 三筆都報出。比對邏輯（`collect_stale_monitored` 逐筆 `gh pr view`、取較短長度比 SHA 前綴、再比 state）沒有分頁、快取或只看部分 PR 的路徑，165 筆釘選逐筆查。
 - 變異驗證：把 head 比對短路成永遠相等，新增的測試立刻紅（#7269 不再被報出）。
 
@@ -1343,7 +1343,7 @@ commit 水位 `c149730819437fbf0d8fda7de6952293bcf69c50`，PR #7452、issue #745
 | `4a7d1594d` | 拿掉兩個依賴延後項目的呼叫        | 1691235 | 1.0171   | 4085070  | 1.0150   | -57         |
 | `e9e3e84b6` | #7249                             | 1691457 | 1.0172   | 4085940  | 1.0152   | +222        |
 
-容差上限為 packed 1679441、unpacked 4064831：packed 在 `2e34275fc` 越線，unpacked 在 `48f5654de` 越線。審查員的倍率（1.0171／1.0150）與 `4a7d1594d` 這一列相同。這不是新缺口：`d599288fd` 以後各份清冊已記過「core 新增 packed 超標」，只是沒有任何會變紅的 gate（ubuntu 的預算檢查只在發布流程）。
+容差上限為 packed 1679441、unpacked 4064830（判定為大於 4064830.85）：packed 在 `2e34275fc` 越線，unpacked 在 `48f5654de` 越線。審查員的倍率（1.0171／1.0150）與 `4a7d1594d` 這一列相同。這不是新缺口：`d599288fd` 以後各份清冊已記過「core 新增 packed 超標」，只是沒有任何會變紅的 gate（ubuntu 的預算檢查只在發布流程）。
 
 **上游同版本的預算**：上游 `scripts/package-size-budgets.json` 的 core 目前是 packed 1762752、unpacked 4268445（`upstream/main`＝`c14973081`），自 `af0d68d61`（#6922，2026-11-01）起未再變動。核心預算在上游只動過兩次：`5e4f5aefb`（#6865，2026-10-30）把 unpacked 由 4024585 提高到 4268445，`af0d68d61`（#6922）把 packed 由 1661748 提高到 1762752。這兩個 commit 本線都延後、未移植（`UPSTREAM_REVIEW_2026-11-02.md` 的「產品同步批次」）。上游在 2026-10-28 的 `51f9fa7c5`，同法量得 core 為 1668930／4018069，與當時預算（1661748／4024585）相當，也就是本線原預算本來就是貼近實測的上限。
 

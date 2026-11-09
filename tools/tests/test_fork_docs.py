@@ -82,9 +82,18 @@ def test_ci_covers_python_314() -> None:
     assert "ubuntu" not in workflow
 
 
-def test_every_workspace_package_is_typechecked_in_ci_and_the_hook() -> None:
-    """ci.yml only runs the maintenance gate, so a package the lefthook hook skips
-    (cli once did) could reach main with type errors and nothing would be red."""
+def test_ci_typechecks_every_workspace_and_hook_covers_cli() -> None:
+    """`bun run --filter '*' typecheck` skips a package that has no `typecheck` script, and
+    the lefthook hook only lists some projects. cli was once in neither, so type errors in its
+    test files reached main with nothing red."""
+    manifests = sorted((ROOT / "packages").glob("*/package.json"))
+    assert manifests
+    missing = [
+        manifest.parent.name
+        for manifest in manifests
+        if "typecheck" not in json.loads(manifest.read_text(encoding="utf-8")).get("scripts", {})
+    ]
+    assert missing == [], f"packages without a typecheck script are skipped by CI: {missing}"
     workflow = (ROOT / ".github" / "workflows" / "typecheck.yml").read_text(
         encoding="utf-8"
     )

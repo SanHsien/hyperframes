@@ -26,6 +26,8 @@ jobs:
     env:
       HYPERFRAMES_NO_TELEMETRY: "1"
     steps:
+      # No `lfs: true` (upstream's job has it): nothing on the install, build or tsc path reads an
+      # LFS object (they are producer test fixtures), so skipping it saves the LFS bandwidth.
       - name: Check out source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
