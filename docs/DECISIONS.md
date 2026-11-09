@@ -1270,7 +1270,7 @@ commit 水位 `ad6f7858f649f44e16f21128a88992ea3c01dd74`，PR #7450、issue #745
 不適用 3 個 commit：
 - `c14973081`（#7257）：macOS 沒裝 developer tools 時 `git`／`xcrun`／`cc` stub 不跳安裝對話框的判斷；`runsWithoutInstallPrompt` 在非 darwin 平台第一行回傳 true，Windows 行為不變，本線是 Windows 原生維護線，需要 macOS 支援時再重訪。
 - `eb0a52c29`（#7443）：`measure` 指令組的使用錯誤處理；19 檔中 14 檔在本線不存在，`measure` 已列為本線沒有的模組（2026-11-04）。
-- `37f1819f3`（#7450）：`style-sampling` 改指向 `reverse-any-video` 與 `look.md`；本線沒有這兩個技能。路由表一列「Another film's style on a new topic → `references/look.md`」可獨立落地，但觸發端不存在，且需重生 `skills-manifest.json` 雜湊與調整 `check-core-skills.mjs` 預算，隨下一次重生技能清單一併做。
+- `37f1819f3`（#7450）：`style-sampling` 改指向 `reverse-any-video` 技能與 `look.md` 參考檔；本線沒有 `reverse-any-video` 與 `style-sampling` 技能（`skills/hyperframes/references/look.md` 存在，但它是參考檔、不是技能）。路由表一列「Another film's style on a new topic → `references/look.md`」可獨立落地，但觸發端不存在，且需重生 `skills-manifest.json` 雜湊與調整 `check-core-skills.mjs` 預算，隨下一次重生技能清單一併做。
 
 10 筆釘選移動：7 筆轉 closed（#7000、#7110、#7249 隨採用，#7257、#7443、#7444、#7450 隨不適用／延後）；3 筆仍 open 而換 head 重釘（#7434 阿拉伯文與右到左字幕的技能文件，需重生 `skills-manifest.json` 雜湊，隨下一次重生技能清單；#7269 依賴本線沒有的 `templates.ts`；#7338 Windows 260 字元暫存資料夾，缺口成立，維持「合併後一組採用」）。四筆 PR（#7434、#7269、#7338，以及審查期間才合併的 #7257）都以 `gh pr diff` 讀過當時 head 的完整 diff。重釘的 head 與狀態取自 `gh pr view` 當下輸出。
 
@@ -1279,7 +1279,7 @@ commit 水位 `ad6f7858f649f44e16f21128a88992ea3c01dd74`，PR #7450、issue #745
 移植時的取捨：
 - #7249 一組帶：`findSceneTemplate`（`subCompositionValidity.ts`）、`ParsableDocumentLike` 與 `SceneTemplateLike` 型別、`locateSceneRoot`／`SceneRootLookup`、`multiple_scene_templates` 規則與 `docs/reference/lint-rules.mdx` 的說明，不拆開；沒有依賴延後項目的呼叫。core 測試經由 `@hyperframes/parsers` 的 `dist` 解析，本機要先在 `packages/parsers` 跑 `bun run build`，否則得到 `findSceneTemplate is not a function`（280 failed，重建後全綠）；CI 先建置所以不受影響。
 - #7249 的套件大小：上游 squash 訊息提到兩次 inspector 預算調整，最終 diff 沒有動 `scripts/package-size-budgets.json`；本批沒有跑需要全套件建置的 `bun run verify:packed-manifests`，所以 core 與 inspector 的 packed 大小是否仍在 1% 容差內未驗證，下一次跑 pack 閘門時確認。
-- #7110 對上游的唯一差異：`detectFormat` 與 `loadTranscript` 呼叫 `parseWhisperJson(readFileSync(...))`，上游呼叫 `parseWhisperJson(readJsonFileText(...))`；`readJsonFileText` 屬 `utils/jsonFlag.js`，本線沒有該模組。
+- #7110 對上游的唯一差異：`detectFormat` 呼叫 `parseWhisperJson(readFileSync(...))`（`loadTranscript` 與上游相同，接收已讀出的內容），上游呼叫 `parseWhisperJson(readJsonFileText(...))`；`readJsonFileText` 屬 `utils/jsonFlag.js`，本線沒有該模組。
 - 既有失敗（乾淨 HEAD 同樣出現）：parsers `assetResolution.test.ts` 一例符號連結 `EPERM`；`packages/cli` 的 `tsc --noEmit` 在 `check.test.ts` 有 3 個型別錯誤（`:2313`、`:3903`、`:3904`）。兩者證據在清冊。
 
 型別與閘門：移植觸及 `packages/core/src/runtime/compositionLoader.ts`，提交前跑 `cd packages/core && bun run typecheck`（含 `typecheck:runtime`）與 CI 同指令 `bun run --filter "@hyperframes/core" test:hyperframe-runtime-ci`，兩者通過；本批沒有使用 `LEFTHOOK_EXCLUDE` 或任何方式跳過 hook。
