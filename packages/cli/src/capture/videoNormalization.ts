@@ -1,14 +1,7 @@
 import { spawn, spawnSync } from "node:child_process";
-import {
-  constants,
-  copyFileSync,
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  rmSync,
-  statSync,
-} from "node:fs";
+import { constants, copyFileSync, existsSync, mkdirSync, rmSync, statSync } from "node:fs";
 import { dirname, extname, join } from "node:path";
+import { createStagingDir } from "@hyperframes/core/atomic-file";
 
 const VIDEO_EXTENSIONS = new Set([".mp4", ".m4v", ".mov", ".webm", ".mkv"]);
 
@@ -39,7 +32,7 @@ function normalizedOutput(destPath: string): { tempDir: string; output: string }
   const ext = extname(destPath).toLowerCase();
   if (!VIDEO_EXTENSIONS.has(ext)) throw new Error(`unsupported video extension: ${ext || "none"}`);
   mkdirSync(dirname(destPath), { recursive: true });
-  const tempDir = mkdtempSync(join(dirname(destPath), ".hf-video-"));
+  const tempDir = createStagingDir(dirname(destPath), ".hf-video-");
   return { tempDir, output: join(tempDir, `video${ext}`) };
 }
 
