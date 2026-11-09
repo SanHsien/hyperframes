@@ -288,7 +288,7 @@ export function buildVirtualTimeShim(options: VirtualTimeShimOptions): string {
   // The seekToTime hook reseeds when seeding is on; under seedRandomFromFrame=false
   // we emit no extra call so the function body is byte-identical to the
   // unseeded shim.
-  const seekToTimeReseedCall = seedRandomFromFrame ? "reseedRngFromTime(safeTimeMs);\n      " : "";
+  const seekToTimeReseedCall = seedRandomFromFrame ? "reseedRngFromTime(safeTimeMs);\n    " : "";
   return String.raw`(function() {
   if (window.__HF_VIRTUAL_TIME__) return;
 
@@ -429,6 +429,20 @@ ${seededRandomBlock}
     if (!cancelTimer(id)) originalClearInterval(id);
   };
 
+  function seekToTime(nextTimeMs) {
+    var safeTimeMs = Math.max(0, Number(nextTimeMs) || 0);
+    if (!rendering && window.__renderReady === true) {
+      rendering = true;
+      // A worker whose first frame is past the start plays the film's first frame first, so timers the
+      // page starts there keep the schedule a one-worker render gives them.
+      if (safeTimeMs > 0) seekToTime(0);
+    }
+    ${seekToTimeReseedCall}fireDueTimers(safeTimeMs);
+    virtualNowMs = safeTimeMs;
+    flushAnimationFrame();
+    return virtualNowMs;
+  }
+
   window.__HF_VIRTUAL_TIME__ = {
     originalSetTimeout: originalSetTimeout,
     originalClearTimeout: originalClearTimeout,
@@ -436,14 +450,7 @@ ${seededRandomBlock}
     originalClearInterval: originalClearInterval,
     originalRequestAnimationFrame: originalRequestAnimationFrame,
     originalCancelAnimationFrame: originalCancelAnimationFrame,
-    seekToTime: function(nextTimeMs) {
-      var safeTimeMs = Math.max(0, Number(nextTimeMs) || 0);
-      if (window.__renderReady === true) rendering = true;
-      ${seekToTimeReseedCall}fireDueTimers(safeTimeMs);
-      virtualNowMs = safeTimeMs;
-      flushAnimationFrame();
-      return virtualNowMs;
-    },
+    seekToTime: seekToTime,
     getTime: function() {
       return virtualNowMs;
     },

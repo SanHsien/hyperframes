@@ -22,8 +22,25 @@ function project(files: Record<string, string>) {
   return root;
 }
 
+/** Makes a symlink, or skips the test where this Windows account may not create them (EPERM). */
+function symlinkOrSkip(
+  context: { skip: (note?: string) => never },
+  target: string,
+  path: string,
+): void {
+  try {
+    symlinkSync(target, path);
+  } catch (error) {
+    const code = error && typeof error === "object" && "code" in error ? String(error.code) : "";
+    if (process.platform === "win32" && ["EPERM", "EACCES", "ENOSYS"].includes(code)) {
+      context.skip("Windows account does not permit creating symbolic links");
+    }
+    throw error;
+  }
+}
+
 async function warnings(root: string) {
-  const report = await lintProject(root);
+  const report = await lintProject(root, undefined, {}, { includeUnmounted: true });
   return report.results
     .flatMap(({ result }) => result.findings)
     .filter((finding) => finding.code === "shader_unbounded_cosine_pow");
@@ -79,9 +96,9 @@ it("skips remote, missing, vendor and commented-out scripts without fetching", a
   expect(await warnings(root)).toEqual([]);
 });
 
-it("does not read a linked shader outside the project through a symlink", async () => {
+it("does not read a linked shader outside the project through a symlink", async (context) => {
   const outside = project({ "secret.js": code() });
   const root = project({ "index.html": '<script src="outside.js"></script>' });
-  symlinkSync(join(outside, "secret.js"), join(root, "outside.js"));
+  symlinkOrSkip(context, join(outside, "secret.js"), join(root, "outside.js"));
   expect(await warnings(root)).toEqual([]);
 });

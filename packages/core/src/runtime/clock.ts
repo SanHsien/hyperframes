@@ -26,6 +26,26 @@ export type AudioClockSource =
 const STALL_THRESHOLD_MS = 500;
 const STALL_ADJUSTED_LAG_MS = 33;
 const HAVE_FUTURE_DATA = 3;
+const MAX_MEDIA_STEP_SECONDS = 0.25;
+const MEDIA_STEPS_KEPT = 8;
+
+type MediaReading = {
+  el: HTMLMediaElement;
+  time: number;
+  steps: number[];
+  from: number;
+  fromMs: number;
+};
+
+const furthestAhead = (reading: MediaReading | null) =>
+  reading ? Math.max(0, ...reading.steps) : 0;
+
+function noteStep(reading: MediaReading, time: number): void {
+  const step = time - reading.time;
+  if (step > 0 && step <= MAX_MEDIA_STEP_SECONDS)
+    reading.steps = [...reading.steps.slice(1 - MEDIA_STEPS_KEPT), step];
+  reading.time = time;
+}
 
 export class TransportClock {
   private _baseTime = 0;
@@ -40,6 +60,8 @@ export class TransportClock {
   /** Wall-clock time of the last `now()` read while playing; null while paused. */
   private _lastReadMs: number | null = null;
   private _lastNow = 0;
+  private _reading: MediaReading | null = null;
+  private _ahead: { el: HTMLMediaElement; seconds: number } | null = null;
 
   constructor(opts?: {
     initialTime?: number;
@@ -54,6 +76,7 @@ export class TransportClock {
   }
 
   now(): number {
+    this._ahead = null;
     if (this._playStartMs === null) return this._baseTime;
 
     // Audio-master: drift is impossible because audio IS the clock. Clearing
@@ -90,10 +113,42 @@ export class TransportClock {
   ): number | null {
     const { el, compositionStart, mediaStart, rate } = source;
     if (el.paused || !Number.isFinite(el.currentTime)) return null;
-    if (el.seeking) return this._lastNow;
+    if (el.seeking) {
+      this._reading = null;
+      return this._lastNow;
+    }
     const spec = rate ?? 1;
     const time = timeAtSourceTime(spec, el.currentTime - mediaStart) + compositionStart;
+    const between = this._betweenUpdates(el, time);
+    if (between !== null) return between;
     return time >= this._lastNow ? time : this._heldTimeWhenBehind(el, this._lastNow - time, spec);
+  }
+
+  // Chromium moves currentTime in 10-50 ms steps, so reading it as is holds a frame, then jumps. Run on at the play
+  // rate, kept within [element time, element time + its largest recent step], never back; null when time is behind
+  // the playhead by more than that step (a late clip, not a step).
+  private _betweenUpdates(el: HTMLMediaElement, time: number): number | null {
+    const nowMs = this._nowMs();
+    const last = this._reading?.el === el ? this._reading : null;
+    if (time < this._lastNow - furthestAhead(last)) return null;
+    if (!last) {
+      this._reading = { el, time, steps: [], from: time, fromMs: nowMs };
+      return this._runAhead(el, time, Math.max(time, this._lastNow));
+    }
+    noteStep(last, time);
+    const run = last.from + ((nowMs - last.fromMs) / 1000) * this._rate;
+    const held = Math.min(Math.max(run, time), time + furthestAhead(last));
+    if (held !== run) Object.assign(last, { from: held, fromMs: nowMs });
+    return this._runAhead(el, time, Math.max(held, this._lastNow));
+  }
+
+  private _runAhead(el: HTMLMediaElement, time: number, now: number): number {
+    this._ahead = { el, seconds: now - time };
+    return now;
+  }
+
+  aheadOf(el: HTMLMediaElement): number {
+    return this._ahead?.el === el ? this._ahead.seconds : 0;
   }
 
   private _heldTimeWhenBehind(el: HTMLMediaElement, behind: number, spec: RateSpec): number | null {
@@ -120,6 +175,7 @@ export class TransportClock {
     if (this._baseTime >= this.getEnd()) return false;
     this._playStartMs = this._nowMs();
     this._lastNow = this._baseTime;
+    this._reading = null;
     // Not a stall: the gap since the clock was last read (possibly a long
     // paused idle) says nothing about lost playback time, since none was
     // playing. `_applyStallCorrection` treats null as "nothing to compare
@@ -132,6 +188,7 @@ export class TransportClock {
     if (this._playStartMs === null) return false;
     this._baseTime = this.now();
     this._playStartMs = null;
+    this._reading = null;
     return true;
   }
 
@@ -141,6 +198,7 @@ export class TransportClock {
       : Math.max(0, timeSeconds);
     this._baseTime = clamped;
     this._lastNow = clamped;
+    this._reading = null;
     if (this._playStartMs !== null) {
       this._playStartMs = this._nowMs();
       // Same reasoning as `play()`: the seek itself, not any elapsed gap
@@ -155,6 +213,7 @@ export class TransportClock {
 
   setRate(rate: number): void {
     const safe = Number.isFinite(rate) && rate > 0 ? Math.max(0.1, Math.min(5, rate)) : 1;
+    this._reading = null;
     if (this._playStartMs !== null) {
       this._baseTime = this.now();
       this._playStartMs = this._nowMs();
@@ -210,6 +269,7 @@ export class TransportClock {
       this._lastReadMs = null;
     }
     this._audioSource = null;
+    this._reading = null;
   }
 
   /** The element the playhead currently follows, if the source is one. */

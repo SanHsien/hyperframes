@@ -2,7 +2,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { mediaElementTime } from "./mediaClock";
 import { HF_COLOR_GRADING_ATTR, serializeHfColorGrading } from "../colorGrading";
-import { STUDIO_PREVIEW_LAZY_ATTR, STUDIO_PREVIEW_MARK_META } from "../studioPreviewMark";
+import {
+  STUDIO_PREVIEW_CAPTURE_MODE,
+  STUDIO_PREVIEW_LAZY_ATTR,
+  STUDIO_PREVIEW_MARK_META,
+} from "../studioPreviewMark";
 import { revealClip } from "./clipReveal";
 import type { RuntimeTimelineLike } from "./types";
 
@@ -327,6 +331,34 @@ describe("runtime entry", () => {
     expect(swallowed).toEqual(["runtime.init.seekHoldCap"]);
   });
 
+  it("resolves a mixed image/video seek only after both have decoded", async () => {
+    servePreview();
+    const root = mountRoot();
+    const current = timed(root, "div", "0");
+    const later = timed(root, "div", "5");
+    const image = later.appendChild(document.createElement("img"));
+    let decodeImage = () => {};
+    image.decode = () => new Promise<void>((resolve) => (decodeImage = resolve));
+    const video = timed(later, "video", "5");
+    video.src = "/movie.mp4";
+    let ready = 1;
+    Object.defineProperty(video, "readyState", { configurable: true, get: () => ready });
+    Object.defineProperty(video, "networkState", { configurable: true, value: 2 });
+    await evaluateRuntime();
+    let settled = false;
+    const landed = Promise.resolve(window.__player!.seek(5.5)).then(() => {
+      settled = true;
+    });
+    decodeImage();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(settled).toBe(false);
+    expect(visibility(current, later)).toEqual(["visible", "hidden"]);
+    ready = 4;
+    video.dispatchEvent(new Event("seeked"));
+    await landed;
+    expect(visibility(current, later)).toEqual(["hidden", "visible"]);
+  });
+
   it("drops a held jump when a newer seek or a render seek lands first", async () => {
     servePreview();
     const root = mountRoot();
@@ -472,6 +504,22 @@ describe("runtime entry", () => {
       expect(armed(...due)).toEqual([true, true, true, true, false]);
       due[1]!.dispatchEvent(new Event("error"));
       expect(armed(...due)).toEqual([true, true, true, true, true]);
+    });
+
+    it("in a hidden capture page only the clip on screen loads, and the one a seek left is freed", async () => {
+      spyLoad();
+      servePreview().setAttribute("content", STUDIO_PREVIEW_CAPTURE_MODE);
+      const [now, soon, later] = videos(mountRoot(), "0", "1.5", "9");
+
+      await evaluateRuntime();
+      expect(armed(now, soon, later)).toEqual([true, false, false]);
+      expect(loadsOf(now, soon, later)).toEqual([1, 0, 0]);
+
+      window.__player?.seek(9.4);
+      expect(armed(now, soon, later)).toEqual([false, false, true]);
+      expect(now.preload).toBe("none");
+      // The clip left is reloaded empty; the one landed on is armed by the seek, not reloaded under it.
+      expect(loadsOf(now, soon, later)).toEqual([2, 0, 0]);
     });
 
     it("prepares a queued split only after a prefetch slot opens", async () => {

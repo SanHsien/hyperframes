@@ -1,5 +1,12 @@
 export const STUDIO_PREVIEW_MARK_META = "hyperframes-studio-preview";
+export const PREVIEW_SEEK_HOLD_ATTR = "data-hf-preview-seek-hold";
 export const STUDIO_PREVIEW_CAPTURE_MODE = "capture";
+export function capturePageIn(doc: Document): boolean {
+  return (
+    doc.querySelector(`meta[name="${STUDIO_PREVIEW_MARK_META}"]`)?.getAttribute("content") ===
+    STUDIO_PREVIEW_CAPTURE_MODE
+  );
+}
 export const STUDIO_PREVIEW_UPCOMING_ATTR = "data-hf-upcoming";
 export const STUDIO_PREVIEW_LAZY_ATTR = "data-hf-preview-lazy";
 export const STUDIO_PREVIEW_ERRORS = "__hfPreviewErrors";

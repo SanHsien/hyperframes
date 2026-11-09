@@ -9,6 +9,47 @@
 // Add a new path/method to TARGET_ENDPOINTS in
 // scripts/generate_hyperframes_cli_client.py to extend this list.
 
+export interface AbortAssetUploadResponse {
+  asset_id: string;
+  status: "aborted";
+}
+
+export interface CompletedPart {
+  part_number: number;
+  etag: string;
+}
+
+export interface MultipartUploadPlan {
+  multipart_upload_id: string;
+  part_size_bytes: number;
+  part_count: number;
+}
+
+export interface UploadedPart {
+  part_number: number;
+  size_bytes: number;
+  etag: string;
+}
+
+export interface ListUploadedPartsResponse {
+  parts: Array<UploadedPart>;
+}
+
+export interface PartUrl {
+  part_number: number;
+  upload_url: string;
+}
+
+export interface MintPartUrlsRequest {
+  multipart_upload_id: string;
+  part_numbers: Array<number>;
+}
+
+export interface MintPartUrlsResponse {
+  parts: Array<PartUrl>;
+  expires_in_seconds: number;
+}
+
 /**
  * Asset input via base64-encoded content.
  */
@@ -63,6 +104,8 @@ export interface CompleteAssetUploadRequest {
    * Optional SHA256 (hex) cross-check.
    */
   checksum_sha256?: string | null;
+  multipart_upload_id?: string | null;
+  parts?: Array<CompletedPart> | null;
 }
 
 /**
@@ -116,6 +159,7 @@ export interface CreateAssetUploadRequest {
    * Optional SHA256 of the file as hex. When provided, S3 enforces it on upload.
    */
   checksum_sha256?: string | null;
+  multipart?: boolean;
 }
 
 /**
@@ -149,6 +193,7 @@ export interface CreateAssetUploadResponse {
    * Upload lifecycle status. Always 'pending_upload' here.
    */
   status: "pending_upload";
+  multipart?: MultipartUploadPlan | null;
 }
 
 /**
