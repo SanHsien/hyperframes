@@ -27,20 +27,26 @@ test("typecheck works with only a hoisted compiler and rejects errors in every p
   const repo = dirname(dirname(fileURLToPath(import.meta.url)));
   mkdirSync(join(repo, "tmp"), { recursive: true });
   const fixture = mkdtempSync(join(repo, "tmp", "lefthook-typecheck-"));
-  const projects = ["packages/core", "packages/studio", "scripts"];
+  // core's runtime sources sit outside tsconfig.json and have their own project file.
+  const projects = [
+    ["packages/core", "tsconfig.json"],
+    ["packages/core", "tsconfig.runtime.json"],
+    ["packages/studio", "tsconfig.json"],
+    ["scripts", "tsconfig.json"],
+  ];
   try {
     // Install only the real root compiler, with no package-local node_modules.
     cpSync(join(repo, "node_modules", "typescript"), join(fixture, "node_modules", "typescript"), {
       recursive: true,
     });
-    for (const project of projects) {
+    for (const [project, config] of projects) {
       const dir = join(fixture, project);
       mkdirSync(dir, { recursive: true });
       writeFileSync(
-        join(dir, "tsconfig.json"),
-        JSON.stringify({ compilerOptions: { types: [] }, files: ["input.ts"] }),
+        join(dir, config),
+        JSON.stringify({ compilerOptions: { types: [] }, files: [`${config}.input.ts`] }),
       );
-      writeFileSync(join(dir, "input.ts"), "const value: number = 1;\n");
+      writeFileSync(join(dir, `${config}.input.ts`), "const value: number = 1;\n");
     }
     const run = () =>
       spawnSync(job.run, {
@@ -51,11 +57,11 @@ test("typecheck works with only a hoisted compiler and rejects errors in every p
       });
     const clean = run();
     assert.equal(clean.status, 0, clean.error?.message ?? clean.stdout + clean.stderr);
-    for (const project of projects) {
-      const source = join(fixture, project, "input.ts");
+    for (const [project, config] of projects) {
+      const source = join(fixture, project, `${config}.input.ts`);
       writeFileSync(source, 'const value: number = "invalid";\n');
       const invalid = run();
-      assert.notEqual(invalid.status, 0, `${project} type errors must block a commit`);
+      assert.notEqual(invalid.status, 0, `${project}/${config} type errors must block a commit`);
       assert.match(invalid.stdout + invalid.stderr, /TS2322/);
       writeFileSync(source, "const value: number = 1;\n");
     }

@@ -3111,10 +3111,7 @@ export function initSandboxRuntimeModular(): void {
       if (el.preload !== "none") {
         el.preload = "none";
         // Frees a clip the window armed; on one the parser started, it would only restart the fetch.
-        if (decided)
-          withoutOwnTimingRecords(el, () =>
-            releaseMedia(el, !loadsAhead || window.__HF_RELEASE_PASSED_MEDIA === true),
-          );
+        if (decided) withoutOwnTimingRecords(el, () => releaseMedia(el));
       }
     } else if (!visible || decided === undefined) {
       // Not a clip a jump lands on: the media sync arms that one, and load() would undo its seek.
@@ -4931,7 +4928,7 @@ export function initSandboxRuntimeModular(): void {
         wallClearTimeout(capTimer);
         if (heldSeek === held) return flushHeldSeek();
       });
-      registerSeekCompletion(landed, "image-decode");
+      registerSeekCompletion(landed);
       return landed;
     },
     renderSeek: (timeSeconds, options) => {
