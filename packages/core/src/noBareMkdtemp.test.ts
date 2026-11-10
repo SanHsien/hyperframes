@@ -16,6 +16,8 @@ const ALLOWED = new Set([
   // script held in a string, a file copied verbatim to dist), so it cannot import createStagingDir.
   "cli/src/media-use/lib/freeze-publisher.mjs",
   "cli/src/media-use/lib/image-normalize.mjs",
+  // Reached through the git symlink packages/cli/src/audio/scripts -> skills/media-use/audio/scripts.
+  "cli/src/audio/scripts/lib/audio-normalize.mjs",
   "core/src/figma/freeze.ts",
   "producer/src/inline-project-publisher.mjs",
   "producer/src/server.ts",

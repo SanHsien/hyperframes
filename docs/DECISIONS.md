@@ -1380,6 +1380,7 @@ PR：#7462（`beats` 清除舊節拍格）、#7466（player 清掉 `src` 要卸�
 
 **移植時的取捨**：
 - 本線有五個上游沒有的 `mkdtemp` 呼叫點。`cli/src/capture/videoNormalization.ts`（TypeScript、cli 依賴 core）改用 `createStagingDir`。另四個（`cli/src/media-use/lib/freeze-publisher.mjs`、`cli/src/media-use/lib/image-normalize.mjs`：技能內獨立腳本；`core/src/figma/freeze.ts`：`String.raw` 內的子行程腳本；`producer/src/inline-project-publisher.mjs`：`build.mjs` 原樣複製到 `dist` 的獨立腳本）無法 import 套件，加進上游新增測試 `packages/core/src/noBareMkdtemp.test.ts` 的 ALLOWED 並附註解。這是對上游測試檔的 fork 改寫，也是這四處仍可能在超過 260 字元的專案路徑失敗的已知缺口：ROADMAP 中期表新增一列，觸發條件是實際遇到、或這些腳本改為可 import 核心。
+- 後續修正（2026-11-10）：推上 main 後 `Windows render verification` 的 core 測試報出第六個呼叫點 `cli/src/audio/scripts/lib/audio-normalize.mjs:12`（本線獨有的技能腳本，與 `image-normalize.mjs` 同類，無法 import 核心），已加進 ALLOWED，納入同一個 ROADMAP 中期列。它經由 git 符號連結 `packages/cli/src/audio/scripts` → `skills/media-use/audio/scripts` 才落在掃描範圍內；本機 checkout 的 `core.symlinks=false` 會把連結存成文字檔，所以本機跑這支測試看不到它，只有 CI 會掃到。在本機驗證這支測試時，要在支援符號連結的 checkout 跑，或對 `skills/media-use/*/scripts` 另做一次 `mkdtemp` 搜尋。
 - `fontCompression.ts` 與 `download.ts` 的 import 區塊、`captureHdrResources.ts` 的呼叫點行與上游不同，手工合併，其餘來源補丁乾淨套用。
 - 套件大小：`atomicFile.ts` 新增約 27 行，沒有重新量 packed 大小；`@hyperframes/core` 已超預算（見 2026-11-10「core 套件大小超出預算」），仍由 ROADMAP 近期表那一列承接，下一次在 ubuntu 跑預算檢查時一併量。
 - 本機驗證前提：engine、producer、cli、studio-server 的測試經由 `packages/core/dist` 解析 `@hyperframes/core/atomic-file`，dist 過舊時得到 `createStagingDir is not a function`；移植觸及 core 時要先重建 dist（清冊有指令）。
