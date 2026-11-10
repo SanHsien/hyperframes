@@ -61,6 +61,15 @@ describe("buildSubCompositionHtml", () => {
     },
   );
 
+  it("loads the default gsap version when the project head has no gsap", () => {
+    const dir = makeTempProject({
+      "index.html": `<!doctype html><html><head><title>Host</title></head><body></body></html>`,
+      "compositions/scene.html": `<div data-composition-id="scene" data-width="320" data-height="180"></div>`,
+    });
+    const html = buildSubCompositionHtml(dir, "compositions/scene.html", "/api/runtime.js");
+    expect(html).toContain(`<script src="${gsapCdnDist()}gsap.min.js"></script>`);
+  });
+
   it.each(["", "<script>gsap.registerPlugin(MotionPathPlugin);</script>"])(
     "loads GSAP core before a project head that has only a GSAP plugin (%#)",
     (usage) => {
