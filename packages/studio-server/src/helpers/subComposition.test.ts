@@ -1,7 +1,7 @@
 // @vitest-environment node
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, relative, sep } from "node:path";
 import { describe, expect, it, onTestFinished } from "vitest";
 import { gsapCdnDist } from "@hyperframes/core/gsap-cdn";
 import { parseHTML } from "linkedom";
@@ -19,15 +19,47 @@ function makeTempProject(files: Record<string, string>): string {
   return dir;
 }
 
+/** Windows without Developer Mode refuses `symlink` with EPERM; the symlink case then has nothing to test. */
+function canCreateSymlinks(): boolean {
+  const dir = mkdtempSync(join(tmpdir(), "hf-subcomp-symlink-probe-"));
+  try {
+    writeFileSync(join(dir, "target"), "", "utf-8");
+    symlinkSync(join(dir, "target"), join(dir, "link"));
+    return true;
+  } catch {
+    return false;
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
 describe("buildSubCompositionHtml", () => {
-  it("loads the default gsap version when the project head has no gsap", () => {
+  it("returns null for a composition path that resolves outside the project", () => {
+    const outside = makeTempProject({ "secret.txt": "outside-secret" });
     const dir = makeTempProject({
-      "index.html": `<!doctype html><html><head><title>Host</title></head><body></body></html>`,
-      "compositions/scene.html": `<div data-composition-id="scene" data-width="320" data-height="180"></div>`,
+      "index.html": "<!doctype html><html><head></head><body></body></html>",
     });
-    const html = buildSubCompositionHtml(dir, "compositions/scene.html", "/api/runtime.js");
-    expect(html).toContain(`<script src="${gsapCdnDist()}gsap.min.js"></script>`);
+    const escape = relative(dir, join(outside, "secret.txt")).split(sep).join("/");
+    expect(buildSubCompositionHtml(dir, escape, "/runtime.js")).toBeNull();
+    expect(buildSubCompositionHtml(dir, join(outside, "secret.txt"), "/runtime.js")).toBeNull();
   });
+
+  it.skipIf(!canCreateSymlinks())(
+    "leaves out an index.html head that a symlink points outside the project",
+    () => {
+      const outside = makeTempProject({
+        "index.html":
+          '<!doctype html><html><head><meta name="outside-head"></head><body></body></html>',
+      });
+      const dir = makeTempProject({
+        "scenes/scene.html": '<template><div id="scene"></div></template>',
+      });
+      symlinkSync(join(outside, "index.html"), join(dir, "index.html"));
+      const html = buildSubCompositionHtml(dir, "scenes/scene.html", "/runtime.js");
+      expect(html).toContain('id="scene"');
+      expect(html).not.toContain("outside-head");
+    },
+  );
 
   it.each(["", "<script>gsap.registerPlugin(MotionPathPlugin);</script>"])(
     "loads GSAP core before a project head that has only a GSAP plugin (%#)",
