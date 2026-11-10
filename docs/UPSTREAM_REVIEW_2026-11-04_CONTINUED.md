@@ -3723,7 +3723,7 @@ issue 軸本批沒有新增項目：`Triaged through #7451`，`No new items abov
 | producer `renderEtaGuard.test.ts`、`renderOrchestrator.test.ts`（#7479） | 套測試、來源還原為 `HEAD`：7 failed（`passes at the 2x margin and fails just over it`、`matches the two prod renders on the 90 minute budget`、`lets a render through whose slowest calibration frame alone would refuse it`、`lets through a long many-worker render whose typical frame fits the budget`、`still refuses a render that would take hours on its typical frame`、`skips the check without a calibration estimate`、`records the typical calibration frame next to the slowest`） | `renderEtaGuard`、`renderOrchestrator`、`captureCost*` 4 檔 312 passed（312）；`bun run typecheck` 無錯誤輸出 | 校準中位幀與 2 倍容忍 |
 | studio-server `subComposition.test.ts`（#7482，本線改寫的測試） | 套測試、來源為 `HEAD`：1 failed／21 passed／1 skipped（23）：`returns null for a composition path that resolves outside the project`，`expected '<!DOCTYPE html>…' to be null`；符號連結例略過（`EPERM` 探測） | 22 passed／1 skipped（23）；`src/helpers` 全目錄 3 failed／623 passed／9 skipped（635），3 例為既有失敗（見 DECISIONS） | 子合成預覽只讀專案內 |
 
-環境說明：上列測試命令沒有降低優先權；`src/routes` 那次改以 BelowNormal 啟動。`src/routes` 有 13 例失敗，改回 `HEAD` 的 `subComposition.ts` 後 `imageThumbnail` 1、`media` 1、`files.renameReferences` 7、`loudness` 1 的逐檔失敗數相同，未截取完整總計行，所以不寫總數。
+環境說明：上列測試命令沒有降低優先權；`src/routes` 那次改以 BelowNormal 啟動。`src/routes` 實為 14 例失敗（覆核以乾淨 `29c50ea16` 對照，與合併前後相同，清單見 DECISIONS「更正與收尾」），原寫 13 例，改回 `HEAD` 的 `subComposition.ts` 後 `imageThumbnail` 1、`media` 1、`files.renameReferences` 7、`loudness` 1 的逐檔失敗數相同，未截取完整總計行，所以不寫總數。
 
 ### PR 軸
 
@@ -3796,5 +3796,3 @@ issue 軸本批沒有新增項目：`Triaged through #7451`，`No new items abov
 ### 最新剩餘快照（水位 `c6d243a2d`，PR #7492，issue #7486）
 
 2026-11-10 `python tools/check_upstream_updates.py --strict` exit 0（最終水位 `61e720b0e7d6d68172466a3a72ea27d98f2ad58d`，含收尾補記的 #7491）：commit 軸 `No new upstream commits`（behind 0）；PR 軸 `Triaged through #7492`、`No new items above that number`；issue 軸 `Triaged through #7486`、`No new items above that number`；monitored 181 筆，`Every pinned item is still at the head and state it was judged at`。
-
-收尾補記：PR 軸再出現 #7493（open，釘 head `98cfa71b32a1936376bf24cd58845a2dc0a1c6a8`），PR 水位 #7493，monitored 182 筆；最終 `--strict` exit 0。

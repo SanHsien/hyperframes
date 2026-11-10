@@ -337,10 +337,8 @@ commit 水位 `c149730819437fbf0d8fda7de6952293bcf69c50`，PR #7452、issue #745
 
 commit 水位 `9e346f9bb793fe53684d7437ac4bed79b11aaa54`，PR #7468、issue #7465，monitored 由 165 增為 169 筆。本線獨有的四個獨立腳本（`freeze-publisher.mjs`、`image-normalize.mjs`、`core/src/figma/freeze.ts`、`inline-project-publisher.mjs`）仍用裸 `mkdtemp`，在 `noBareMkdtemp.test.ts` 的 ALLOWED 列出並登記於 ROADMAP；其餘先前延後項目依清冊條件維持延後。採用的上游程式碼作者為 Miguel Ángel（#7338、#7456、#7459）、James Russo（#7454）、Ular Kimsanov（#7439）、Akshar Patel（#7463，供 Co-authored-by）。剩餘數字僅記於清冊最新節。
 
-## 2026-11-10：連續水位 `c6d243a2d`
+## 2026-11-10：連續水位 `f9255e39a`
 
-以 fork `29c50ea16` 接續，審完 `9e346f9bb..b4c7f9cf7`（上游 tip）共 16 個 commit、PR #7469–#7492 共 22 筆、issue #7473／#7486 共 2 筆與 12 筆釘選移動。採用 6 個 commit（#7490 預覽伺服器 host 與跨來源寫入防護、#7466 player 清掉 `src` 卸載影片、#7479 慢渲染拒絕改看中位幀、#7482 子合成預覽只讀專案內、#7441／#7440 Studio 桌面版文件）；延後 6 個 commit（#7487 gcp-cloud-run 映像釘選，雲端路徑；#7469／#7471／#7476 engine 影片幀擷取，隨 #6914／#6920／#6908 passthrough 組；#7480 隨 #7415 history 效能；#7468 隨 `@hf-result` 結果行）；不適用 4 個 commit（#7470 `packages/share`、#7351 `heygen` 用戶端、#7475／#7483 版號）。新釘 12 筆 open PR（#7487、#7490 在審查中合併，已重釘 closed）。
+以 fork `29c50ea16` 接續，審完 `9e346f9bb..f9255e39a`（上游 tip）共 18 個 commit、PR #7469–#7495、issue #7473／#7486 與 14 筆釘選移動。採用 6 個 commit（#7490 預覽伺服器 host 與跨來源寫入防護、#7466 player 清掉 `src` 卸載影片、#7479 慢渲染拒絕改看中位幀、#7482 子合成預覽只讀專案內、#7441／#7440 Studio 桌面版文件），另採用 open PR #7493（dev server 對 API 路由檢查 Host，保留 monitored 追蹤）；延後 8 個 commit（#7487、#7485 雲端映像與 Lambda 鎖檔；#7469／#7471／#7476 engine 影片幀擷取，隨 #6914／#6920／#6908 passthrough 組；#7480、#7491 隨 #7415 history 組；#7468 隨 `@hf-result` 結果行）；不適用 4 個 commit（#7470 `packages/share`、#7351 `heygen` 用戶端、#7475／#7483 版號），#7494 為 v0.9.30 版號 PR 不適用。
 
-commit 水位 `c6d243a2dee879e5f1fa2aeda544de8ecf91a998`，PR #7492、issue #7486，monitored 由 169 增為 181 筆。`subComposition.test.ts` 與上游測試的差異（Windows 路徑、符號連結略過）記於 [維護決策](DECISIONS.md#2026-11-10連續水位-c6d243a2dpr-7492issue-7486)；core 封裝大小那一列的觸發條件未成立。剩餘數字僅記於清冊最新節。
-
-收尾時水位再前進到 `61e720b0e7d6d68172466a3a72ea27d98f2ad58d`（#7491 history 掃描，延後，隨 #7415 組）。
+commit 水位 `f9255e39a56de17fd86362c4558a918ad2a874ef`，PR #7495，issue #7486，monitored 183 筆。`subComposition.test.ts` 與上游測試的差異（Windows 路徑、符號連結略過）及既有失敗清單記於 [維護決策](DECISIONS.md#2026-11-10連續水位-f9255e39apr-7495issue-7486)；core 封裝大小那一列的觸發條件未成立。剩餘數字僅記於清冊最新節。

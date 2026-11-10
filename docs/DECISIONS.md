@@ -1391,9 +1391,9 @@ PR：#7462（`beats` 清除舊節拍格）、#7466（player 清掉 `src` 要卸�
 commit 水位 `9e346f9bb793fe53684d7437ac4bed79b11aaa54`，PR #7468、issue #7465，monitored 由 165 增為 169 筆。採用的上游程式碼作者為 Miguel Ángel（#7338、#7456、#7459）、James Russo（#7454）、Ular Kimsanov（#7439）、Akshar Patel（#7463，供 Co-authored-by）。無新 LFS 物件。
 
 
-## 2026-11-10：連續水位 `c6d243a2d`（PR #7492，issue #7486）
+## 2026-11-10：連續水位 `f9255e39a`（PR #7495，issue #7486）
 
-以 fork `29c50ea16` 接續，審完 `9e346f9bb..b4c7f9cf7`（上游 tip）共 16 個 commit、PR #7469–#7492 共 22 筆（審查結束時已合併 12 筆、open 10 筆）、issue #7473 與 #7486 共 2 筆與 12 筆釘選移動。逐筆來源、numstat、紅綠證據見 [接續清冊](UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-10接續至-c6d243a2d上游-tip)。審查進行中上游又合併了 #7490 與 #7487 兩個 commit，水位因此是 `c6d243a2d`，不是原先審的 `b4c7f9cf7`（#7483）。
+以 fork `29c50ea16` 接續，審完 `9e346f9bb..b4c7f9cf7`（上游 tip）共 18 個 commit、PR #7469–#7495（25 筆）、issue #7473 與 #7486 共 2 筆與 14 筆釘選移動。逐筆來源、numstat、紅綠證據見 [接續清冊](UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-10接續至-c6d243a2d上游-tip)。審查進行中上游又合併了 #7490 與 #7487 兩個 commit，水位因此是 `c6d243a2d`，不是原先審的 `b4c7f9cf7`（#7483）。
 
 採用 6 個 commit（五個 fork commit：`6b8f2174d`、`f99360cff`、`e59120195`、`a85a00e36`、`3a66039cc`）：
 - `e5e79e59e`（#7466，issue #7465）：`<hyperframes-player>` 的 `src` 移除或設為空字串時卸載影片並重設為暫停在 0:00（`hyperframes-player.ts:280` 的 `val || this._videoSource`）。補丁逐位元套用；測試先紅（2 failed）後綠（`hyperframes-player.test.ts` 243 passed）。
@@ -1402,7 +1402,7 @@ commit 水位 `9e346f9bb793fe53684d7437ac4bed79b11aaa54`，PR #7468、issue #746
 - `f318d3d08`（#7490）：Studio API 拒絕跨來源（含不透明 `null` origin）的寫入，並只回應伺服器實際被存取的 host，補 DNS rebinding 與跨站寫入專案的入口；host 辨識函式由 CLI 的 `telemetryIdentity.ts` 移到新子路徑 `@hyperframes/studio-server/request-identity`，CLI 端 re-export。本線 `telemetryIdentity.ts` 與上游父 commit 的對應檔相同（`git diff HEAD upstream/main` 該檔 15 增 118 減，等於上游這個 commit 的變動），補丁以 `--3way` 乾淨套用（原 `apply --check` 只因 `tsup.config.ts:14` 的上下文失敗）。測試先紅（`createStudioApi.originGuard.test.ts` 12 failed；`desktopRoutes.test.ts`、`studioServer.test.ts` 無法載入）後綠（21 passed；cli `src/server` 20 檔 passed／1 skipped，246 passed／10 skipped／0 failed，前提是重建 studio-server 的 `dist`）。fork `3a66039cc`。
 - `756bd6b17`（#7441）、`b12365d67`（#7440）：Studio 桌面版 `export.mdx`、`reference-video.mdx` 的方案與 API 金鑰說明，逐位元套用。
 
-延後 6 個 commit：
+延後 8 個 commit（含收尾時合併的 #7491、#7485）：
 - `4d0fa2baa`（#7469）、`235c80bae`（#7471）、`1a758fd60`（#7476）：engine 影片幀擷取的最後一幀、逐幀來源修正與測試拆檔。`git apply --check` 失敗於 `videoFrameExtractor.ts:1205`；`--3way` 在 `videoFrameExtractor.ts` 留下兩個衝突區（1129–1247 與 1422–1448 行），第一個把整段 layer passthrough 路徑（`VIDEO_LAYER_TAIL_SLACK_SECONDS`，上游 #6914）帶進來；本線 `videoFrameExtractor.ts` 完全沒有 `videoStartOnMediaTimeline` 與 `VIDEO_LAYER_TAIL_SLACK_SECONDS`（grep 0 筆，上游父 commit 9 筆），濾鏡鏈用 `metadata.videoStreamLeadSeconds`（`:1222`）。#6914 在 2026-11-02 因「衝突」延後。已還原，沒有留下半成品。重訪條件：採用 #6914／#6920／#6908 那一組時一併採；#7469 把 `SCHEMA_PREFIX` 由 `hfcache-v8-` 升到 `v9-`，#7471 也動 `extractionCache.ts`，兩者要同批採才不會多升版。
 - `e8416b2a4`（#7480）：Studio history 等待被存檔清空的檔案。`--3way` 三個檔（`blobStore.ts`、`blobStore.test.ts`、`projectHistory.ts`）衝突；它接在 #7415（history 首次複製效能，2026-11-10 延後）之上，本線 `blobStore.ts` 對上游父 commit 少 104 行。已還原。重訪條件：採用 #7415 時一併採。
 - `c6d243a2d`（#7487）：gcp-cloud-run Dockerfile 釘基底映像並以 sha256 驗證 chrome-headless-shell 與 bun，1 檔 +32／−9；`apply --check` 可套用，但本線不建置也不發佈該映像，沒有 Docker 建置驗證就換釘雜湊，風險大於收益，與 #6890 同為雲端路徑延後。重訪條件：本線建置或發佈 `gcp-cloud-run` 映像，或能在有 Docker 的環境跑建置驗證時。
@@ -1428,6 +1428,11 @@ commit 水位 `9e346f9bb793fe53684d7437ac4bed79b11aaa54`，PR #7468、issue #746
 
 commit 水位 `c6d243a2dee879e5f1fa2aeda544de8ecf91a998`，PR #7492、issue #7486，monitored 由 169 增為 181 筆（新釘 12 筆）。採用的上游程式碼作者為 Akshar Patel（#7466）、Miguel Ángel（#7479）、James Russo（#7482、#7490）、Ular Kimsanov（#7440、#7441）。無新 LFS 物件。
 
-**收尾補記（水位再前進到 `61e720b0e7d6d68172466a3a72ea27d98f2ad58d`）**：審查收尾時上游又合併 `61e720b0e`（#7491，history 掃描不再長時間占住事件迴圈，6 檔 +151／−26）。延後：`apply --check` 失敗於 `projectSignature.test.ts:17` 與 `projectHistory.ts:26`，它與已延後的 #7415、#7480 同在 history 模組，隨該組一併採用；#7491 轉 closed 重釘。#7436（draft）head 再移動到 `dee5322fd`（15 檔 +466／−39，仍 draft），重釘。commit 軸因此共 17 個 commit，延後 7 個；其餘計數不變。`61e720b0e` 的 151 行新增行掃描 0 命中。
-
-收尾時又出現 #7493（open，head `98cfa71b32a1936376bf24cd58845a2dc0a1c6a8`，`fix(studio): check Host on the dev server's API routes and honor preview allowed hosts`，2 檔 +172／−0：`packages/studio/vite.config.ts` 36 行與 `vite.config.hosts.test.ts` 136 行，開發伺服器 API 路由檢查 Host；`git apply --check` 無輸出即可乾淨套用，隱藏內容掃描 0 命中）。與 #7490 同屬預覽／開發伺服器 Host 防護，仍 open，依規則釘 monitored、合併後與 #7490 的守衛一併對照後採用；PR 水位 #7493，monitored 增為 182 筆。
+**更正與收尾（以此段為最終數字）**：
+- #7482 的手工移植（`e59120195`）曾誤刪既有測試 `loads the default gsap version when the project head has no gsap`，已在 `2256640cc` 原樣補回；`subComposition.test.ts` 23 passed／1 skipped。補回後該測試檔與上游的差異只有：import 多 `symlinkSync`、`relative`、`sep`；逃逸路徑改用 `relative()`／`sep`；新增 `canCreateSymlinks()` 探測並以 `it.skipIf` 略過符號連結例。
+- 既有失敗清單（覆核以乾淨 `29c50ea16` 對照，`src/routes` 加 `src/helpers` 在合併前後同為 17 例，**全為既有，與本批無關**）：`src/helpers` 3 例（`hfIdPersist` 兩例、`undecodableAudioTrack`）；`src/routes` 14 例（`files.renameReferences` 7、`files.test.ts` 3 例「backup cannot be created」、`imageThumbnail` 1、`imageThumbnail.withoutSharp` 1、`loudness` 1、`media` 1）。前文寫的「13 例」以此為準。
+- **採用 open PR #7493**（fork `cf00cea3e`）：dev server 對插件的 `/api/*` 與 `/__hyperframes_config` 檢查 Host、並接受 `HYPERFRAMES_PREVIEW_ALLOWED_HOSTS`，補 dev 模式 DNS rebinding 讀專案檔的缺口。逐位元套用上游 head `98cfa71b3`（2 檔 +172，`vite.config.ts` 36 行、`vite.config.hosts.test.ts` 136 行）；測試先紅（3 failed）後綠（5 passed），studio typecheck exit 0。PR 仍 open，保留在 monitored 追蹤 head，合併後與合併版對照。
+- 收尾時上游又合併 `61e720b0e`（#7491 history 掃描，6 檔 +151／−26，`apply --check` 失敗於 `projectSignature.test.ts:17`、`projectHistory.ts:26`，延後，隨 #7415 組）與 `f9255e39a`（#7485 aws-lambda 以鎖檔安裝執行階段，11 檔 +1037／−57，`apply --check` 可套用，雲端路徑本線不發佈，與 #6890 同延後；觸發條件：本線發佈 Lambda handler zip 或能驗證其建置時）。#7494（release v0.9.30）版號發行，不適用，不釘；#7495（`ci(publish)` 在唯讀 job 建 Lambda zip 並驗雜湊，1 檔 `.github/workflows/publish.yml` +63／−3，head `974485669`，open）：本線 publish 流程有 `heygen-com/hyperframes` 閘門，不採，釘 monitored。
+- 重釘：#7436（draft，head `2bfc550b2`，15 檔 +471／−39）、#7488（head `254459763`，8 檔 +282／−60）、#7492（head `a13fffd03`，13 檔 +277／−4，增量只是縮圖來源改用 hostname bind 名稱，`serverOrigin.ts` 與其測試 +27／−2）仍 open，維持原判定；#7485、#7491 轉 closed。
+- 隱藏內容掃描補充：commit 軸 `61e720b0e` 151、`f9255e39a` 1037 行新增行，PR 軸 #7436 471、#7488 282、#7492 277、#7493 172、#7495 63，全部 0 命中。
+- 水位：commit `f9255e39a56de17fd86362c4558a918ad2a874ef`，PR #7495，issue #7486，monitored 183 筆。core 封裝大小那一列觸發條件仍未成立（本批唯一動到 `packages/studio` 與 `studio-server`，沒有動 `packages/core`，預算檔無上游變動）。
