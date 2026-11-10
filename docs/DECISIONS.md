@@ -1389,3 +1389,45 @@ PR：#7462（`beats` 清除舊節拍格）、#7466（player 清掉 `src` 要卸�
 **型別與閘門**：每個 fork commit 提交前 `bun run --filter '*' typecheck` 15 個套件全部 exit 0、`cd packages/core && bun run typecheck` exit 0；`bun run --filter "@hyperframes/core" test:hyperframe-runtime-ci` 在第一個 commit 前 exit 0（第二個 commit 沒有動 `packages/core`）；pre-commit 的 lint、format、typecheck、fallow、cli process ownership、largefiles 與 commitlint 都通過。本批沒有使用 `LEFTHOOK_EXCLUDE` 或任何方式跳過 hook。
 
 commit 水位 `9e346f9bb793fe53684d7437ac4bed79b11aaa54`，PR #7468、issue #7465，monitored 由 165 增為 169 筆。採用的上游程式碼作者為 Miguel Ángel（#7338、#7456、#7459）、James Russo（#7454）、Ular Kimsanov（#7439）、Akshar Patel（#7463，供 Co-authored-by）。無新 LFS 物件。
+
+
+## 2026-11-10：連續水位 `c6d243a2d`（PR #7492，issue #7486）
+
+以 fork `29c50ea16` 接續，審完 `9e346f9bb..b4c7f9cf7`（上游 tip）共 16 個 commit、PR #7469–#7492 共 22 筆（審查結束時已合併 12 筆、open 10 筆）、issue #7473 與 #7486 共 2 筆與 12 筆釘選移動。逐筆來源、numstat、紅綠證據見 [接續清冊](UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-10接續至-c6d243a2d上游-tip)。審查進行中上游又合併了 #7490 與 #7487 兩個 commit，水位因此是 `c6d243a2d`，不是原先審的 `b4c7f9cf7`（#7483）。
+
+採用 6 個 commit（五個 fork commit：`6b8f2174d`、`f99360cff`、`e59120195`、`a85a00e36`、`3a66039cc`）：
+- `e5e79e59e`（#7466，issue #7465）：`<hyperframes-player>` 的 `src` 移除或設為空字串時卸載影片並重設為暫停在 0:00（`hyperframes-player.ts:280` 的 `val || this._videoSource`）。補丁逐位元套用；測試先紅（2 failed）後綠（`hyperframes-player.test.ts` 243 passed）。
+- `88db83092`（#7479）：預先擷取的 ETA 檢查改用校準的中位幀（`checkCalibratedRenderEta`、`medianMs`），`RENDER_TOO_SLOW` 的容忍倍數由 1.2 升為 2（`renderEtaGuard.ts:4`）。三方合併乾淨套用；測試先紅（7 failed）後綠（4 檔 312 passed）。
+- `724ab39b3`（#7482）：`buildSubCompositionHtml` 對合成路徑與根 `index.html` 改走 `resolveWithinProject`（`subComposition.ts:277`、`:336`），路徑離開專案時回 `null`／不取該檔的 head。補丁因 import 區塊不同而失敗，手工移植；與上游測試的差異見下。測試先紅（1 failed）後綠（22 passed／1 skipped）。
+- `f318d3d08`（#7490）：Studio API 拒絕跨來源（含不透明 `null` origin）的寫入，並只回應伺服器實際被存取的 host，補 DNS rebinding 與跨站寫入專案的入口；host 辨識函式由 CLI 的 `telemetryIdentity.ts` 移到新子路徑 `@hyperframes/studio-server/request-identity`，CLI 端 re-export。本線 `telemetryIdentity.ts` 與上游父 commit 的對應檔相同（`git diff HEAD upstream/main` 該檔 15 增 118 減，等於上游這個 commit 的變動），補丁以 `--3way` 乾淨套用（原 `apply --check` 只因 `tsup.config.ts:14` 的上下文失敗）。測試先紅（`createStudioApi.originGuard.test.ts` 12 failed；`desktopRoutes.test.ts`、`studioServer.test.ts` 無法載入）後綠（21 passed；cli `src/server` 20 檔 passed／1 skipped，246 passed／10 skipped／0 failed，前提是重建 studio-server 的 `dist`）。fork `3a66039cc`。
+- `756bd6b17`（#7441）、`b12365d67`（#7440）：Studio 桌面版 `export.mdx`、`reference-video.mdx` 的方案與 API 金鑰說明，逐位元套用。
+
+延後 6 個 commit：
+- `4d0fa2baa`（#7469）、`235c80bae`（#7471）、`1a758fd60`（#7476）：engine 影片幀擷取的最後一幀、逐幀來源修正與測試拆檔。`git apply --check` 失敗於 `videoFrameExtractor.ts:1205`；`--3way` 在 `videoFrameExtractor.ts` 留下兩個衝突區（1129–1247 與 1422–1448 行），第一個把整段 layer passthrough 路徑（`VIDEO_LAYER_TAIL_SLACK_SECONDS`，上游 #6914）帶進來；本線 `videoFrameExtractor.ts` 完全沒有 `videoStartOnMediaTimeline` 與 `VIDEO_LAYER_TAIL_SLACK_SECONDS`（grep 0 筆，上游父 commit 9 筆），濾鏡鏈用 `metadata.videoStreamLeadSeconds`（`:1222`）。#6914 在 2026-11-02 因「衝突」延後。已還原，沒有留下半成品。重訪條件：採用 #6914／#6920／#6908 那一組時一併採；#7469 把 `SCHEMA_PREFIX` 由 `hfcache-v8-` 升到 `v9-`，#7471 也動 `extractionCache.ts`，兩者要同批採才不會多升版。
+- `e8416b2a4`（#7480）：Studio history 等待被存檔清空的檔案。`--3way` 三個檔（`blobStore.ts`、`blobStore.test.ts`、`projectHistory.ts`）衝突；它接在 #7415（history 首次複製效能，2026-11-10 延後）之上，本線 `blobStore.ts` 對上游父 commit 少 104 行。已還原。重訪條件：採用 #7415 時一併採。
+- `c6d243a2d`（#7487）：gcp-cloud-run Dockerfile 釘基底映像並以 sha256 驗證 chrome-headless-shell 與 bun，1 檔 +32／−9；`apply --check` 可套用，但本線不建置也不發佈該映像，沒有 Docker 建置驗證就換釘雜湊，風險大於收益，與 #6890 同為雲端路徑延後。重訪條件：本線建置或發佈 `gcp-cloud-run` 映像，或能在有 Docker 的環境跑建置驗證時。
+- `651de1d94`（#7468）：`@hf-result` 結果行帶 motion blur 摘要。本線沒有 `@hf-result` 結果行（`grep -rln '@hf-result\|reference_background' packages/cli/src` 無輸出），`packages/cli/README.md` 與 `render.ts` 兩處補丁都失敗。重訪條件：移植 `@hf-result` 結果行（含 `reference_background`）時一併採。
+
+不適用 4 個 commit：`58e9cae75`（#7470，與 #7472 同 head `00d25628d`）：`packages/share` 不在本線；`0ba894123`（#7351）：`packages/cli/src/heygen` 不在本線，#7351 在 2026-11-06 已判不適用；`58686a74c`（#7475，v0.9.28）與 `b4c7f9cf7`（#7483，v0.9.29）：版號發行，本線 CLI 版本是 0.8.210。
+
+**與上游的差異（`subComposition.test.ts`）**：上游兩個新測試在 Windows 無法如實驗證。路徑逃逸測試用 `outside.split("/").pop()`，Windows 路徑用反斜線，組出的相對路徑不是 `..` 逃逸，所以**未修補的碼也通過**（本機實測：只套原樣測試時該例通過，只有符號連結例因 `EPERM` 失敗）；符號連結例在沒有開發人員模式的 Windows 上 `symlinkSync` 丟 `EPERM`。本線改以 `relative()`／`sep` 組出逃逸路徑（改後修補前紅燈），符號連結例在建不了符號連結時用 `it.skipIf` 略過。本機這一例被略過，所以「符號連結的 `index.html` 被排除」**沒有在本機驗證**，需要在可建符號連結的環境或 CI 跑。上游同步到該測試時移除這個差異。
+
+**open PR（12 筆新釘，其中 #7487、#7490 在審查進行中合併、已重釘 closed；全部以 `git fetch upstream refs/pull/<n>/head` 唯讀取回、讀過 diff）**：#7474（`EACCES` 視為沒有硬連結，對應 issue #7473；`atomicFile.ts` 與 `ownerLock.ts` 各改 1 行，等合併後採）、#7477（Windows 下載改為安裝程式的文件）、#7478（Studio `?` 開捷徑面板，`ShortcutsPanel.tsx` 本線存在）、#7481（`CSS_URL_RE` 比對含括號與另一種引號的 URL，`parsers/src/assetPaths.ts`）、#7484（`atomicFile` fsync 與影片狀態可復原，動 `packages/core`）、#7485（aws-lambda 執行階段鎖檔，雲端路徑）、#7487（gcp-cloud-run Dockerfile 釘基底映像，已合併，見延後）、#7488（`reverse` 登入說明，`commands/reverse` 本線不存在）、#7489（音訊 read 無分軌警告字句）、#7490（預覽伺服器只回應自己的 host、拒絕跨來源寫入，**安全修正**，審查中合併，已採用，見上）、#7491（history 走訪的命名重構，接 #7415）、#7492（縮圖來源與預覽沙盒，同屬 Studio 預覽安全面；審查中 head 由 `f9065fbeb` 強推為 `d1fc1d3f0`，三點 diff 仍 13 檔 +252／−4，內容未變，只是 rebase 到含 #7490 的主線，合併後與 #7490 的守衛對照評估）。其餘仍 open，依「open PR 釘 monitored、合併後再判」的規則不移植。
+
+**重釘的移動**：#7440、#7441、#7466、#7468、#7487、#7490 轉 closed（隨已採用／延後的 commit）；#7492 head `f9065fbeb`→`d1fc1d3f0`（上段）；#6890 head `67e48cc71`→`07ac428f3`（現為「拒絕不安全的分散式整數」，10 檔 +1146／−85，仍是雲端路徑，延後不變）；#6935 head `b90c658d2`→`8a36252d2`（兩個 head 之間只差刪 10 行註解，延後不變）；#7372 head `7e2492fda`→`4423ea9ee`（三點 diff 仍 4 檔 +27／−4，`skills-manifest.json` 雜湊補丁失敗不變，延後不變）。本批進行中另有兩筆再移動並已重讀增量重釘：#7436（draft，head `6a25337bd`→`a97070ec1`，14 檔 +465／−20，動 `packages/core/src/runtime/init.ts`，補丁失敗於 `init.test.ts:6047`，維持「合併後核對 `media.ts`」）與 #7485（head `50cae4a3d`→`79f53bef1`，只多 `packages/aws-lambda/package.json` 1 行）。
+
+**issue**：#7473（open，`createFileAtomically` 在 Android／Termux 因 `EACCES` 失敗）由 open PR #7474 追蹤並釘選，Windows 本線不受影響，記錄、不動；#7486（夜間 motion blur seed 62660）不適用，本線沒有上游夜間 differential harness（#7437 延後）。
+
+**判準八掃描**：commit 軸 16 個 commit 共 5,521 行新增行，PR 軸 16 筆 open／draft 目前 head 共 3,825 行新增行，0 個隱藏內容命中；400 字元以上單行只有 `0ba894123` 的兩行 `skills/media-use` 技能說明散文。
+
+**core 封裝大小那一列（ROADMAP 近期）**：觸發條件「要發版或跑 `publish.yml` 之前，或採用 #6865／#6922 時」**未成立**。本批沒有動 `packages/core`（五個 fork commit 在 player、producer、studio-server、cli、studio 與 docs），上游 `9e346f9bb..c6d243a2d` 對 `scripts/package-size-budgets.json` 與 `scripts/verify-packed-manifests.mjs` 沒有任何變動，#6865、#6922 仍延後；沒有重新量 packed 大小。該列維持原狀。
+
+**LFS 工作樹差異**：開工時 `packages/producer/tests/*/output/compiled.html` 10 個檔顯示已修改，`git diff --ignore-cr-at-eol --stat` 顯示 10 檔 30 增 3,393 減。這是假象：工作樹內容與 HEAD blob 逐位元相同（`git hash-object --no-filters` 與 `git rev-parse HEAD:<檔>` 10 筆全相同），原因是 `.gitattributes:18` 把它們標成 `filter=lfs`，而 HEAD 存的是原始 HTML，clean filter 把工作樹內容轉成 pointer 後與 blob 不同。`git checkout -- <檔>` 無法清除（每次重做同一個 clean 比較），所以保持原樣、沒有提交；根治已在 ROADMAP 近期「讓 `compiled.html` 的 git 儲存方式與 `.gitattributes` 一致」那一列（`git add --renormalize`），本批不動。
+
+**型別與閘門**：player、studio-server、producer 的 `bun run typecheck` 無錯誤輸出，#7490 之後 studio-server、cli、studio 三個逐一 exit 0；每個 fork commit 的 pre-commit（lint、format、typecheck、fallow、largefiles、tracked-artifacts）與 commitlint 都通過，沒有跳過 hook。fallow 回報的 `renderEtaGuard.ts:22 RenderTooSlowError.code` 是 `audit gate excluded 1 inherited finding`，在 `origin/main` 已存在，本批沒有新增。既有失敗：studio-server `src/helpers` 的 3 例（`hfIdPersist` 兩例 `EPERM` rename、`undecodableAudioTrack`）與 `src/routes` 的多檔失敗，改回 #7482 之前的來源後逐檔失敗數相同（`imageThumbnail` 1、`media` 1、`files.renameReferences` 7、`loudness` 1）。
+
+commit 水位 `c6d243a2dee879e5f1fa2aeda544de8ecf91a998`，PR #7492、issue #7486，monitored 由 169 增為 181 筆（新釘 12 筆）。採用的上游程式碼作者為 Akshar Patel（#7466）、Miguel Ángel（#7479）、James Russo（#7482、#7490）、Ular Kimsanov（#7440、#7441）。無新 LFS 物件。
+
+**收尾補記（水位再前進到 `61e720b0e7d6d68172466a3a72ea27d98f2ad58d`）**：審查收尾時上游又合併 `61e720b0e`（#7491，history 掃描不再長時間占住事件迴圈，6 檔 +151／−26）。延後：`apply --check` 失敗於 `projectSignature.test.ts:17` 與 `projectHistory.ts:26`，它與已延後的 #7415、#7480 同在 history 模組，隨該組一併採用；#7491 轉 closed 重釘。#7436（draft）head 再移動到 `dee5322fd`（15 檔 +466／−39，仍 draft），重釘。commit 軸因此共 17 個 commit，延後 7 個；其餘計數不變。`61e720b0e` 的 151 行新增行掃描 0 命中。
+
+收尾時又出現 #7493（open，head `98cfa71b32a1936376bf24cd58845a2dc0a1c6a8`，`fix(studio): check Host on the dev server's API routes and honor preview allowed hosts`，2 檔 +172／−0：`packages/studio/vite.config.ts` 36 行與 `vite.config.hosts.test.ts` 136 行，開發伺服器 API 路由檢查 Host；`git apply --check` 無輸出即可乾淨套用，隱藏內容掃描 0 命中）。與 #7490 同屬預覽／開發伺服器 Host 防護，仍 open，依規則釘 monitored、合併後與 #7490 的守衛一併對照後採用；PR 水位 #7493，monitored 增為 182 筆。

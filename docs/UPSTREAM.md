@@ -336,3 +336,11 @@ commit 水位 `c149730819437fbf0d8fda7de6952293bcf69c50`，PR #7452、issue #745
 以 fork `f3cab380a` 接續，審完 `c14973081..9e346f9bb`（上游 tip）共 12 個 commit、PR #7453–#7468 共 11 筆、issue #7457–#7465 共 5 筆與 11 筆釘選移動。採用 6 個 commit（#7338 `createStagingDir` 修 Windows 暫存資料夾超過 260 字元、#7459 Studio 渲染取每帳號渲染鎖、#7463 刪除動畫群組只解析一次、#7454 `seam-gate` 的 seek 改 await、#7456 engine 瀏覽器測試逾時 30 秒、#7439 MCP 指南設定步驟）；#6732 本線 2026-10-30 已移植，無新增改動；延後 2 個 commit（#7455 雲端用戶端型別重生、#7437 夜間 motion blur 差異測試）；不適用 3 個 commit（#7453 週報、#7269 `templates pull`、#7464 v0.9.27 版號發行）。11 筆釘選移動：6 筆轉 closed，5 筆更新 open head；新釘 #7462、#7466、#7467、#7468。issue #7457、#7460 已由採用的 commit 修復，#7461、#7465 由已釘的 PR 追蹤，#7458 記錄、不動。逐筆來源／fork 行號與紅綠證據見 [接續清冊](UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-10接續至-9e346f9bb上游-tip)。
 
 commit 水位 `9e346f9bb793fe53684d7437ac4bed79b11aaa54`，PR #7468、issue #7465，monitored 由 165 增為 169 筆。本線獨有的四個獨立腳本（`freeze-publisher.mjs`、`image-normalize.mjs`、`core/src/figma/freeze.ts`、`inline-project-publisher.mjs`）仍用裸 `mkdtemp`，在 `noBareMkdtemp.test.ts` 的 ALLOWED 列出並登記於 ROADMAP；其餘先前延後項目依清冊條件維持延後。採用的上游程式碼作者為 Miguel Ángel（#7338、#7456、#7459）、James Russo（#7454）、Ular Kimsanov（#7439）、Akshar Patel（#7463，供 Co-authored-by）。剩餘數字僅記於清冊最新節。
+
+## 2026-11-10：連續水位 `c6d243a2d`
+
+以 fork `29c50ea16` 接續，審完 `9e346f9bb..b4c7f9cf7`（上游 tip）共 16 個 commit、PR #7469–#7492 共 22 筆、issue #7473／#7486 共 2 筆與 12 筆釘選移動。採用 6 個 commit（#7490 預覽伺服器 host 與跨來源寫入防護、#7466 player 清掉 `src` 卸載影片、#7479 慢渲染拒絕改看中位幀、#7482 子合成預覽只讀專案內、#7441／#7440 Studio 桌面版文件）；延後 6 個 commit（#7487 gcp-cloud-run 映像釘選，雲端路徑；#7469／#7471／#7476 engine 影片幀擷取，隨 #6914／#6920／#6908 passthrough 組；#7480 隨 #7415 history 效能；#7468 隨 `@hf-result` 結果行）；不適用 4 個 commit（#7470 `packages/share`、#7351 `heygen` 用戶端、#7475／#7483 版號）。新釘 12 筆 open PR（#7487、#7490 在審查中合併，已重釘 closed）。
+
+commit 水位 `c6d243a2dee879e5f1fa2aeda544de8ecf91a998`，PR #7492、issue #7486，monitored 由 169 增為 181 筆。`subComposition.test.ts` 與上游測試的差異（Windows 路徑、符號連結略過）記於 [維護決策](DECISIONS.md#2026-11-10連續水位-c6d243a2dpr-7492issue-7486)；core 封裝大小那一列的觸發條件未成立。剩餘數字僅記於清冊最新節。
+
+收尾時水位再前進到 `61e720b0e7d6d68172466a3a72ea27d98f2ad58d`（#7491 history 掃描，延後，隨 #7415 組）。

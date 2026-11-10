@@ -1,7 +1,7 @@
 # 路線圖
 
 > 本 repo 後續工作的單一真相源。做完一項，就在同一個 commit 刪掉那一列；新工作只加在這裡。
-> 上游審查於 2026-11-10 接續到 commit `9e346f9bb793fe53684d7437ac4bed79b11aaa54`（PR #7468、issue #7465）；逐筆裁決見 [接續缺口清冊](docs/UPSTREAM_REVIEW_2026-11-04_CONTINUED.md)。CI／告警保留現況段既有日期快照。
+> 上游審查於 2026-11-10 接續到 commit `61e720b0e7d6d68172466a3a72ea27d98f2ad58d`（PR #7492、issue #7486）；逐筆裁決見 [接續缺口清冊](docs/UPSTREAM_REVIEW_2026-11-04_CONTINUED.md)。CI／告警保留現況段既有日期快照。
 
 ## 現況
 
@@ -66,6 +66,8 @@ HyperFrames 將 HTML、CSS 與動畫渲染為影片，本線保留 Windows 渲�
 2026-11-10 以 fork `4a7d1594d` 接續，審完 `ad6f7858f..c14973081`（上游 tip）共 8 個 commit、PR #7452 與 issue 軸無新增：採用 3 個 commit（#7249、#7110、#7000），延後 2 個 commit（#7444、#7452），不適用 3 個 commit（#7257、#7443、#7450）；10 筆釘選移動（7 筆轉 closed，3 筆換 head），monitored 維持 165 筆。逐筆證據見 [接續缺口清冊](docs/UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-10接續至-c14973081上游-tip)。
 
 2026-11-10 以 fork `f3cab380a` 再接續，審完 `c14973081..9e346f9bb`（上游 tip）共 12 個 commit、PR #7453–#7468 與 issue #7457–#7465：採用 6 個 commit（#7338 `createStagingDir` 修 Windows 暫存資料夾超過 260 字元、#7459 Studio 渲染取每帳號渲染鎖、#7463、#7454、#7456、#7439），#6732 本線 2026-10-30 已移植而無新增改動，延後 2 個 commit（#7455、#7437），不適用 3 個 commit（#7453、#7269、#7464）；11 筆釘選移動（6 筆轉 closed，5 筆換 head），新釘 #7462、#7466、#7467、#7468，monitored 由 165 增為 169 筆。逐筆證據見 [接續缺口清冊](docs/UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-10接續至-9e346f9bb上游-tip)。
+
+2026-11-10 以 fork `29c50ea16` 再接續，審完 `9e346f9bb..c6d243a2d`（上游 tip）共 16 個 commit、PR #7469–#7492 與 issue #7473／#7486：採用 6 個 commit（#7490 預覽伺服器 host 與跨來源寫入防護、#7466 player 清掉 `src` 卸載影片、#7479 慢渲染拒絕改看中位幀、#7482 子合成預覽只讀專案內、#7441／#7440 Studio 桌面版文件），延後 6 個 commit（#7469／#7471／#7476 隨 #6914／#6920／#6908 passthrough 組，#7480 隨 #7415，#7468 隨 `@hf-result` 結果行，#7487 雲端映像），不適用 4 個 commit（#7470、#7351、#7475、#7483）；12 筆釘選移動，新釘 12 筆 open PR，monitored 由 169 增為 181 筆。core 封裝大小那一列的觸發條件未成立，維持原狀。逐筆證據見 [接續缺口清冊](docs/UPSTREAM_REVIEW_2026-11-04_CONTINUED.md#2026-11-10接續至-c6d243a2d上游-tip)。
 
 ## 近期：可以直接動手
 

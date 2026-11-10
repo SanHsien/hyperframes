@@ -2411,7 +2411,7 @@ CI 專用檔案判定：本輪 `git show --stat` 動到的檔案沒有 `*.browse
 
 ### 最新剩餘快照（水位 `f5bde9533`，PR #7382，issue #7371）
 
-2026-11-08 `python tools/check_upstream_updates.py --strict` exit 0：commit 軸 `No new upstream commits`（behind 0）；PR 軸 `Triaged through #7382`、`No new items above that number`；issue 軸 `Triaged through #7371`、`No new items above that number`；monitored 136 筆，`Every pinned item is still at the head and state it was judged at`。
+2026-11-08 `python tools/check_upstream_updates.py --strict` exit 0（最終水位 `61e720b0e7d6d68172466a3a72ea27d98f2ad58d`，含收尾補記的 #7491）：commit 軸 `No new upstream commits`（behind 0）；PR 軸 `Triaged through #7382`、`No new items above that number`；issue 軸 `Triaged through #7371`、`No new items above that number`；monitored 136 筆，`Every pinned item is still at the head and state it was judged at`。
 
 
 ## 2026-11-08：接續至 `12906e0bf`
@@ -2801,7 +2801,7 @@ CI 專用檔案判定：本輪 `git show --stat` 動到的檔案沒有 `*.browse
 
 ### 最新剩餘快照（水位 `12906e0bf`，PR #7403，issue #7404）
 
-2026-11-08 `python tools/check_upstream_updates.py --strict` exit 0：commit 軸 `No new upstream commits`（behind 0）；PR 軸 `Triaged through #7403`、`No new items above that number`；issue 軸 `Triaged through #7404`、`No new items above that number`；monitored 142 筆，`Every pinned item is still at the head and state it was judged at`。
+2026-11-08 `python tools/check_upstream_updates.py --strict` exit 0（最終水位 `61e720b0e7d6d68172466a3a72ea27d98f2ad58d`，含收尾補記的 #7491）：commit 軸 `No new upstream commits`（behind 0）；PR 軸 `Triaged through #7403`、`No new items above that number`；issue 軸 `Triaged through #7404`、`No new items above that number`；monitored 142 筆，`Every pinned item is still at the head and state it was judged at`。
 
 
 ## 2026-11-09：接續至 `c38ac5438`（推進至最新 tip `ad6f7858f`）
@@ -3103,7 +3103,7 @@ CI 專用檔案判定：本輪 `git show --stat` 動到的檔案沒有 `*.browse
 
 ### 最新剩餘快照（水位 `ad6f7858f`，PR #7450，issue #7451）
 
-2026-11-09 `python tools/check_upstream_updates.py --strict` exit 0：commit 軸 `No new upstream commits`（behind 0）；PR 軸 `Triaged through #7450`、`No new items above that number`；issue 軸 `Triaged through #7451`、`No new items above that number`；monitored 165 筆，`Every pinned item is still at the head and state it was judged at`。審查中途上游前進過兩次（`ad6f7858f`、#7449、#7450、#7445 合併；其後 issue #7451 與 #7434、#7450 換 head），都已併入本節，#7434 與 #7450 在 baseline 重釘新 head。
+2026-11-09 `python tools/check_upstream_updates.py --strict` exit 0（最終水位 `61e720b0e7d6d68172466a3a72ea27d98f2ad58d`，含收尾補記的 #7491）：commit 軸 `No new upstream commits`（behind 0）；PR 軸 `Triaged through #7450`、`No new items above that number`；issue 軸 `Triaged through #7451`、`No new items above that number`；monitored 165 筆，`Every pinned item is still at the head and state it was judged at`。審查中途上游前進過兩次（`ad6f7858f`、#7449、#7450、#7445 合併；其後 issue #7451 與 #7434、#7450 換 head），都已併入本節，#7434 與 #7450 在 baseline 重釘新 head。
 
 ## 2026-11-10：接續至 `c14973081`（上游 tip）
 
@@ -3268,7 +3268,7 @@ issue 軸本批沒有新增項目：`Triaged through #7451`，`No new items abov
 
 ### 最新剩餘快照（水位 `c14973081`，PR #7452，issue #7451）
 
-2026-11-10 `python tools/check_upstream_updates.py --strict` exit 0：commit 軸 `No new upstream commits`（behind 0）；PR 軸 `Triaged through #7452`、`No new items above that number`；issue 軸 `Triaged through #7451`、`No new items above that number`；monitored 165 筆，`Every pinned item is still at the head and state it was judged at`。
+2026-11-10 `python tools/check_upstream_updates.py --strict` exit 0（最終水位 `61e720b0e7d6d68172466a3a72ea27d98f2ad58d`，含收尾補記的 #7491）：commit 軸 `No new upstream commits`（behind 0）；PR 軸 `Triaged through #7452`、`No new items above that number`；issue 軸 `Triaged through #7451`、`No new items above that number`；monitored 165 筆，`Every pinned item is still at the head and state it was judged at`。
 
 ## 2026-11-10：接續至 `9e346f9bb`（上游 tip）
 
@@ -3493,4 +3493,308 @@ issue 軸本批沒有新增項目：`Triaged through #7451`，`No new items abov
 
 ### 最新剩餘快照（水位 `9e346f9bb`，PR #7468，issue #7465）
 
-2026-11-10 `python tools/check_upstream_updates.py --strict` exit 0：commit 軸 `No new upstream commits`（behind 0）；PR 軸 `Triaged through #7468`、`No new items above that number`；issue 軸 `Triaged through #7465`、`No new items above that number`；monitored 169 筆，`Every pinned item is still at the head and state it was judged at`。
+2026-11-10 `python tools/check_upstream_updates.py --strict` exit 0（最終水位 `61e720b0e7d6d68172466a3a72ea27d98f2ad58d`，含收尾補記的 #7491）：commit 軸 `No new upstream commits`（behind 0）；PR 軸 `Triaged through #7468`、`No new items above that number`；issue 軸 `Triaged through #7465`、`No new items above that number`；monitored 169 筆，`Every pinned item is still at the head and state it was judged at`。
+
+## 2026-11-10：接續至 `c6d243a2d`（上游 tip）
+
+以 fork `29c50ea16` 接續。`git fetch upstream main` 取回 `e5e79e59e..b4c7f9cf7`；`python tools/check_upstream_updates.py --strict` 先回 14 個 commit、22 筆 PR、2 筆 issue、7 筆釘選移動，exit 1；審查進行中再取回 #7490、#7487 兩個新 commit（tip 由 `b4c7f9cf7` 變為 `c6d243a2d`），釘選移動增為 12 筆。所有 open PR 以 `git fetch upstream refs/pull/<n>/head` 唯讀取回後讀本地三點 diff（`gh` 只用在 `pr list` 取狀態與完整 head），不寫入、不開 PR。
+
+### Commit 軸
+
+| Commit | PR | 標題 | 裁決 | 證據 |
+| --- | --- | --- | --- | --- |
+| `e5e79e59e` | #7466 | fix(player): unload the video when its src is cleared | 採用 | Akshar Patel；補丁逐位元套用，fork `6b8f2174d` |
+| `651de1d94` | #7468 | feat(cli): carry the motion blur summary on the @hf-result line | 延後 | `apply --check` 失敗於 `packages/cli/README.md:104`、`render.ts:509`；本線沒有 `@hf-result` 結果行；隨該結果行移植時一併採 |
+| `58e9cae75` | #7470 | fix(share): preserve re-invites and validate workspace responses | 不適用 | `packages/share` 不在本線（`apply --check`：`reviewClient.mjs: No such file or directory`）；PR #7472 同 head `00d25628d` |
+| `4d0fa2baa` | #7469 | fix(engine): short clips from Apple-encoded videos keep their last frame | 延後 | `apply --check` 失敗於 `videoFrameExtractor.ts:1205`；`--3way` 兩個衝突區後已還原；隨 #6914／#6920／#6908 passthrough 組 |
+| `756bd6b17` | #7441 | docs(studio-app): cloud exports come with the plan, not only an API key | 採用 | Ular Kimsanov；逐位元套用，fork `a85a00e36` |
+| `58686a74c` | #7475 | chore: release v0.9.28 | 不適用 | 版號發行，22 檔；本線 CLI 版本 0.8.210 |
+| `235c80bae` | #7471 | fix(engine): a video clip shows a new source frame on every frame it is on screen | 延後 | `apply --check` 失敗於 `extractionCache.test.ts:67`、`extractionCache.ts:62`、`videoFrameExtractor.ts:1441`；隨 #7469 同批 |
+| `b12365d67` | #7440 | docs(studio-app): the Reference read is paid by Pro or a saved HeyGen API key | 採用 | Ular Kimsanov；逐位元套用，fork `a85a00e36` |
+| `1a758fd60` | #7476 | test(engine): split the frame extractor tests so each file stays under the flake gate budget | 延後 | `apply --check` 失敗於 `videoFrameExtractor.test.ts:1`；本線測試檔內容與上游父 commit 不同，隨 #7469／#7471 同批 |
+| `88db83092` | #7479 | fix(producer): refuse a too-slow render only when its typical frame says it cannot finish | 採用 | Miguel Ángel；`apply --check` 因行偏移失敗，`--3way` 乾淨套用，fork `f99360cff` |
+| `e8416b2a4` | #7480 | fix(studio-server): history waits out a file a save has emptied, and rereads one written mid-copy | 延後 | `--3way` 三個檔衝突後已還原；接在延後的 #7415 之上 |
+| `0ba894123` | #7351 | feat(cli): label GPT image prices as estimates and show the charged credits | 不適用 | `packages/cli/src/heygen`、`commands/media-use/generate.ts` 不在本線；#7351 在 2026-11-06 已判不適用 |
+| `724ab39b3` | #7482 | fix(studio-server): buildSubCompositionHtml reads only compositions inside the project | 採用 | James Russo；`apply --check` 失敗（import 區塊不同），手工移植，fork `e59120195` |
+| `b4c7f9cf7` | #7483 | chore: release v0.9.29 | 不適用 | 版號發行，22 檔；本線 CLI 版本 0.8.210 |
+| `f318d3d08` | #7490 | fix(studio-server): refuse cross-origin writes and unknown hosts on the preview server | 採用 | James Russo；審查進行中才合併；`apply --check` 只失敗於 `tsup.config.ts:14`，`--3way` 乾淨套用，fork `3a66039cc` |
+| `c6d243a2d` | #7487 | fix(gcp-cloud-run): pin the base image and verify chrome-headless-shell and bun by sha256 | 延後 | 審查進行中才合併；`apply --check` 可套用；雲端映像本線不建置，沒有 Docker 驗證不換釘雜湊 |
+
+### Commit 逐檔 numstat（`git diff --numstat <c>^1 <c>` 實算）
+
+`e5e79e59e`（#7466）4 檔 +38／−2：
+
+```
+2	0	docs/packages/player.mdx
+2	0	packages/player/README.md
+28	0	packages/player/src/hyperframes-player.test.ts
+6	2	packages/player/src/hyperframes-player.ts
+```
+
+`651de1d94`（#7468）6 檔 +167／−9：
+
+```
+5	2	packages/cli/README.md
+3	0	packages/cli/src/commands/render.ts
+21	0	packages/cli/src/commands/render/execute.test.ts
+29	0	packages/cli/src/telemetry/renderMotionBlur.ts
+97	0	packages/cli/src/ui/renderResult.test.ts
+12	7	packages/cli/src/ui/renderResult.ts
+```
+
+`58e9cae75`（#7470）4 檔 +231／−48：
+
+```
+2	0	docs/studio-app/share.mdx
+83	48	packages/share/src/reviewClient.mjs
+30	0	packages/share/tests/reviewFlags.test.mjs
+116	0	packages/share/tests/reviewRegrant.test.mjs
+```
+
+`4d0fa2baa`（#7469）4 檔 +100／−20：
+
+```
+2	2	packages/engine/src/services/extractionCache.test.ts
+1	1	packages/engine/src/services/extractionCache.ts
+54	0	packages/engine/src/services/videoFrameExtractor.finalFrame.test.ts
+43	17	packages/engine/src/services/videoFrameExtractor.ts
+```
+
+`756bd6b17`（#7441）1 檔 +4／−4：
+
+```
+4	4	docs/studio-app/export.mdx
+```
+
+`58686a74c`（#7475）22 檔 +67／−20：
+
+```
+1	1	.claude-plugin/plugin.json
+1	1	.codex-plugin/plugin.json
+1	1	.cursor-plugin/plugin.json
+24	0	docs/changelog.mdx
+1	1	gemini-extension.json
+1	1	packages/aws-lambda/package.json
+1	1	packages/cli/package.json
+1	1	packages/core/package.json
+1	1	packages/engine/package.json
+1	1	packages/gcp-cloud-run/package.json
+1	1	packages/inspector/package.json
+1	1	packages/lint/package.json
+1	1	packages/parsers/package.json
+1	1	packages/player/package.json
+1	1	packages/producer/package.json
+1	1	packages/sdk/package.json
+1	1	packages/shader-transitions/package.json
+1	1	packages/share/package.json
+1	1	packages/studio-server/package.json
+1	1	packages/studio/package.json
+1	1	plugin.json
+23	0	releases/v0.9.28.md
+```
+
+`235c80bae`（#7471）7 檔 +121／−47：
+
+```
+2	2	packages/engine/src/services/extractionCache.test.ts
+1	1	packages/engine/src/services/extractionCache.ts
+73	0	packages/engine/src/services/videoFrameExtractor.slots.test.ts
+5	3	packages/engine/src/services/videoFrameExtractor.test.ts
+20	28	packages/engine/src/services/videoFrameExtractor.ts
+17	10	packages/producer/src/services/render/videoFrameCoverage.test.ts
+3	3	packages/producer/src/services/render/videoFrameCoverage.ts
+```
+
+`b12365d67`（#7440）1 檔 +6／−2：
+
+```
+6	2	docs/studio-app/reference-video.mdx
+```
+
+`1a758fd60`（#7476）5 檔 +3182／−3033：
+
+```
+759	0	packages/engine/src/services/videoFrameExtractor.format.test.ts
+675	0	packages/engine/src/services/videoFrameExtractor.hdr.test.ts
+386	0	packages/engine/src/services/videoFrameExtractor.sampling.test.ts
+185	3033	packages/engine/src/services/videoFrameExtractor.test.ts
+1177	0	packages/engine/src/services/videoFrameExtractor.vfr.test.ts
+```
+
+`88db83092`（#7479）5 檔 +110／−13：
+
+```
+10	0	packages/producer/src/services/render/captureCost.ts
+64	7	packages/producer/src/services/render/renderEtaGuard.test.ts
+19	2	packages/producer/src/services/render/renderEtaGuard.ts
+12	0	packages/producer/src/services/renderOrchestrator.test.ts
+5	4	packages/producer/src/services/renderOrchestrator.ts
+```
+
+`e8416b2a4`（#7480）4 檔 +391／−56：
+
+```
+94	4	packages/studio-server/src/history/blobStore.test.ts
+55	24	packages/studio-server/src/history/blobStore.ts
+175	0	packages/studio-server/src/history/projectHistory.saving.test.ts
+67	28	packages/studio-server/src/history/projectHistory.ts
+```
+
+`0ba894123`（#7351）9 檔 +244／−23：
+
+```
+3	2	packages/cli/src/commands/media-use/generate.ts
+130	1	packages/cli/src/heygen/generate.test.ts
+13	0	packages/cli/src/heygen/generate.ts
+16	9	packages/cli/src/heygen/pricing.ts
+41	0	packages/cli/src/heygen/v3.test.ts
+37	7	packages/cli/src/heygen/v3.ts
+1	1	skills-manifest.json
+1	1	skills/media-use/SKILL.md
+2	2	skills/media-use/references/heygen.md
+```
+
+`724ab39b3`（#7482）2 檔 +31／−5：
+
+```
+25	1	packages/studio-server/src/helpers/subComposition.test.ts
+6	4	packages/studio-server/src/helpers/subComposition.ts
+```
+
+`b4c7f9cf7`（#7483）22 檔 +75／−20：
+
+```
+1	1	.claude-plugin/plugin.json
+1	1	.codex-plugin/plugin.json
+1	1	.cursor-plugin/plugin.json
+28	0	docs/changelog.mdx
+1	1	gemini-extension.json
+1	1	packages/aws-lambda/package.json
+1	1	packages/cli/package.json
+1	1	packages/core/package.json
+1	1	packages/engine/package.json
+1	1	packages/gcp-cloud-run/package.json
+1	1	packages/inspector/package.json
+1	1	packages/lint/package.json
+1	1	packages/parsers/package.json
+1	1	packages/player/package.json
+1	1	packages/producer/package.json
+1	1	packages/sdk/package.json
+1	1	packages/shader-transitions/package.json
+1	1	packages/share/package.json
+1	1	packages/studio-server/package.json
+1	1	packages/studio/package.json
+1	1	plugin.json
+27	0	releases/v0.9.29.md
+```
+
+`f318d3d08`（#7490）14 檔 +721／−143：
+
+```
+23	0	docs/packages/studio-server.mdx
+2	1	packages/cli/src/server/desktopRoutes.test.ts
+13	13	packages/cli/src/server/desktopRoutes.ts
+130	0	packages/cli/src/server/studioServer.test.ts
+23	1	packages/cli/src/server/studioServer.ts
+15	118	packages/cli/src/server/telemetryIdentity.ts
+6	0	packages/studio-server/package-subpaths.json
+10	0	packages/studio-server/package.json
+296	0	packages/studio-server/src/createStudioApi.originGuard.test.ts
+59	7	packages/studio-server/src/createStudioApi.ts
+127	0	packages/studio-server/src/helpers/requestIdentity.ts
+5	1	packages/studio-server/src/index.ts
+1	0	packages/studio-server/tsup.config.ts
+11	2	packages/studio/vite.config.ts
+```
+
+`c6d243a2d`（#7487）1 檔 +32／−9：
+
+```
+32	9	packages/gcp-cloud-run/Dockerfile
+```
+
+### 紅綠證據
+
+紅綠方法：先只套用測試檔（不含來源變更），跑測試記下失敗；再套來源變更，跑同一組測試。
+
+| 套件 | 紅 | 綠 | 名稱 |
+| --- | --- | --- | --- |
+| player `hyperframes-player.test.ts`（#7466） | 只套測試、`-t "unloads a playing video"`：2 failed／241 skipped（243），`expected null` 在 `video.getAttribute("src")` 斷言（`hyperframes-player.test.ts:3363`） | 整檔 243 passed（243）；`bun run typecheck` 無錯誤輸出 | 清掉 `src` 卸載影片 |
+| producer `renderEtaGuard.test.ts`、`renderOrchestrator.test.ts`（#7479） | 套測試、來源還原為 `HEAD`：7 failed（`passes at the 2x margin and fails just over it`、`matches the two prod renders on the 90 minute budget`、`lets a render through whose slowest calibration frame alone would refuse it`、`lets through a long many-worker render whose typical frame fits the budget`、`still refuses a render that would take hours on its typical frame`、`skips the check without a calibration estimate`、`records the typical calibration frame next to the slowest`） | `renderEtaGuard`、`renderOrchestrator`、`captureCost*` 4 檔 312 passed（312）；`bun run typecheck` 無錯誤輸出 | 校準中位幀與 2 倍容忍 |
+| studio-server `subComposition.test.ts`（#7482，本線改寫的測試） | 套測試、來源為 `HEAD`：1 failed／21 passed／1 skipped（23）：`returns null for a composition path that resolves outside the project`，`expected '<!DOCTYPE html>…' to be null`；符號連結例略過（`EPERM` 探測） | 22 passed／1 skipped（23）；`src/helpers` 全目錄 3 failed／623 passed／9 skipped（635），3 例為既有失敗（見 DECISIONS） | 子合成預覽只讀專案內 |
+
+環境說明：上列測試命令沒有降低優先權；`src/routes` 那次改以 BelowNormal 啟動。`src/routes` 有 13 例失敗，改回 `HEAD` 的 `subComposition.ts` 後 `imageThumbnail` 1、`media` 1、`files.renameReferences` 7、`loudness` 1 的逐檔失敗數相同，未截取完整總計行，所以不寫總數。
+
+### PR 軸
+
+| PR | 狀態與裁決 |
+| --- | --- |
+| #7487 | MERGED（head `c6d243a2d`／commit `c6d243a2d`（審查中合併））：延後（見 commit 軸） |
+| #7490 | MERGED（head `f318d3d08`／commit `f318d3d08`（審查中合併））：採用（見 commit 軸） |
+| #7469 | MERGED（head `f33756a91`／commit `4d0fa2baa`）：延後（見 commit 軸） |
+| #7470 | MERGED（head `00d25628d`／commit `58e9cae75`）：不適用（見 commit 軸） |
+| #7471 | MERGED（head `2c475070e`／commit `235c80bae`）：延後（見 commit 軸） |
+| #7472 | MERGED（head `00d25628d`）：MERGED，與 #7470 同 head，不適用 |
+| #7475 | MERGED（head `29f3acc14`／commit `58686a74c`）：不適用，版號 PR 不釘 |
+| #7476 | MERGED（head `44216e1be`／commit `1a758fd60`）：延後（見 commit 軸） |
+| #7479 | MERGED（head `6a5c1d7a6`／commit `88db83092`）：採用（見 commit 軸） |
+| #7480 | MERGED（head `2abfcfc43`／commit `e8416b2a4`）：延後（見 commit 軸） |
+| #7482 | MERGED（head `28b52977d`／commit `724ab39b3`）：採用（見 commit 軸） |
+| #7483 | MERGED（head `05c527e73`／commit `b4c7f9cf7`）：不適用，版號 PR 不釘 |
+| #7474 | monitored（open，釘 head `05bd36e90`）：`EACCES` 視為沒有硬連結（`atomicFile.ts`、`ownerLock.ts`、`share/projectLock.mjs` 與三個測試，6 檔 +7／−7）；對應 issue #7473；合併後採 core 與 studio-server 兩處 |
+| #7477 | monitored（open，釘 head `e642c1657`）：Studio 桌面版 Windows 下載改為安裝程式的文件，1 檔 +4／−5；合併後採 |
+| #7478 | monitored（open，釘 head `112948dd0`）：Studio `?` 開捷徑面板，4 檔 +101／−4（`ShortcutsPanel.tsx`、`studioShortcuts.ts` 與測試、`docs/studio/index.mdx`），本線檔案都存在；合併後採 |
+| #7481 | monitored（open，釘 head `19678cf57`）：`CSS_URL_RE` 比對含括號與另一種引號的 URL，2 檔 +17／−2（`parsers/src/assetPaths.ts`、`rewriteSubCompPaths.test.ts`）；合併後採 |
+| #7484 | monitored（open，釘 head `d7f2a021b`）：`atomicFile` fsync 與影片狀態可復原，5 檔 +353／−57，動 `packages/core`；合併後評估並重量 core 封裝大小 |
+| #7485 | monitored（open，釘 head `79f53bef1`）：aws-lambda 執行階段鎖檔，11 檔 +1037／−57，雲端路徑，延後 |
+| #7488 | monitored（open，釘 head `35b71c8ba`）：`reverse` 登入說明，6 檔 +88／−44，`commands/reverse` 與 `skills/reverse-any-video` 本線不存在，不適用 |
+| #7489 | monitored（open，釘 head `bc2e533ab`）：音訊 read 無分軌警告字句，2 檔 +3／−5；合併後採 |
+| #7491 | monitored（open，釘 head `1b05a1197`）：history 走訪命名重構，6 檔 +151／−26，接在延後的 #7415 之上，延後 |
+| #7492 | monitored（open，釘 head `d1fc1d3f0`）：縮圖來源與預覽沙盒，13 檔 +252／−4（新增 `serverOrigin.ts`，動 `createStudioApi.ts`、`routes/thumbnail.ts`），Studio 預覽安全面；審查中 head 由 `f9065fbeb` 強推為 `d1fc1d3f0`（rebase 到含 #7490 的主線，三點 diff 仍 13 檔 +252／−4）；合併後與 #7490 的守衛對照評估 |
+
+### issue 軸
+
+| Issue | 裁決與理由 | 證據 |
+| --- | --- | --- |
+| #7473 | 記錄、不動（OPEN）：`createFileAtomically` 在 Android／Termux 因 `EACCES` 拒絕硬連結而失敗；Windows 本線不受影響，已由 open PR #7474 追蹤並釘選 | `check_upstream_updates.py` 列出；#7474 diff 讀過 |
+| #7486 | 不適用：夜間 motion blur seed 62660 的自動回報，本線沒有上游夜間 differential harness（#7437 延後） | `check_upstream_updates.py` 列出 |
+
+### 釘選移動（12 筆）
+
+| 釘選 | 移動 | 裁決 |
+| --- | --- | --- |
+| #6890 | open（head `67e48cc71`）→ open（head `07ac428f3`） | 讀 diff（10 檔 +1146／−85，現標題「reject unsafe distributed integers」）：雲端路徑，延後不變；重釘 |
+| #6935 | open（head `b90c658d2`）→ open（head `8a36252d2`） | 新 head 只比舊 head 少 10 行（`git diff --stat b90c658d2 8a36252d2`：`sdk/src/engine/model.ts` 10 刪），延後不變；重釘 |
+| #7372 | open（head `7e2492fda`）→ open（head `4423ea9ee`） | 三點 diff 仍 4 檔 +27／−4，`git apply --check` 失敗於 `skills-manifest.json:18` 不變，延後不變；重釘 |
+| #7487 | open（head `e58085ede`）→ closed（merged `c6d243a2d`，head `e58085ede`） | 延後（見 commit 軸），重釘 closed |
+| #7490 | open（head `2028188a9`）→ closed（merged `f318d3d08`，head `2028188a9`） | 採用（見 commit 軸），重釘 closed |
+| #7492 | open（head `f9065fbeb`）→ open（head `d1fc1d3f0`） | 三點 diff 仍 13 檔 +252／−4（rebase），內容未變；維持 monitored；重釘 |
+| #7440 | open → closed（merged，head `a76748924`） | 採用（見 commit 軸），重釘 closed |
+| #7441 | open（head `f76d06f76`）→ closed（merged，head `8955fd2a0`） | 採用（見 commit 軸），重釘 closed 與新 head |
+| #7466 | open → closed（merged `e5e79e59e`，head `45315cb6c`） | 採用（見 commit 軸），重釘 closed |
+| #7468 | open → closed（merged `651de1d94`，head `31d1eb7dd`） | 延後（見 commit 軸），重釘 closed |
+| #7436 | draft（head `6a25337bd`）→ draft（head `a97070ec1`），審查進行中再移動 | 讀 diff（14 檔 +465／−20：`runtime/init.ts`、`preloadMedia.ts`、`proxySrc.ts` 與測試，標題現為「Safari holds a later clip of a long file…」）；`apply --check` 失敗於 `init.test.ts:6047`、`init.ts:517`；仍 draft，維持「合併後核對 `media.ts`」；重釘 |
+| #7485 | open（head `50cae4a3d`）→ open（head `79f53bef1`），審查進行中再移動 | 增量只有 `packages/aws-lambda/package.json` 1 行（`git diff 50cae4a3d 79f53bef1`）；雲端路徑延後不變；重釘 |
+
+### 新釘選
+
+#7474、#7477、#7478、#7481、#7484、#7485、#7487、#7488、#7489、#7490、#7491、#7492 共 12 筆 open PR（head 取自 `git fetch` 後的 `git rev-parse`），monitored 由 169 增為 181 筆；其中 #7487、#7490 在審查中合併，已重釘 closed。審查開始前已合併的 #7469–#7472、#7475、#7476、#7479、#7480、#7482、#7483 不釘（內容就是 commit 軸），#7475／#7483 為版號 PR。
+
+### 隱藏內容掃描（判準八）
+
+掃描新增行（`git diff -U0`）：空白夾內容（`\S\s{40,}\S`）、`eval(`／`new Function(`、`globalThis.`／`global.require`、`atob(`／`fromCharCode`／`Buffer.from(…base64)`、120 字元以上的 base64、240 字元以上的 hex、零寬與雙向控制字元、400 字元以上單行。
+- commit 軸：16 個 commit 共 5,521 行新增行（依序 38、167、231、100、4、67、121、6、3183、110、391、244、31、75、721、32）。0 個隱藏內容命中；400 字元以上單行兩處：`0ba894123` 的 `skills/media-use/SKILL.md` 與 `skills/media-use/references/heygen.md` 各一行技能說明散文（credits 與 GPT Image 估價的使用說明，沒有指令或連結）。
+- PR 軸：16 筆 open／draft 目前 head 的三點 diff 共 3,825 行新增行（#7462 52、#7467 43、#7474 7、#7477 4、#7478 101、#7481 17、#7484 353、#7485 1037、#7488 88、#7489 3、#7491 151、#7492 252、#6890 1146、#6935 79、#7372 27、#7436 465；#7487、#7490 已併入 commit 軸）。0 個隱藏內容命中，0 個 400 字元以上單行。
+
+### 預算、LFS 與延後
+
+- 無新 LFS 物件：`git diff --name-only 9e346f9bb upstream/main` 對 `.mp4／.mov／.webm／.png／.onnx／.mp3`、`output/compiled.html`、`.gitattributes` 無命中。`packages/producer/tests/*/output/compiled.html` 的 10 筆工作樹差異是 LFS clean filter 假象（工作樹與 HEAD blob 逐位元相同，`git hash-object --no-filters` 對 10 檔全部等於 `git rev-parse HEAD:<檔>`），`git checkout -- <檔>` 不能清除，沒有暫存、不在任何 commit；根治列在 ROADMAP 近期表。
+- `scripts/package-size-budgets.json` 與 `scripts/verify-packed-manifests.mjs` 在 `9e346f9bb..c6d243a2d` 無上游變動；本批五個 fork commit 沒有動 `packages/core`，沒有重新量 packed 大小；ROADMAP 近期「core 封裝大小」那一列的觸發條件（發版或跑 `publish.yml`、或採用 #6865／#6922）未成立，維持原狀。
+- 本機取回 `refs/pr-review/*`（20 個 PR 頭，僅本機參考）與上游新標籤 `v0.9.28`、`v0.9.29`，沒有推送任何東西。
+- 維持延後：先前所有延後項目；新增延後 #7469／#7471／#7476（隨 #6914／#6920／#6908）、#7480（隨 #7415）、#7468（隨 `@hf-result` 結果行）、#7487（雲端映像）。
+
+### 最新剩餘快照（水位 `c6d243a2d`，PR #7492，issue #7486）
+
+2026-11-10 `python tools/check_upstream_updates.py --strict` exit 0（最終水位 `61e720b0e7d6d68172466a3a72ea27d98f2ad58d`，含收尾補記的 #7491）：commit 軸 `No new upstream commits`（behind 0）；PR 軸 `Triaged through #7492`、`No new items above that number`；issue 軸 `Triaged through #7486`、`No new items above that number`；monitored 181 筆，`Every pinned item is still at the head and state it was judged at`。
+
+收尾補記：PR 軸再出現 #7493（open，釘 head `98cfa71b32a1936376bf24cd58845a2dc0a1c6a8`），PR 水位 #7493，monitored 182 筆；最終 `--strict` exit 0。

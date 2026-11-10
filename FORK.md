@@ -52,6 +52,8 @@
 
 2026-11-10 另採用上游 #7338：`@hyperframes/core/atomic-file` 的 `createStagingDir` 取代 25 處專案路徑旁的裸 `mkdtemp`，修 Windows 暫存資料夾超過 260 字元失敗；與上游的差異限三處：`packages/cli/src/capture/videoNormalization.ts` 也改用 `createStagingDir`（上游已無此檔）、`packages/core/src/noBareMkdtemp.test.ts` 的 ALLOWED 另列本線獨有的五個獨立腳本（`freeze-publisher.mjs`、`image-normalize.mjs`、`audio-normalize.mjs`（經 `packages/cli/src/audio/scripts` 符號連結）、`core/src/figma/freeze.ts`、`inline-project-publisher.mjs`），以及 `fontCompression.ts`、`download.ts` 的 import 區塊手工合併。上游產品同步包含這些檔時移除這段差異，細節見 [維護決策](docs/DECISIONS.md)。
 
+2026-11-10 另採用上游 #7482：`packages/studio-server/src/helpers/subComposition.ts` 對合成路徑與根 `index.html` 改走 `resolveWithinProject`，與上游的差異限 `subComposition.test.ts`：逃逸路徑用 `relative()`／`sep` 組出（上游的 `split("/")` 在 Windows 組不出逃逸，未修補的碼也通過），符號連結案例在建不了符號連結時以 `it.skipIf` 略過。上游同步到該測試時移除這段差異，細節見 [維護決策](docs/DECISIONS.md#2026-11-10連續水位-c6d243a2dpr-7492issue-7486)。
+
 ## 分支與 remote
 
 - `origin/main`：SanHsien 維護線，也是唯一長期分支。
