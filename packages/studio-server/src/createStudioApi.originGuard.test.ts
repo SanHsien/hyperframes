@@ -20,7 +20,10 @@ afterEach(() => {
   }
 });
 
-function createApp(): { app: ReturnType<typeof createStudioApi>; projectDir: string } {
+function createApp(): {
+  app: ReturnType<typeof createStudioApi>;
+  projectDir: string;
+} {
   const projectDir = mkdtempSync(join(tmpdir(), "hf-origin-guard-"));
   tempDirs.push(projectDir);
   return { app: createStudioApi(stubAdapter(projectDir)), projectDir };
@@ -46,7 +49,10 @@ function createFile(
 describe("createStudioApi cross-origin write guard", () => {
   it("rejects a cross-origin POST file create and writes nothing", async () => {
     const { app, projectDir } = createApp();
-    const res = await createFile(app, { Origin: EVIL_ORIGIN, "Content-Type": "text/plain" });
+    const res = await createFile(app, {
+      Origin: EVIL_ORIGIN,
+      "Content-Type": "text/plain",
+    });
     expect(res.status).toBe(403);
     expect(existsSync(join(projectDir, "planted.html"))).toBe(false);
   });
@@ -66,7 +72,10 @@ describe("createStudioApi cross-origin write guard", () => {
 
   it("rejects a write whose Origin is the opaque literal null", async () => {
     const { app } = createApp();
-    const res = await createFile(app, { Origin: "null", "Content-Type": "text/plain" });
+    const res = await createFile(app, {
+      Origin: "null",
+      "Content-Type": "text/plain",
+    });
     expect(res.status).toBe(403);
   });
 
@@ -80,7 +89,11 @@ describe("createStudioApi cross-origin write guard", () => {
     const { app } = createApp();
     const res = await app.request("http://localhost/projects/demo/files/planted.html", {
       method: "PUT",
-      headers: { Host: "localhost", Origin: EVIL_ORIGIN, "If-None-Match": "*" },
+      headers: {
+        Host: "localhost",
+        Origin: EVIL_ORIGIN,
+        "If-None-Match": "*",
+      },
       body: "overwritten",
     });
     expect(res.status).toBe(403);
@@ -128,6 +141,41 @@ describe("createStudioApi cross-origin write guard", () => {
     });
     expect(res.status).toBe(201);
     expect(existsSync(join(projectDir, "planted.html"))).toBe(true);
+  });
+
+  const postWithHostAndOrigin = (
+    app: ReturnType<typeof createStudioApi>,
+    host: string,
+    origin: string,
+  ): Promise<Response> =>
+    app.request("http://localhost/projects/demo/files/planted.html", {
+      method: "POST",
+      headers: { Host: host, Origin: origin, "Content-Type": "text/plain" },
+      body: "<html>planted</html>",
+    });
+
+  it.each([
+    ["Host carries the explicit default port", "localhost:80", "http://localhost"],
+    ["Host is an uncompressed IPv6 literal", "[0:0:0:0:0:0:0:1]:5190", "http://[::1]:5190"],
+    ["Host is a mixed-case name", "LOCALHOST", "http://localhost"],
+  ])("allows a same-origin write when %s", async (_label, host, origin) => {
+    const { app, projectDir } = createApp();
+    const res = await postWithHostAndOrigin(app, host, origin);
+    expect(res.status).toBe(201);
+    expect(existsSync(join(projectDir, "planted.html"))).toBe(true);
+  });
+
+  it.each([
+    ["a different port", "localhost:5190", "http://localhost:5191"],
+    ["the default port against a non-default Host port", "localhost:5190", "http://localhost"],
+    ["a different loopback name", "localhost", "http://127.0.0.1"],
+    ["an IPv4-mapped IPv6 Origin", "127.0.0.1:5190", "http://[::ffff:127.0.0.1]:5190"],
+    ["an IPv4-mapped IPv6 Host", "[::ffff:127.0.0.1]:5190", "http://127.0.0.1:5190"],
+  ])("rejects a write with %s", async (_label, host, origin) => {
+    const { app, projectDir } = createApp();
+    const res = await postWithHostAndOrigin(app, host, origin);
+    expect(res.status).toBe(403);
+    expect(existsSync(join(projectDir, "planted.html"))).toBe(false);
   });
 
   it("allows a write with no Origin header (non-browser callers)", async () => {

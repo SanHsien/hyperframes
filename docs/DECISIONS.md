@@ -1436,3 +1436,11 @@ commit 水位 `c6d243a2dee879e5f1fa2aeda544de8ecf91a998`，PR #7492、issue #748
 - 重釘：#7436（draft，head `2bfc550b2`，15 檔 +471／−39）、#7488（head `254459763`，8 檔 +282／−60）、#7492（head `a13fffd03`，13 檔 +277／−4，增量只是縮圖來源改用 hostname bind 名稱，`serverOrigin.ts` 與其測試 +27／−2）仍 open，維持原判定；#7485、#7491 轉 closed。
 - 隱藏內容掃描補充：commit 軸 `61e720b0e` 151、`f9255e39a` 1037 行新增行，PR 軸 #7436 471、#7488 282、#7492 277、#7493 172、#7495 63，全部 0 命中。
 - 水位：commit `f9255e39a56de17fd86362c4558a918ad2a874ef`，PR #7495，issue #7486，monitored 183 筆。core 封裝大小那一列觸發條件仍未成立（本批唯一動到 `packages/studio` 與 `studio-server`，沒有動 `packages/core`，預算檔無上游變動）。
+
+## 2026-11-11 同源比對兩側正規化（fork 修正 #7490）
+
+**背景**：獨立覆核發現 A1（低）。`requestIdentity.ts` 的 `originMatches`（上游 #7490 移植）把 Origin 經 `new URL().host` 正規化（去預設 port、IPv6 壓縮），Host 只轉小寫，所以合法同源被誤拒：`Host: localhost:80`＋`Origin: http://localhost`、`Host: [0:0:0:0:0:0:0:1]:5190`＋`Origin: http://[::1]:5190`。誤拒只造成寫入 403，不放行任何跨來源請求。
+
+**上游**：`git fetch upstream` 後 `upstream/main` 的 `requestIdentity.ts` 與本線修正前逐位元相同，上游沒改同處，所以是 fork 修正，登記於 FORK.md。
+
+**決定**：Host 套用 Origin 的 scheme 後同樣走 `new URL()`，比對 scheme、hostname、有效 port（預設 port 依 scheme 補齊）；Host 含帳密、路徑、查詢或片段一律拒絕。不同 port／scheme、外站、`null` Origin、IPv4-mapped IPv6（URL 正規化為 `[::ffff:7f00:1]`，與 IPv4 字面不等）維持拒絕。**測試**：`createStudioApi.originGuard.test.ts` 新增 3 個合法案例（預設 port、未壓縮 IPv6、大小寫）與 5 個拒絕案例；修正前 2 例紅燈，修正後 29 passed。

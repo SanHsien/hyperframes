@@ -96,16 +96,38 @@ function firstForwarded(value: string | undefined): string | undefined {
   return first === "" ? undefined : first;
 }
 
-function originMatches(origin: string, host: string, proto: string | undefined): boolean {
-  let parsed: URL;
+function parseUrl(value: string): URL | undefined {
   try {
-    parsed = new URL(origin);
+    return new URL(value);
   } catch {
-    return false;
+    return undefined;
   }
+}
+
+// Parse Host the same way as Origin, under the Origin's scheme, so default ports and IPv6 spelling normalize alike. A Host carrying userinfo, a path, a query or a fragment is not a host.
+function parseHostUnder(protocol: string, host: string): URL | undefined {
+  const url = parseUrl(`${protocol}//${host}`);
+  if (url === undefined) return undefined;
+  const bare = url.username === "" && url.password === "";
+  return bare && url.pathname === "/" && url.search === "" && url.hash === "" ? url : undefined;
+}
+
+function originMatches(origin: string, host: string, proto: string | undefined): boolean {
+  const parsed = parseUrl(origin);
+  if (parsed === undefined) return false;
   if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return false;
   if (proto !== undefined && parsed.protocol !== `${proto}:`) return false;
-  return parsed.host.toLowerCase() === host.toLowerCase();
+  const requested = parseHostUnder(parsed.protocol, host);
+  return (
+    requested !== undefined &&
+    requested.hostname === parsed.hostname &&
+    effectivePort(requested) === effectivePort(parsed)
+  );
+}
+
+function effectivePort(url: URL): string {
+  if (url.port !== "") return url.port;
+  return url.protocol === "https:" ? "443" : "80";
 }
 
 // proto is the scheme on the request URL the caller saw. The forwarded pair wins when a proxy supplies it: that is the origin the browser actually used. With no scheme known, an http or https origin passes.
