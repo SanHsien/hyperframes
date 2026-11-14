@@ -1444,3 +1444,11 @@ commit 水位 `c6d243a2dee879e5f1fa2aeda544de8ecf91a998`，PR #7492、issue #748
 **上游**：`git fetch upstream` 後 `upstream/main` 的 `requestIdentity.ts` 與本線修正前逐位元相同，上游沒改同處，所以是 fork 修正，登記於 FORK.md。
 
 **決定**：Host 套用 Origin 的 scheme 後同樣走 `new URL()`，比對 scheme、hostname、有效 port（預設 port 依 scheme 補齊）；Host 含帳密、路徑、查詢或片段一律拒絕。不同 port／scheme、外站、`null` Origin、IPv4-mapped IPv6（URL 正規化為 `[::ffff:7f00:1]`，與 IPv4 字面不等）維持拒絕。**測試**：`createStudioApi.originGuard.test.ts` 新增 3 個合法案例（預設 port、未壓縮 IPv6、大小寫）與 5 個拒絕案例；修正前 2 例紅燈，修正後 29 passed。
+
+## 2026-11-14：producer 測試 fixture 改存 LFS pointer（與 `.gitattributes` 一致）
+
+**問題**：`.gitattributes` 規定 `packages/producer/tests/**/output/compiled.html` 走 LFS，但本線自初始 commit `370725f24` 起存原始內容；`git lfs fsck --pointers` 對 HEAD 報 55 筆 should have been a pointer（54 個 `compiled.html` 與 `portrait-edge-bleed/src/sample.mp4`）。clean filter 讓既有 fixture 在 `git status` 一直顯示為已修改，每次提交都得手動避開。
+
+**決定**：`git add --renormalize packages/producer/tests` 後提交，55 個檔改存 pointer（實檔共 35589564 bytes，推送時上傳到 `SanHsien/hyperframes` 的 LFS）。檔案內容不變，只改 git 的儲存方式，與上游一致。
+
+**驗證**：提交後 `git lfs fsck --pointers` 回報 0 筆；讀這些 fixture 的 producer 測試以推送後的 `regression` workflow 為準。
