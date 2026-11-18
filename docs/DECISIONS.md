@@ -1452,3 +1452,11 @@ commit 水位 `c6d243a2dee879e5f1fa2aeda544de8ecf91a998`，PR #7492、issue #748
 **決定**：`git add --renormalize packages/producer/tests` 後提交，55 個檔改存 pointer（實檔共 35589564 bytes，推送時上傳到 `SanHsien/hyperframes` 的 LFS）。檔案內容不變，只改 git 的儲存方式，與上游一致。
 
 **驗證**：提交後 `git lfs fsck --pointers` 回報 0 筆；讀這些 fixture 的 producer 測試以推送後的 `regression` workflow 為準。
+
+## 2026-11-19：core 套件大小預算依實測重訂
+
+在 `ed289f094` 以同法（`bun run build` 後 `pnpm pack`，packed 為 tgz 位元組數，unpacked 為 `tar -xOf` 長度，與 `verify-packed-manifests.mjs` 相同）重量 `@hyperframes/core`：packed 1691857、unpacked 4087164（舊預算 1662813／4024585 的 1.0175／1.0156 倍，超過 1% 容差）。上次量（2026-11-10 `e9e3e84b6`）為 1691457／4085940，之後只增 400／1224 bytes。
+
+**增量來源**：沒有不該出貨的東西。逐檔檢查 455 個封裝檔：沒有 `*.map` 之外的測試、fixture 或 stories，`.map` 已被 `files` 排除（`dist/**/*.js`、`dist/**/*.d.ts`）；最大者是 `dist/fonts/fontData.generated.js`（983375）、`dist/generated/runtime-inline.js`（637194）與公開子路徑 `./runtime` 的 `dist/hyperframe.runtime.iife.js`（620413），皆為執行期內容。`docs/`（約 54 KB unpacked）是刻意隨套件出貨的 agent 文件，全排除才夠補缺口，等於移除產品內容，不做。超額是 2026-11-06 起十幾批上游移植的累計（見 2026-11-10 逐 commit 表），沒有單一來源可修。
+
+**處置（選 b）**：沿用 `d599288fd` 的前例，預算改為實測值（packed 1691857、unpacked 4087164），不採上游現值（#6865／#6922 的 1762752／4268445 對應本線未移植的程式，會蓋住真實增長）。`listPackageSizeIssues` 對 core 回 `[]`。平台註記：量值取自 Windows；`verify-packed-manifests.mjs` 在 ubuntu 的 `publish.yml` 才跑，若兩平台不同大小，以 ubuntu 實測再調。
