@@ -99,7 +99,10 @@ def fake_pr_view(live: dict[int, dict | None], returncode: int = 0):
         payload = live[number]
         if payload is None:
             return subprocess.CompletedProcess(
-                args, 1, stdout="", stderr="Could not resolve to a PullRequest"
+                args,
+                1,
+                stdout="",
+                stderr=f"GraphQL: Could not resolve to a PullRequest with the number of {number}. (repository.pullRequest)",
             )
         return subprocess.CompletedProcess(
             args, returncode, stdout=json.dumps(payload), stderr=""
@@ -170,6 +173,28 @@ def test_a_vanished_pull_request_is_reported_not_skipped(monkeypatch):
     stale = checker.collect_stale_monitored(monitored((1, PINNED_OLD, "open")))
 
     assert stale is not None and stale[0]["now"] == "not found"
+
+
+@pytest.mark.parametrize(
+    "stderr",
+    [
+        "GraphQL: Could not resolve to a Repository with the name 'owner/repo'. (repository)",
+        "GraphQL: Could not resolve to a PullRequest with the number of 999. (repository.pullRequest)",
+        "HTTP 404: Not Found",
+        "dial tcp: lookup api.github.com: no such host",
+    ],
+)
+def test_a_lookup_failure_that_does_not_prove_the_pr_is_gone_is_unchecked_not_vanished(
+    monkeypatch, stderr
+):
+    """Only gh's exact 'no PullRequest with the number of N' answer for THIS number means vanished."""
+
+    def runner(args, **kwargs):
+        return subprocess.CompletedProcess(args, 1, stdout="", stderr=stderr)
+
+    monkeypatch.setattr(checker.subprocess, "run", runner)
+
+    assert checker.collect_stale_monitored(monitored((1, PINNED_OLD, "open"))) is None
 
 
 def test_monitored_gh_failure_reports_unchecked_rather_than_nothing_moved(monkeypatch):
