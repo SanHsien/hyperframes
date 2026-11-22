@@ -164,6 +164,14 @@ describe("media treatment routing documentation", () => {
     expect(registrySkill).toContain("CRT scanlines");
   });
 
+  it("keeps the AGENTS.md and CLAUDE.md project templates byte-identical", () => {
+    // An upstream fix once landed in the AGENTS.md template only, so projects
+    // scaffolded for Claude Code missed the "stop preview before the desktop app
+    // edits" rule while every other agent got it.
+    const shared = ["packages", "cli", "src", "templates", "_shared"];
+    expect(read(...shared, "CLAUDE.md")).toBe(read(...shared, "AGENTS.md"));
+  });
+
   it("gives agents a process-owned preview lifecycle in new project instructions", () => {
     for (const file of ["AGENTS.md", "CLAUDE.md"]) {
       const template = read("packages", "cli", "src", "templates", "_shared", file);

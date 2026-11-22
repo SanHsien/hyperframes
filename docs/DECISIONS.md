@@ -1460,3 +1460,9 @@ commit 水位 `c6d243a2dee879e5f1fa2aeda544de8ecf91a998`，PR #7492、issue #748
 **增量來源**：沒有不該出貨的東西。逐檔檢查 455 個封裝檔：沒有 `*.map` 之外的測試、fixture 或 stories，`.map` 已被 `files` 排除（`dist/**/*.js`、`dist/**/*.d.ts`）；最大者是 `dist/fonts/fontData.generated.js`（983375）、`dist/generated/runtime-inline.js`（637194）與公開子路徑 `./runtime` 的 `dist/hyperframe.runtime.iife.js`（620413），皆為執行期內容。`docs/`（約 54 KB unpacked）是刻意隨套件出貨的 agent 文件，全排除才夠補缺口，等於移除產品內容，不做。超額是 2026-11-06 起十幾批上游移植的累計（見 2026-11-10 逐 commit 表），沒有單一來源可修。
 
 **處置（選 b）**：沿用 `d599288fd` 的前例，預算改為實測值（packed 1691857、unpacked 4087164），不採上游現值（#6865／#6922 的 1762752／4268445 對應本線未移植的程式，會蓋住真實增長）。`listPackageSizeIssues` 對 core 回 `[]`。平台註記：量值取自 Windows；`verify-packed-manifests.mjs` 在 ubuntu 的 `publish.yml` 才跑，若兩平台不同大小，以 ubuntu 實測再調。
+
+## 2026-11-22：CLI 專案範本 `_shared/CLAUDE.md` 補回與 `AGENTS.md` 一致（prompt audit 第 8 批）
+
+`3de999d22`（11-08）採用上游「desktop app 開著 preview 時不能編輯，交出前先 `preview --stop`」時只改了 `packages/cli/src/templates/_shared/AGENTS.md`，漏了同目錄的 `CLAUDE.md`；用 `hyperframes init` 建給 Claude Code 的專案因此少這條規則。根目錄 `AGENTS.md` 說兩份範本位元組一致，與 repo 現況矛盾。
+
+修法：照 `3de999d22` 的方向把同一段補進 `CLAUDE.md`，兩份恢復位元組一致；`packages/cli/src/commands/coreSkillContent.test.ts` 加一條測試斷言兩份範本完全相同，下次只改一份就會紅。`appHistory.test.ts` 以 `CLAUDE.md` 範本為期望值，一併跑過。
