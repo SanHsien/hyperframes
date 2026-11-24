@@ -1,5 +1,80 @@
 # 維護決策
 
+## 2026-11-25：本機提交依賴已補齊，monitored PR 查詢受阻
+
+接續 `codex/upstream-1124` 的既有暫存文件；起點為 fork
+`33adf0b064bc7417d01eb8f2386b943af9b049ad`，未切換分支或推送。
+以 `python tools/check_upstream_updates.py --ticket-cap 2000` 重查，上游快照為
+[`df909c65dfeef283ea7389333eb2e6f9e7764ae6`](https://github.com/heygen-com/hyperframes/commit/df909c65dfeef283ea7389333eb2e6f9e7764ae6)。
+新 PR／issue 列舉已越過舊水位，但檢查最後 **exit 2**：
+`ERROR: could not enumerate upstream monitored pull requests.`
+報告明示 `gh` 無法讀取釘選 PR，183 筆 monitored 未完成檢查；輸出未提供更細的失敗原因，不能判定為沒有變動。
+
+依本次任務「If blocked, write what blocked you and stop」停止審查。下表是阻塞狀態，
+**不是**把未審項目全部裁決為延後；未完成每筆採用／延後／拒絕判斷。
+
+| 範圍與上游來源 | 實際取得 | 決定／原因 |
+| --- | --- | --- |
+| [commit](https://github.com/heygen-com/hyperframes/compare/f9255e39a56de17fd86362c4558a918ad2a874ef...df909c65dfeef283ea7389333eb2e6f9e7764ae6) | 998 筆 | 未裁決；整輪檢查受阻，未逐筆完成審查 |
+| [PR](https://github.com/heygen-com/hyperframes/pulls?q=is%3Apr+sort%3Acreated-asc) | 1162 筆，#7496–#8730 | 未裁決；未逐筆完成審查 |
+| [issue](https://github.com/heygen-com/hyperframes/issues?q=is%3Aissue+sort%3Acreated-asc) | 71 筆，#7500–#8729 | 未裁決；未逐筆完成審查 |
+| [monitored PR](https://github.com/heygen-com/hyperframes/pulls) | 釘選 183 筆；查詢未完成 | 受阻；不得重釘 head／state 或宣稱無變動 |
+
+**水位**：`tools/upstream_baseline.json` 未修改，仍為 commit
+`f9255e39a56de17fd86362c4558a918ad2a874ef`、日期 `2026-11-10`、PR #7495、issue #7486，
+monitored 保持原樣。未採用產品、文件或技能補丁，沒有採用項目的前紅後綠測試。
+
+**Agent check**：已讀本機 Agent Advisor orchestration 與成本規則，選 `solo`，未派工。
+唯讀等價 preflight 驗證實際 user-level `AGENTS.md` 為一般非連結檔、14867 bytes、
+唯一聲明 `gpt-6.2-sol/medium`，且無 user-level `AGENTS.override.md`；
+證據屬 operator-attested with verified user-level provenance，非 runtime-verified。
+上游 agent 指引／技能僅初步列舉，未完成逐筆審查；沒有安裝或執行上游技能。
+
+**本機依賴**：舊提示的 `C:\bun-windows-x64` 不存在，改從 Bun 官方 GitHub release
+下載 1.4.4 至本工作樹 `node_modules/.cache/upstream-review/bun/`。
+`bun install --frozen-lockfile --linker=hoisted --ignore-scripts` exit 0，安裝 746 個套件，
+包含鎖檔的 oxfmt 0.41.0 與 commitlint。快取、暫存及工具皆設於工作樹內；未改鎖檔、
+未安裝全域工具或修改使用者設定。`--ignore-scripts` 避免 `prepare` 重裝共用 hooks；
+提交仍正常執行既有 hooks，沒有跳過或改寫 hooksPath。
+
+**維護 gate**：`pwsh -NoProfile -File tools/dev_check.ps1` exit 0；49 tests passed，
+12 份維護文件相對連結無錯誤。文件完成後亦執行此 gate，提交 hooks 結果以實際提交為準。
+原始檢查、安裝及 gate 輸出放在忽略的 `node_modules/.cache/upstream-review/`，不提交測試產物。
+上一次（2026-11-24）的阻塞紀錄保留於下節；其提交依賴問題本輪已解除。
+
+## 2026-11-24：上游檢查受 PR 列舉上限阻塞，未推進水位
+
+本次在 `codex/upstream-1124`、fork `33adf0b064bc7417d01eb8f2386b943af9b049ad` 執行
+`python tools/check_upstream_updates.py`。檢查器取得上游 tip
+[`7975ecc423a0670a510fedd7d722146a370a0186`](https://github.com/heygen-com/hyperframes/commit/7975ecc423a0670a510fedd7d722146a370a0186)，
+列出基準後 989 個 commit，但 PR 列舉碰到預設 1000 筆上限，結果為 **INCOMPLETE**。
+`#7496`–`#7654` 未完整抵達，其中 9 個編號已知為 issue；報告估計新增 PR 為 1000–1150 筆，不能把這份清單當成完整審查範圍。
+檢查最後明示 `ERROR: the listing of upstream pull requests hit its item cap before reaching the reviewed watermark; older unreviewed items may be missing.`；本次 shell 呼叫回傳非零（exit 1）。
+
+**決定**：依本次任務「If blocked, write what blocked you and stop」停止，未進行採用／延後／拒絕裁決，未採用產品或技能變更。
+這是檢查未完成，並非把全部項目裁決為延後。`tools/upstream_baseline.json` 全部保持原樣：commit
+`f9255e39a56de17fd86362c4558a918ad2a874ef`、PR #7495、issue #7486，monitored 也不重釘。
+
+| 範圍 | 本次狀態 | 水位處理 |
+| --- | --- | --- |
+| [commit 範圍](https://github.com/heygen-com/hyperframes/compare/f9255e39a56de17fd86362c4558a918ad2a874ef...7975ecc423a0670a510fedd7d722146a370a0186) | 列出 989 筆，未逐筆完成審查 | 不動 |
+| [PR 範圍](https://github.com/heygen-com/hyperframes/pulls?q=is%3Apr+sort%3Acreated-asc) | 列舉不完整，不能結案 | 不動 |
+| [issue 範圍](https://github.com/heygen-com/hyperframes/issues?q=is%3Aissue+sort%3Acreated-asc)／monitored | 未完成逐筆審查 | 不動 |
+
+**Agent check**：使用已安裝的 Agent Advisor orchestration，選 `solo`，未派輔助 agent。
+primary inspector 通過 user-level `AGENTS.md` 的唯一聲明 `gpt-6.2-sol/medium`；
+這是 operator-attested with verified user-level provenance，不是 runtime-verified。
+未完成上游 agent 指引／技能的逐筆審查，也未安裝上游技能或執行其中指令。
+
+**維護 gate**：`pwsh -NoProfile -File tools/dev_check.ps1` 在原工作樹 exit 0，49 tests passed，12 份維護文件相對連結無錯誤。
+文件修改後同一 gate 也 exit 0，49 tests passed、12 份維護文件相對連結無錯誤。沒有採用項目，因此沒有採用前紅燈／採用後綠燈證據。
+本機報告 `upstream-review-report.md` 為忽略的檢查輸出，不提交。接續工作僅列於 `ROADMAP.md`。
+
+**提交也受阻**：明列加入 `docs/DECISIONS.md`、`ROADMAP.md` 後嘗試 Conventional Commit，正常 pre-commit hook 失敗：
+`sh: line 1: bun: command not found`（tracked-artifacts）與
+`sh: line 1: node_modules/.bin/oxfmt: No such file or directory`（format），兩者 exit 127，`git commit` exit 1。
+沒有略過 hooks、修改 hooksPath、安裝全域工具或改動其他分支。未產生新 commit；兩份文件保留於目前工作樹與暫存區。
+
 ## 2026-09-12：建立 Windows-first 維護型 fork
 
 **決定**：fork `heygen-com/hyperframes`，保留 Apache License 2.0 與完整歷史。本線預設分支用 `main`。本線聚焦繁中文件、Windows 開發 gate、Windows CI，以及逐筆審查的上游追蹤。
