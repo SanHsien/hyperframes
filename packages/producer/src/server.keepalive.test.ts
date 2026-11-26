@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { Hono } from "hono";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
@@ -88,7 +89,8 @@ it("keeps a queued and a running render-stream alive with live progress, and sto
   await settle(() => queued.events.some((event) => event.type === "complete"));
   await vi.advanceTimersByTimeAsync(95_000);
   await settle(() => true);
-  expect(queued.events.at(-1)).toMatchObject({ type: "complete" });
+  const { version } = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
+  expect(queued.events.at(-1)).toMatchObject({ type: "complete", producerVersion: version });
 });
 
 it("frees the render slot when a render ends, even if its client stops reading", async () => {

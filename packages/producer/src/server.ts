@@ -54,6 +54,7 @@ import {
 } from "@hyperframes/core";
 import { parseEncoderOptions } from "@hyperframes/studio-server/encoder-options";
 import { createRenderRequest, renderConfigFromRequest } from "./renderRequest.js";
+import { readProducerVersion } from "./services/distributed/shared.js";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -963,6 +964,7 @@ export function createRenderHandlers(options: HandlerOptions = {}): RenderHandle
             outcome: job.outcome ?? "completed",
             warnings: job.warnings,
             perf: job.perfSummary ?? null,
+            producerVersion: readProducerVersion(),
           }),
         });
       } catch (error) {

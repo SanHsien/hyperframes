@@ -54,6 +54,11 @@ const job = createRenderJob({
 });
 ```
 
+## Identify the producer version
+
+The `/render/stream` endpoint includes `producerVersion` in its `complete`
+event so clients can identify which version rendered the output.
+
 ## Choose an output
 
 | Format | Best for | Audio |

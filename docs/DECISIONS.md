@@ -1,5 +1,9 @@
 # 維護決策
 
+## 2026-11-26：在渲染完成事件回傳 Producer 版本
+
+移植上游 PR #7515。在 `/render/stream` 的 `complete` 事件加入 `producerVersion`，沿用分散式渲染的版本讀取函式，並在 fork 現有的串流測試比對 Producer 套件版本。此項移植獨立於整批上游審查，審查水位維持原值。
+
 ## 2026-11-25：本機提交依賴已補齊，monitored PR 查詢受阻
 
 接續 `codex/upstream-1124` 的既有暫存文件；起點為 fork
