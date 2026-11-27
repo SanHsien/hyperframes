@@ -47,6 +47,10 @@ gh repo set-default --view
 | R-09 | P2     | 上游工作流防護：在 `publish.yml` 與 `sync-skills-to-clawhub.yml` 注入 `if: github.repository == 'heygen-com/hyperframes'` 機械閘門，防止 fork CI 誤觸對外發布 |
 | R-10 | P2     | 遠端分支精簡：修剪 fork 預設複製的數百個上游分支，保持 `origin` 僅有純淨 `main` 維護主線                                                                      |
 
+## 2026-11-27 本機渲染回註
+
+上游 #7388 的預設 GSAP 離線渲染問題已於 `35db9a1e6`（2026-11-27）修復。封鎖 jsDelivr 後，Windows 打包版仍輸出 320×180 的 MP4，共 30 個不同畫格。測試涵蓋指定鏡像及完整性不符時的原下載路徑。
+
 ## 接受、不改契約
 
 | ID  | 嚴重度 | 處理                                   |
