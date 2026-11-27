@@ -1,5 +1,5 @@
 import postcss from "postcss";
-import { gsapCallOffset, containingCallOffset } from "../scriptPositions";
+import { gsapCallOffset, containingCallOffset, gsapRunsWhenScriptRuns } from "../scriptPositions";
 interface LintParsedGsap {
   animations: Array<{
     targetSelector: string;
@@ -1038,6 +1038,31 @@ function collectCssOpacityZeroSelectors(
 // ── GSAP rules ─────────────────────────────────────────────────────────────
 
 // fallow-ignore-next-line complexity
+function scriptExecutionMode(attrs: string): "blocking" | "defer" | "module" | "async" {
+  const tag = `<script ${attrs}>`;
+  const isModule = (readDecodedAttr(tag, "type") ?? "").toLowerCase() === "module";
+  const hasSrc = readDecodedAttr(tag, "src") !== null;
+  if ((isModule || hasSrc) && readDecodedAttr(tag, "async") !== null) return "async";
+  if (isModule) return "module";
+  if (hasSrc && readDecodedAttr(tag, "defer") !== null) return "defer";
+  return "blocking";
+}
+
+function isBlockingClassicScript(attrs: string): boolean {
+  const tag = `<script ${attrs}>`;
+  const type = (readDecodedAttr(tag, "type") ?? "").trim().toLowerCase();
+  const classicType =
+    !type ||
+    /^(?:(?:application|text)\/(?:x-)?(?:java|ecma)script|text\/(?:javascript1\.[0-5]|jscript|livescript))$/.test(
+      type,
+    );
+  return (
+    classicType &&
+    readDecodedAttr(tag, "nomodule") === null &&
+    scriptExecutionMode(attrs) === "blocking"
+  );
+}
+
 export const gsapRules: LintRule<LintContext>[] = [
   // gsap_undefined_css_variable
   async ({ tags, styles, scripts }) => {
@@ -1428,7 +1453,28 @@ export const gsapRules: LintRule<LintContext>[] = [
         /\b_gsScope\b/.test(t),
     );
 
-    if (!usesGsap || hasGsapScript || hasInlineGsap || canInheritGsapFromHost) return [];
+    if (!usesGsap || hasInlineGsap || canInheritGsapFromHost) return [];
+    if (hasGsapScript) {
+      const blockingScripts = scripts.filter(({ attrs }) => isBlockingClassicScript(attrs));
+      const firstUse = blockingScripts.find(
+        (script) =>
+          readDecodedAttr(`<script ${script.attrs}>`, "src") === null &&
+          gsapRunsWhenScriptRuns(script),
+      );
+      const firstGsap = blockingScripts.find(({ attrs }) =>
+        isGsapCoreSrc(readAttr(`<script ${attrs}>`, "src") ?? ""),
+      );
+      if (!firstUse || (firstGsap && firstGsap.index < firstUse.index)) return [];
+      return [
+        {
+          code: "gsap_loaded_after_use",
+          severity: "error",
+          message:
+            "A script can call GSAP before it is loaded, preventing its timeline from registering.",
+          fixHint: "Move the GSAP <script src> before its first use and remove defer or async.",
+        },
+      ];
+    }
     return [
       {
         code: "missing_gsap_script",
@@ -1453,22 +1499,11 @@ export const gsapRules: LintRule<LintContext>[] = [
     const firstMotionPathScriptIndex = motionPathUseIndices.findIndex((index) => index !== null);
     const firstMotionPathUseIndex = motionPathUseIndices[firstMotionPathScriptIndex] ?? null;
     const firstUseScript = scripts[firstMotionPathScriptIndex];
-    const executionMode = (attrs: string): "blocking" | "defer" | "module" | "async" => {
-      const tag = `<script ${attrs}>`;
-      const isModule = (readDecodedAttr(tag, "type") ?? "").toLowerCase() === "module";
-      const hasSrc = readDecodedAttr(tag, "src") !== null;
-      const hasAsync = readDecodedAttr(tag, "async") !== null;
-      const hasDefer = readDecodedAttr(tag, "defer") !== null;
-      if ((isModule || hasSrc) && hasAsync) return "async";
-      if (isModule) return "module";
-      if (hasSrc && hasDefer) return "defer";
-      return "blocking";
-    };
-    const firstUseMode = firstUseScript ? executionMode(firstUseScript.attrs) : "blocking";
+    const firstUseMode = firstUseScript ? scriptExecutionMode(firstUseScript.attrs) : "blocking";
     const hasMotionPathPlugin = scripts
       .slice(0, firstMotionPathScriptIndex + 1)
       .some((script, candidateIndex) => {
-        const candidateMode = executionMode(script.attrs);
+        const candidateMode = scriptExecutionMode(script.attrs);
         const sameScript = candidateIndex === firstMotionPathScriptIndex;
         const candidateIsPostParse = candidateMode === "defer" || candidateMode === "module";
         const firstUseIsPostParse = firstUseMode === "defer" || firstUseMode === "module";

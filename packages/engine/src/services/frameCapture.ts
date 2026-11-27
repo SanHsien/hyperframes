@@ -2610,6 +2610,14 @@ export function recordSubTimelineWarning(session: CaptureSession, timeoutMs: num
   const loadCauses = session.scriptLoadCauses ?? [];
   const pending = session.pendingTimelineIds ?? [];
   const pendingSuffix = pending.length > 0 ? ` (still unregistered: ${pending.join(", ")})` : "";
+  // The render page can expose GSAP as null before it loads.
+  const gsapLoadOrderHint = session.pageErrors.some((s) =>
+    /gsap is not defined|Cannot read properties of (?:null|undefined) \(reading '(?:timeline|registerPlugin)'\)/.test(
+      s,
+    ),
+  )
+    ? " Check whether GSAP loaded before the script that uses it."
+    : "";
   const isolated = session.isolatedCompositions ?? [];
   if (isolated.length > 0) {
     recordCaptureWarnings(session, [
@@ -2633,7 +2641,7 @@ export function recordSubTimelineWarning(session: CaptureSession, timeoutMs: num
       code: scriptFailure ? "sub_timeline_script_failure" : "sub_timeline_readiness_timeout",
       message: threwThenTimedOut
         ? `A composition script threw before its timeline registered` +
-          `${pendingSuffix} (${sources.join(", ")}). Fix the error; a composition animated by ` +
+          `${pendingSuffix} (${sources.join(", ")}).${gsapLoadOrderHint} Fix the error; a composition animated by ` +
           `CSS or rAF rather than a GSAP timeline must mark its host with data-no-timeline.`
         : scriptFailure
           ? `A sub-composition timeline script failed to load${scriptLoadCauseSuffix(loadCauses)} ` +

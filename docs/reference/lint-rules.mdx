@@ -494,6 +494,12 @@ Source: `packages/lint/src/rules/gsap.ts`.
 
 **Fix:** Define the variable in CSS, declare it in `data-composition-variables`, or add a `var(--x, #fff)` fallback.
 
+### `gsap_loaded_after_use`
+
+**Error.** An inline script can call GSAP before its library has loaded, leaving the animation timeline unregistered.
+
+**Fix:** Move the GSAP `<script src>` above the script that uses it and remove `defer` or `async` from the GSAP tag.
+
 ### `missing_gsap_plugin`
 
 **Error.** A tween uses a plugin-specific property such as `motionPath`, but the plugin is not loaded and registered, so core GSAP ignores the property.
