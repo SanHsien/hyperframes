@@ -1,5 +1,6 @@
 import { captureArtifactRevision } from "../utils/artifactCapture.js";
 import { recordRenderSuccess, registerRenderOutput } from "@hyperframes/studio-server/history";
+import { resolveGsapVendorDir } from "../server/gsapVendor.js";
 import { failCommand, requestCliExit, scheduleCliExit } from "../utils/commandResult.js";
 import { defineCommand } from "citty";
 import type { Example } from "./_examples.js";
@@ -1105,6 +1106,10 @@ async function executeLocalRender(
 
   cancellation.checkAncestors();
   cancellation.signal.throwIfAborted();
+  if (!process.env.HYPERFRAMES_GSAP_VENDOR_DIR) {
+    const gsapVendorDir = resolveGsapVendorDir();
+    if (gsapVendorDir) process.env.HYPERFRAMES_GSAP_VENDOR_DIR = gsapVendorDir;
+  }
   const producer = await loadProducer();
   const deParallelRouterActive =
     options.manageDeParallelRouterBreaker === true

@@ -1,5 +1,9 @@
 # 維護決策
 
+## 2026-11-27：本機渲染沿用 CLI 打包的 GSAP
+
+移植上游 PR #7388。CLI 渲染與 Studio 預覽共用套件內的 GSAP 查找函式。Producer 只為同版本的預設 CDN 主檔使用本機副本，並保留完整性檢查及原有的下載路徑。
+
 ## 2026-11-26：在渲染完成事件回傳 Producer 版本
 
 移植上游 PR #7515。在 `/render/stream` 的 `complete` 事件加入 `producerVersion`，沿用分散式渲染的版本讀取函式，並在 fork 現有的串流測試比對 Producer 套件版本。此項移植獨立於整批上游審查，審查水位維持原值。

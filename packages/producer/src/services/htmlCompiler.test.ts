@@ -1,5 +1,5 @@
 // fallow-ignore-file code-duplication
-import { describe, expect, it, mock, beforeAll } from "bun:test";
+import { describe, expect, it, mock, beforeAll, spyOn } from "bun:test";
 import { createHash } from "node:crypto";
 import { mkdtempSync, writeFileSync, mkdirSync, rmSync, readFileSync, readdirSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -8,6 +8,7 @@ import { runInThisContext } from "node:vm";
 import { parseHTML } from "linkedom";
 import { interpolateVolumeGain } from "@hyperframes/core/media-volume-envelope";
 import { redactTelemetryString } from "@hyperframes/core";
+import { gsapCdnDist } from "@hyperframes/core/gsap-cdn";
 import { defaultLogger } from "../logger.js";
 import { NotMediaPayloadError } from "@hyperframes/engine";
 import {
@@ -382,6 +383,46 @@ describe("collectExternalAssets", () => {
 // ── inlineExternalScripts ──────────────────────────────────────────────────
 
 describe("inlineExternalScripts", () => {
+  it("uses bundled GSAP offline while respecting the source and integrity metadata", async () => {
+    const vendorDir = mkdtempSync(join(tmpdir(), "hf-bundled-gsap-"));
+    const previousDir = process.env.HYPERFRAMES_GSAP_VENDOR_DIR;
+    const localScript = "window.bundledGsap = true;";
+    const remoteScript = "window.remoteGsap = true;";
+    const url = `${gsapCdnDist()}gsap.min.js`;
+    const digest = (script: string) =>
+      `sha384-${createHash("sha384").update(script).digest("base64")}`;
+    const fetchMock = spyOn(globalThis, "fetch").mockRejectedValue(new Error("offline"));
+    try {
+      writeFileSync(join(vendorDir, "gsap.min.js"), localScript);
+      process.env.HYPERFRAMES_GSAP_VENDOR_DIR = vendorDir;
+      const html = `<script src="${url}" integrity="${digest(localScript)}"></script>`;
+      expect(await inlineExternalScripts(html)).toContain(localScript);
+      expect(fetchMock).not.toHaveBeenCalled();
+
+      fetchMock.mockImplementation(async () => new Response(remoteScript));
+      const mirror = `${gsapCdnDist(undefined, "https://mirror.example/npm")}gsap.min.js`;
+      const externalScripts = [
+        { source: mirror, tag: `<script src="${mirror}"></script>` },
+        { source: url, tag: `<script src="${url}" integrity="${digest(remoteScript)}"></script>` },
+      ];
+      for (const { source, tag } of externalScripts) {
+        const result = await inlineExternalScripts(tag);
+        expect(result).toContain(remoteScript);
+        expect(result).not.toContain(localScript);
+        expect(fetchMock).toHaveBeenLastCalledWith(source, expect.anything());
+      }
+      const badIntegrity = `<script src="${url}" integrity="${digest("wrong bytes")}"></script>`;
+      await expect(inlineExternalScripts(badIntegrity)).rejects.toThrow(
+        "Subresource integrity mismatch",
+      );
+    } finally {
+      fetchMock.mockRestore();
+      if (previousDir === undefined) delete process.env.HYPERFRAMES_GSAP_VENDOR_DIR;
+      else process.env.HYPERFRAMES_GSAP_VENDOR_DIR = previousDir;
+      rmSync(vendorDir, { recursive: true, force: true });
+    }
+  });
+
   it("returns HTML unchanged when no external scripts exist", async () => {
     const html = `<html><body><script>var x = 1;</script></body></html>`;
     const result = await inlineExternalScripts(html);

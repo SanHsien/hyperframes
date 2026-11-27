@@ -1287,9 +1287,18 @@ function matchesScriptIntegrity(bytes: Uint8Array, metadata: string): boolean {
   );
 }
 
+function readBundledGsap(src: string): Buffer | null {
+  const dir = process.env.HYPERFRAMES_GSAP_VENDOR_DIR;
+  if (!dir || src !== `${gsapCdnDist()}gsap.min.js`) return null;
+  try {
+    return readFileSync(join(dir, "gsap.min.js"));
+  } catch {
+    return null;
+  }
+}
+
 /**
- * Download external CDN scripts and inline them into the HTML so rendering
- * works without network access (Docker, CI, restricted environments).
+ * Read bundled or downloaded scripts and inline them before browser capture.
  */
 export async function inlineExternalScripts(html: string): Promise<string> {
   const fullHtml = ensureFullDocument(html);
@@ -1309,12 +1318,17 @@ export async function inlineExternalScripts(html: string): Promise<string> {
 
   const downloads = await Promise.allSettled(
     externalScripts.map(async ({ el, src }) => {
+      const integrity = el.getAttribute("integrity") || "";
+      const bundled = readBundledGsap(src);
+      if (bundled && matchesScriptIntegrity(bundled, integrity)) {
+        return { src, text: new TextDecoder().decode(bundled) };
+      }
       const response = await fetch(src, {
         signal: AbortSignal.timeout(15_000),
       });
       if (!response.ok) throw new Error(`HTTP ${response.status} for ${src}`);
       const bytes = new Uint8Array(await response.arrayBuffer());
-      if (!matchesScriptIntegrity(bytes, el.getAttribute("integrity") || "")) {
+      if (!matchesScriptIntegrity(bytes, integrity)) {
         throw new ScriptIntegrityError(`Subresource integrity mismatch for ${src}`);
       }
       return { src, text: new TextDecoder().decode(bytes) };

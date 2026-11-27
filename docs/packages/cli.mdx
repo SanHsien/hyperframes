@@ -1623,6 +1623,10 @@ it, undoing the newer entries too.
 
 Render a composition to MP4, WebM, MOV, GIF, or an RGBA PNG sequence.
 
+Local renders can load the CLI's bundled `gsap.min.js` without contacting the
+default CDN. Custom mirrors, other versions, and scripts whose integrity
+metadata requires different bytes still use their configured URL.
+
 ```bash
 # Fast iteration
 npx hyperframes render --output output.mp4
