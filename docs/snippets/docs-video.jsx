@@ -423,10 +423,7 @@ export const ShowcaseWall = () => {
   ];
   const [openId, setOpenId] = useState(null);
   // Lazy initializer, not a post-mount effect: with useState(false) the first
-  // committed render emits <video src autoPlay loop> and only then drops the
-  // attributes, so a reduce-motion visitor has already started fetching every
-  // tile. autoPlay also overrides preload="metadata", and removing src without
-  // a following load() is not a reliable abort. CSS cannot reach any of this.
+  // pass lets the tile observer start before it sees the visitor's preference.
   const wallRef = useRef(null);
   const [reduced, setReduced] = useState(
     () =>
@@ -454,6 +451,35 @@ export const ShowcaseWall = () => {
       video.load();
     }
   }, [reduced]);
+
+  // Leave only the poster on screen until a tile approaches the viewport.
+  useEffect(() => {
+    const wall = wallRef.current;
+    if (reduced || !wall) return;
+    const tiles = wall.querySelectorAll("video[data-tile-src]");
+    const playTile = (video) => {
+      if (!video.hasAttribute("src")) video.src = video.dataset.tileSrc;
+      video.play().catch(() => {});
+    };
+    if (typeof IntersectionObserver === "undefined") {
+      tiles.forEach(playTile);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const { target, isIntersecting } of entries) {
+          if (isIntersecting) playTile(target);
+          else target.pause();
+        }
+      },
+      { rootMargin: "200px 0px" },
+    );
+    tiles.forEach((video) => observer.observe(video));
+    return () => {
+      observer.disconnect();
+      observer.takeRecords();
+    };
+  }, [reduced, openId]);
 
   const open = films.find((film) => film.id === openId) || null;
 
@@ -506,7 +532,6 @@ export const ShowcaseWall = () => {
     );
   }
 
-
   return (
     <div
       ref={wallRef}
@@ -537,13 +562,12 @@ export const ShowcaseWall = () => {
           }}
         >
           <video
-            src={reduced ? undefined : film.tile}
+            data-tile-src={film.tile}
             poster={film.poster}
-            autoPlay={!reduced}
             muted
             loop={!reduced}
             playsInline
-            preload="metadata"
+            preload="none"
             style={{
               width: "100%",
               aspectRatio: "16 / 9",
